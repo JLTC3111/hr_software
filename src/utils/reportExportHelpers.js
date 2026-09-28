@@ -2,8 +2,8 @@ import { summarizeAttendance, workingDateKeys } from './attendanceRules.js';
 export { workingDateKeys } from './attendanceRules.js';
 
 // Only translate authored fields actually written by the selected format.
-// PDF tables omit descriptions, attendance notes and leave reasons; CSV/XLSX
-// include them. Demo task/goal text already comes from the UI translations.
+// PDF includes full task details, but omits attendance notes and leave reasons.
+// Demo task/goal titles and descriptions already come from the UI translations.
 export const collectExportUgcStrings = (timeEntries = [], tasks = [], goals = [], leave = [], { format = 'csv', demo = false } = {}) => {
   const strings = [];
   const includeDetails = format !== 'pdf';
@@ -17,7 +17,7 @@ export const collectExportUgcStrings = (timeEntries = [], tasks = [], goals = []
   if (!demo) {
     tasks.forEach(({ title, description }) => {
       if (title) strings.push(title);
-      if (includeDetails && description) strings.push(description);
+      if (description) strings.push(description);
     });
     goals.forEach(({ title, description, notes }) => {
       if (title) strings.push(title);
@@ -25,6 +25,10 @@ export const collectExportUgcStrings = (timeEntries = [], tasks = [], goals = []
       if (includeDetails && notes) strings.push(notes);
     });
   }
+  tasks.forEach(({ self_assessment, comments }) => {
+    if (self_assessment) strings.push(self_assessment);
+    if (comments) strings.push(comments);
+  });
   if (includeDetails) leave.forEach(({ reason }) => { if (reason) strings.push(reason); });
   return strings;
 };
@@ -72,10 +76,10 @@ export const getTaskDurationDays = (task, now = new Date()) => {
   const dueAt = parseStamp(task?.due_date);
   const completedAt = parseStamp(task?.completion_date || task?.completed_at);
 
-  const estimated = startedAt && dueAt ? Math.max(1, daysBetween(startedAt, dueAt)) : null;
+  const estimated = startedAt && dueAt && dueAt >= startedAt ? Math.max(1, daysBetween(startedAt, dueAt)) : null;
 
   let actual = null;
-  if (startedAt && completedAt) {
+  if (startedAt && completedAt && completedAt >= startedAt) {
     actual = Math.max(0, daysBetween(startedAt, completedAt));
   } else if (startedAt && !isTaskClosed(task)) {
     actual = Math.max(0, daysBetween(startedAt, now));
@@ -104,6 +108,24 @@ export const filterExportSnapshotByScope = (scope = {}, snapshot = {}) => ({
 
 /** Mon–Fri days in an inclusive YYYY-MM-DD range. */
 export const countWorkingDays = (startDate, endDate) => workingDateKeys(startDate, endDate).length;
+
+export const REPORT_PERFORMANCE_WEIGHTS = { time: 50, tasks: 45, goals: 5 };
+
+/** A full calendar month is 22 eight-hour days; partial months are prorated. */
+export const expectedReportHours = (startDate, endDate) => {
+  const start = parseStamp(startDate);
+  const end = parseStamp(endDate);
+  if (!start || !end || end < start) return null;
+  let hours = 0;
+  for (let month = new Date(start.getFullYear(), start.getMonth(), 1); month <= end;
+    month = new Date(month.getFullYear(), month.getMonth() + 1, 1)) {
+    const monthEnd = new Date(month.getFullYear(), month.getMonth() + 1, 0);
+    const from = start > month ? start : month;
+    const to = end < monthEnd ? end : monthEnd;
+    hours += 176 * (daysBetween(from, to) + 1) / monthEnd.getDate();
+  }
+  return hours;
+};
 
 /**
  * Group working-day keys into contiguous runs. Adjacent weekdays stay in one
@@ -172,25 +194,69 @@ export const computeEmployeePerformance = (employee, timeEntries = [], tasks = [
   const employeeTasks = tasks.filter((task) => String(task.employee_id) === String(employee.id));
   const employeeGoals = goals.filter((goal) => String(goal.employee_id) === String(employee.id));
 
-  const totalHours = summarizeAttendance({ ...attendance, timeEntries: employeeTimeEntries, employeeId: employee.id }).total_hours;
+  const attendanceSummary = summarizeAttendance({ ...attendance, timeEntries: employeeTimeEntries, employeeId: employee.id });
+  const totalHours = attendanceSummary.total_hours;
   const approvedEntries = employeeTimeEntries.filter((entry) => entry.status === 'approved').length;
   const completedTasks = employeeTasks.filter((task) => task.status === 'completed').length;
   const taskCompletionRate = employeeTasks.length ? (completedTasks / employeeTasks.length) * 100 : 0;
   const avgGoalProgress = employeeGoals.length
-    ? employeeGoals.reduce((sum, goal) => sum + (goal.status === 'completed' ? 100 : (Number(goal.progress) || 0)), 0) / employeeGoals.length
+    ? employeeGoals.reduce((sum, goal) => sum + (goal.status === 'completed' ? 100 : Math.max(0, Math.min(100, Number(goal.progress_percentage ?? goal.progress) || 0))), 0) / employeeGoals.length
     : 0;
-  const timeScore = employeeTimeEntries.length ? (approvedEntries / employeeTimeEntries.length) * 100 : 0;
-  const overallScore = ((timeScore + taskCompletionRate + avgGoalProgress) / 3).toFixed(1);
+  const expectedHours = expectedReportHours(attendance.startDate, attendance.endDate);
+  const hasTime = employeeTimeEntries.length > 0 || (attendance.overtimeLogs || []).some((log) =>
+    String(log.employee_id) === String(employee.id));
+  const hasRecords = hasTime || employeeTasks.length > 0 || employeeGoals.length > 0;
+  // Keep shared attendance rules (including leave and rejected-entry exclusions).
+  // Overtime contributes hours, not a second approval-based score.
+  const timeScore = hasRecords && attendance.scoreScope?.timeEntries !== false && expectedHours > 0
+    ? Math.min(100, Math.max(0, totalHours) / expectedHours * 100) : null;
+
+  const measuredDurations = employeeTasks.filter(isTaskClosed).flatMap((task) => {
+    const start = parseStamp(task.start_date);
+    const due = parseStamp(task.due_date);
+    const end = parseStamp(task.completion_date || task.completed_at);
+    // Older rows can have due dates before their starts. Do not turn those
+    // into one-day estimates or invent a finish date to score them.
+    if (!start || !due || !end || due < start || end < start) return [];
+    return [{ estimated: Math.max(1, daysBetween(start, due)), actual: Math.max(0, daysBetween(start, end)) }];
+  });
+  const estimatedTaskDays = measuredDurations.reduce((sum, duration) => sum + duration.estimated, 0);
+  const actualTaskDays = measuredDurations.reduce((sum, duration) => sum + duration.actual, 0);
+  const taskEfficiency = measuredDurations.length
+    ? Math.min(100, estimatedTaskDays / Math.max(1, actualTaskDays) * 100) : null;
+  // Equal shares for task volume delivered (completed / assigned) and duration
+  // efficiency. With no valid durations, use completion alone, not a guessed 0.
+  const taskScore = hasRecords && attendance.scoreScope?.tasks !== false
+    ? (taskEfficiency == null ? taskCompletionRate : (taskCompletionRate + taskEfficiency) / 2) : null;
+  const categoryScores = { time: timeScore, tasks: taskScore, goals: employeeGoals.length ? avgGoalProgress : null };
+  const weightTotal = Object.entries(categoryScores).reduce((sum, [key, score]) =>
+    sum + (score == null ? 0 : REPORT_PERFORMANCE_WEIGHTS[key]), 0);
+  const weights = Object.fromEntries(Object.entries(categoryScores).map(([key, score]) =>
+    [key, score == null || !weightTotal ? 0 : REPORT_PERFORMANCE_WEIGHTS[key] / weightTotal * 100]));
+  const overallScore = weightTotal
+    ? Object.entries(categoryScores).reduce((sum, [key, score]) => sum + (score ?? 0) * weights[key] / 100, 0).toFixed(1)
+    : null;
 
   return {
     totalHours,
     timeEntriesCount: employeeTimeEntries.length,
+    timeApprovalRate: employeeTimeEntries.length ? (approvedEntries / employeeTimeEntries.length * 100).toFixed(1) : null,
+    regularHours: attendanceSummary.regular_hours,
+    overtimeHours: attendanceSummary.overtime_hours + attendanceSummary.holiday_overtime_hours,
+    expectedHours,
+    timeScore: timeScore == null ? null : timeScore.toFixed(1),
     tasksCount: employeeTasks.length,
     completedTasks,
     taskCompletionRate: taskCompletionRate.toFixed(1),
+    taskEfficiency: taskEfficiency == null ? null : taskEfficiency.toFixed(1),
+    taskScore: taskScore == null ? null : taskScore.toFixed(1),
+    estimatedTaskDays,
+    actualTaskDays,
+    measuredTaskCount: measuredDurations.length,
     goalsCount: employeeGoals.length,
     avgGoalProgress: avgGoalProgress.toFixed(1),
-    overallScore
+    overallScore,
+    weights,
   };
 };
 
@@ -557,6 +623,21 @@ export const createPdfReportLayout = ({
         { bold: true }
       );
       y = top + blockHeight;
+    },
+
+    /** Short explanatory copy that wraps and respects the page footer. */
+    paragraph(text) {
+      doc.setFontSize(8);
+      const lines = doc.splitTextToSize(String(text), contentWidth);
+      y += 3;
+      lines.forEach((line) => {
+        ensure(4);
+        doc.setFontSize(8);
+        doc.setTextColor(...T.muted);
+        drawText(line, left, baselineOf(y, 8));
+        y += 4;
+      });
+      y += 2;
     },
 
     /**

@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { setImmediate } from 'node:timers/promises';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import ExcelJS from 'exceljs';
 import * as helpers from '../src/utils/reportExportHelpers.js';
 import * as attendance from '../src/utils/attendanceRules.js';
 import * as industry from '../src/theme/industry.js';
@@ -20,9 +23,9 @@ function find(tree, predicate) {
   }
 }
 
-function exportFixture({ failEntries = false, employeeId = null } = {}) {
+function exportFixture({ failEntries = false, failSource = null, employeeId = null, format = 'csv', entryCount = 584, tasks = [], cached = true } = {}) {
   const employees = ['a', 'b'].map(id => ({ id, name: `Employee ${id}`, department: 'Operations', status: 'Active' }));
-  const entries = Array.from({ length: 584 }, (_, id) => ({
+  const entries = Array.from({ length: entryCount }, (_, id) => ({
     id, employee_id: employees[id % 2].id, employee: employees[id % 2], date: '2026-07-06',
     clock_in: '09:00', clock_out: '17:00', hours: 8, hour_type: 'regular', status: 'approved',
     notes: `Record ${id}`, created_at: '2026-07-06T10:00:00Z',
@@ -43,19 +46,29 @@ function exportFixture({ failEntries = false, employeeId = null } = {}) {
   const source = name => async () => {
     started.add(name);
     await gate.promise;
-    return { success: true, data: [] };
+    if (name === failSource) return { success: false, error: 'Read failed' };
+    return { success: true, data: name === 'tasks' ? tasks.map(task => ({ ...task, employee_id: task.employee_id || 'a', employee: employees[0] })) : [] };
   };
   const states = [];
   let cursor = 0, flushes = 0, downloaded = null, filename = null;
   const alerts = [];
+  const errors = [];
   const translations = [];
+  const tables = [];
+  let modelCalls = 0;
+  class ReportPdf extends jsPDF {
+    constructor(...args) {
+      super(...args);
+      this.save = name => { filename = name; downloaded = new Blob([this.output('arraybuffer')]); };
+    }
+  }
   const react = {
     createElement: (type, props, ...children) => ({ type, props, children }),
     useState(initial) {
       const index = cursor++;
       if (!(index in states)) {
         let value = typeof initial === 'function' ? initial() : initial;
-        if (value?.timeEntries && value?.employees) value = { timeEntries: entries, employees, tasks: [], goals: [], leave: [], overtimeLogs: [] };
+        if (value?.timeEntries && value?.employees) value = { timeEntries: entries, employees, tasks, goals: [], leave: [], overtimeLogs: [] };
         if (value?.startDate && value?.endDate) value = { startDate: '2026-07-01', endDate: '2026-09-30' };
         states[index] = value;
       }
@@ -77,16 +90,28 @@ function exportFixture({ failEntries = false, employeeId = null } = {}) {
     '../utils/supabaseTimeout': { withTimeout: promise => promise }, '../config/requestTimeouts': {},
     '../utils/sessionHelper': { validateAndRefreshSession: async () => ({ success: true }) },
     '../utils/retryHelper': {}, '../config/supabaseClient': { supabase: client },
-    '../utils/fetchAllRows.js': { fetchAllRows }, '../utils/reportExportHelpers.js': helpers,
+    '../utils/fetchAllRows.js': { fetchAllRows },
+    '../utils/reportExportHelpers.js': { ...helpers, loadPdfLogo: async () => null, loadPdfProfileImage: async () => null },
     '../utils/attendanceRules.js': attendance, '../utils/localeFormat.js': locale,
-    '../services/translateService.js': { translateTexts: async texts => { translations.push(...texts); return texts.map(text => `Translated ${text}`); } },
+    '../services/translateService.js': {
+      translateTexts: () => { modelCalls++; return new Promise(() => {}); },
+      peekCachedTranslation: text => { translations.push(text); return cached ? `Translated ${text}` : null; },
+    },
     '../theme/industry.js': industry, '../utils/employeeStatus.js': employeeStatus,
-    '../utils/employeePositionKey.js': employeePosition, '../utils/pdfFontLoader.js': {},
+    '../utils/employeePositionKey.js': employeePosition,
+    '../utils/pdfFontLoader.js': {
+      loadPdfFonts: async () => ({ unicodeReady: false }), choosePdfFont: () => 'helvetica',
+      getPdfTableFont: () => 'helvetica', pdfFontSupportsBold: () => true,
+    },
+    jspdf: { jsPDF: ReportPdf },
+    'jspdf-autotable': (doc, options) => { tables.push(options); return autoTable(doc, options); },
+    exceljs: ExcelJS,
     '@/lib/utils': { cn: (...values) => values.filter(Boolean).join(' ') },
   };
   for (const name of ['./ui/translated-text.jsx', './ui/specular-button', './motion-primitives', './ui/number-ticker', './ui/date-picker.jsx', './ui/industry.jsx']) imports[name] = {};
   imports['./ui/fetch-elapsed-pill'] = { FetchElapsedPill: 'elapsed-pill' };
   const { default: Reports } = loadSource('src/components/reports.jsx', imports, {
+    console: { log() {}, warn() {}, error: (...args) => errors.push(args.map(String).join(' ')) },
     window: { localStorage: { getItem: () => null, setItem() {} } },
     URL: { createObjectURL: blob => { downloaded = blob; return 'blob:test'; }, revokeObjectURL() {} },
     document: { createElement: () => ({ click() { filename = this.download; } }), body: { appendChild() {}, removeChild() {} } },
@@ -102,9 +127,13 @@ function exportFixture({ failEntries = false, employeeId = null } = {}) {
       .props.onChange({ target: { value: employeeId } });
     screen = render();
   }
+  if (format !== 'csv') {
+    find(screen, node => node.props?.ariaLabel === en.reports.format).props.onChange(format);
+    screen = render();
+  }
   const button = find(screen, node => node.props?.title === en.reports.exportingIncludes);
   assert.ok(button);
-  return { started, gate, client, alerts, translations, run: button.props.onClick, content: () => downloaded?.text(), filename: () => filename };
+  return { started, gate, client, alerts, errors, translations, tables, run: button.props.onClick, content: () => downloaded?.text(), bytes: () => downloaded?.arrayBuffer(), filename: () => filename, modelCalls: () => modelCalls };
 }
 
 test('actual CSV export starts all sources together and writes all 584 rows beyond the first page', async () => {
@@ -141,4 +170,70 @@ test('failed attendance fetch does not download an incomplete report', async () 
   await fixture.run();
   assert.equal(fixture.content(), undefined);
   assert.match(fixture.alerts[0].message, /error/i);
+});
+
+test('failed task or goal fetch cannot masquerade as an empty category in the score', async () => {
+  for (const failSource of ['tasks', 'goals']) {
+    const fixture = exportFixture({ failSource });
+    fixture.gate.resolve();
+    await fixture.run();
+    assert.equal(fixture.content(), undefined);
+    assert.match(fixture.alerts[0].message, /error/i);
+  }
+});
+
+const detailedTasks = [
+  { id: 1, title: 'A task title longer than forty characters that must remain complete', description: 'Implemented the new data import.\nVerified all 28 records.', status: 'completed', start_date: '2026-07-01', due_date: '2026-07-10', completion_date: '2026-07-08', self_assessment: 'All checks complete', comments: 'Ready for review', quality_rating: 4 },
+  { id: 2, title: 'In progress task', description: 'Build the remaining screens', status: 'in-progress', start_date: '2026-07-01', due_date: '2026-07-20', self_assessment: 'Three screens complete', comments: 'Two screens remain' },
+];
+
+test('PDF exports full task work, status and progress notes without waiting for a stalled translator', async () => {
+  const fixture = exportFixture({ format: 'pdf', entryCount: 26, tasks: detailedTasks, cached: false });
+  fixture.gate.resolve();
+  await fixture.run();
+  assert.equal(fixture.modelCalls(), 0);
+  assert.match(fixture.filename() || '', /\.pdf$/, fixture.errors.join('\n'));
+  assert.ok((await fixture.bytes()).byteLength > 1000);
+  const table = fixture.tables.find(table => table.head[0].includes('Task Title'));
+  assert.ok(table);
+  const [completed, progress] = table.body;
+  assert.ok(completed[1].includes(detailedTasks[0].title), 'long titles must not be truncated');
+  assert.ok(completed[1].includes(detailedTasks[0].description));
+  assert.ok(completed[1].includes('All checks complete'));
+  assert.ok(completed[1].includes('Ready for review'));
+  assert.match(completed[2], /100%/);
+  assert.match(completed[2], /4\/5/);
+  assert.ok(progress[1].includes('Three screens complete'));
+  assert.ok(progress[1].includes('Two screens remain'));
+  assert.match(progress[2], /In Progress/);
+  assert.match(progress[2], /Percentage not recorded/);
+  assert.doesNotMatch(progress[2], /50%|100%/);
+});
+
+test('Excel keeps task assessments, progress notes and ratings with the full work description', async () => {
+  const fixture = exportFixture({ format: 'xlsx', entryCount: 2, tasks: detailedTasks, employeeId: 'a' });
+  fixture.gate.resolve();
+  await fixture.run();
+  assert.match(fixture.filename(), /\.xlsx$/);
+  assert.equal(fixture.modelCalls(), 0);
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(await fixture.bytes());
+  const sheet = workbook.getWorksheet(en.reports.excel.sheets.tasks);
+  assert.ok(sheet);
+  assert.equal(sheet.getCell('D2').value, `Translated ${detailedTasks[0].description}`);
+  assert.equal(sheet.getCell('P2').value, 'Translated All checks complete');
+  assert.equal(sheet.getCell('Q3').value, 'Translated Two screens remain');
+  assert.equal(sheet.getCell('R2').value, '4/5');
+});
+
+test('monthly task output follows completion dates instead of old due dates', async () => {
+  const fixture = exportFixture({ entryCount: 2, tasks: [
+    { ...detailedTasks[0], title: 'Delivered this period', due_date: '2026-06-15', completion_date: '2026-07-08' },
+    { ...detailedTasks[0], id: 3, title: 'Delivered next period', due_date: '2026-07-15', completion_date: '2026-10-08' },
+  ], cached: false });
+  fixture.gate.resolve();
+  await fixture.run();
+  const csv = await fixture.content();
+  assert.ok(csv.includes('Delivered this period'));
+  assert.ok(!csv.includes('Delivered next period'));
 });

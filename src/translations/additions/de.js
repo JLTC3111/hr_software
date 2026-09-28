@@ -1,4 +1,15 @@
 export default {
+  'reports.taskPeriodBasis': "Abgeschlossene Aufgaben zählen zum Abschlussdatum, andere zum Fälligkeitsdatum oder ersatzweise zum Start-/Erstellungsdatum.",
+  'reports.scoreBasis': "Arbeitszeit 50%, Aufgabenerfüllung 45%, Ziele 5%; Ziele ohne Daten entfallen, ihr Gewicht wird verteilt. Zeit = reguläre/Homeoffice- plus Überstunden im Verhältnis zu 176 Stunden pro vollem Monat (anteilig bei Teilmonaten), maximal 100%. Aufgaben = Mittel aus Abschlussquote und geplanten/tatsächlichen Tagen abgeschlossener Aufgaben; fehlende oder ungültige Zeitangaben entfallen. Schwierigkeit wird noch nicht erfasst.",
+  'reports.translationNote': "Verfügbare Übersetzungen werden verwendet. Noch nicht übersetzte Texte bleiben im Original.",
+  'reports.progressNotRecorded': "Prozentsatz nicht erfasst",
+  'reports.scoreCalculation': "Punkteberechnung",
+  'reports.expectedHours': "Erwartete reguläre Stunden",
+  'reports.timeWorkedScore': "Arbeitszeitbewertung",
+  'reports.completedAssigned': "Aufgaben abgeschlossen / zugewiesen",
+  'reports.taskDurationTotals': "Geplante / tatsächliche Aufgabentage",
+  'reports.taskEfficiency': "Zeiteffizienz der Aufgaben",
+  'reports.taskDeliveryScore': "Aufgabenerfüllung",
   // Add employee
   'addEmployee.addNew': 'Neu hinzufügen',
   'addEmployee.addPhoto': 'Foto hinzufügen',

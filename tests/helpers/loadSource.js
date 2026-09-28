@@ -7,6 +7,7 @@ import { transformSync } from 'esbuild';
 export function loadSource(file, imports, globals = {}) {
   const { code } = transformSync(readFileSync(file, 'utf8'), {
     format: 'cjs', loader: file.endsWith('.ts') ? 'ts' : file.endsWith('.jsx') ? 'jsx' : 'js',
+    supported: { 'dynamic-import': false },
     define: { 'import.meta.env': JSON.stringify({ VITE_SUPABASE_URL: 'https://fixture.supabase.co', DEV: false }) },
   });
   const module = { exports: {} };

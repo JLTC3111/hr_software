@@ -48,7 +48,7 @@ import {
 } from '../utils/reportExportHelpers.js';
 import { localDateKey, summarizeAttendance } from '../utils/attendanceRules.js';
 import { TranslatedText } from './ui/translated-text.jsx';
-import { translateTexts } from '../services/translateService.js';
+import { peekCachedTranslation, translateTexts } from '../services/translateService.js';
 import { SpecularButton } from './ui/specular-button';
 import { SlidingNumber } from './motion-primitives';
 import { NumberTicker } from './ui/number-ticker';
@@ -92,16 +92,18 @@ const PREVIEW_PAGE = 50;
 
 /**
  * The date a record sits on for period purposes. Time entries and leave carry a
- * real date; a task or a goal is placed by when it is due, and an undated one by
- * when it was raised, so nothing drops out of the period for want of a due date.
+ * real date. Completed work belongs to its completion month; other tasks and
+ * goals use their due date, falling back to start/created date when undated.
  */
 const recordDate = (item) =>
-  String(item?.date || item?.due_date || item?.target_date || item?.start_date || item?.created_at || '').slice(0, 10);
+  String(item?.date || (item?.status === 'completed' && item?.completion_date) || item?.due_date || item?.target_date || item?.start_date || item?.created_at || '').slice(0, 10);
 
 const withinRange = (item, startDate, endDate) => {
   const date = recordDate(item);
   return Boolean(date) && date >= startDate && date <= endDate;
 };
+
+const formatPercent = (value) => value == null ? '—' : `${value}%`;
 
 /** ISO-8601 week number, so the volume strip agrees with payroll's week labels. */
 const isoWeekNumber = (date) => {
@@ -400,6 +402,27 @@ const Reports = () => {
     alert(message);
   };
 
+  const scoreBasis = t('reports.scoreBasis', 'Time worked 50%, task delivery 45%, goals 5%; goals without records are excluded and their weight is redistributed. Time = regular/WFH plus overtime hours against 176 hours per full month (partial months prorated), capped at 100%. Tasks = equal shares of completion rate and planned/actual days for completed tasks; missing or invalid durations are excluded. Difficulty is not yet recorded.');
+  const translationNote = t('reports.translationNote', 'Available translations are included. Text still being translated is kept as originally entered.');
+  const taskPeriodBasis = t('reports.taskPeriodBasis', 'Completed tasks use the completion date; other tasks use the due date, or start/created date when undated.');
+  const scoreRows = (performance) => {
+    const weightedLabel = (label, key) => `${label} (${performance.weights[key].toFixed(1)}%)`;
+    return [
+      [t('reports.expectedHours', 'Expected regular hours'), performance.expectedHours == null ? '—' : formatHours(performance.expectedHours)],
+      [t('reports.excel.metrics.regularHours', 'Regular Hours'), formatHours(performance.regularHours)],
+      [t('reports.excel.metrics.overtimeHours', 'Overtime Hours'), formatHours(performance.overtimeHours)],
+      [weightedLabel(t('reports.timeWorkedScore', 'Time worked score'), 'time'), formatPercent(performance.timeScore)],
+      [t('reports.completedAssigned', 'Tasks completed / assigned'), `${performance.completedTasks}/${performance.tasksCount}`],
+      [t('reports.taskDurationTotals', 'Planned / actual task days'), performance.measuredTaskCount ? `${performance.estimatedTaskDays}/${performance.actualTaskDays}` : '—'],
+      [t('reports.taskEfficiency', 'Task duration efficiency'), formatPercent(performance.taskEfficiency)],
+      [weightedLabel(t('reports.taskDeliveryScore', 'Task delivery score'), 'tasks'), formatPercent(performance.taskScore)],
+      [weightedLabel(t('reports.excel.performance.avgGoalProgress', 'Average Goal Progress'), 'goals'), formatPercent(performance.goalsCount ? performance.avgGoalProgress : null)],
+    ];
+  };
+  const taskProgress = (task) => task.status === 'completed'
+    ? '100%'
+    : t('reports.progressNotRecorded', 'Percentage not recorded');
+
   // 01 · Records — which record types the export carries.
   const [scope, setScope] = useState({ timeEntries: true, leave: true, tasks: true, goals: true });
   // 02 · People
@@ -412,6 +435,9 @@ const Reports = () => {
     startDate: localDateKey(new Date(new Date().getFullYear(), new Date().getMonth(), 1)),
     endDate: localDateKey(new Date())
   });
+
+  const periodEnd = new Date(`${filters.endDate}T00:00:00`);
+  const taskAsOf = periodEnd < new Date() ? periodEnd : new Date();
 
   // Preview ledger
   const [sortKey, setSortKey] = useState('date');
@@ -735,6 +761,8 @@ const Reports = () => {
       timeTrackingService.getAllLeaveRequests({ startDate, endDate, ...(employeeId ? { employeeId } : {}) }),
     ]);
     if (!overtimeResult.success) throw new Error(overtimeResult.error);
+    if (!tasksResponse.success) throw new Error(tasksResponse.error || 'Unable to load report tasks');
+    if (!goalsResponse.success) throw new Error(goalsResponse.error || 'Unable to load report goals');
 
     let tasks = tasksResponse.success ? tasksResponse.data || [] : [];
     if (employeeId) {
@@ -1372,11 +1400,15 @@ const Reports = () => {
       t('reports.excel.headers.actualHours', 'Actual Days'),
       t('reports.excel.headers.variance', 'Variance'),
       t('reports.excel.headers.createdAt', 'Created At'),
-      t('reports.excel.headers.updatedAt', 'Updated At')
+      t('reports.excel.headers.updatedAt', 'Updated At'),
+      t('reports.excel.headers.progress', 'Progress (%)'),
+      t('taskListing.selfAssessment', 'Self Assessment'),
+      t('timeTracking.notes', 'Notes'),
+      t('taskListing.qualityRating', 'Quality Rating')
     ];
 
     const rows = tasks.map((task) => {
-      const duration = getTaskDurationDays(task);
+      const duration = getTaskDurationDays(task, taskAsOf);
       return [
         t('reports.tasks', 'Tasks'),
         isDemoMode() ? getDemoEmployeeName(task.employee, t) : (task.employee?.name || 'Unknown'),
@@ -1392,7 +1424,11 @@ const Reports = () => {
         duration.actual ?? '',
         duration.variance ?? '',
         new Date(task.created_at).toLocaleString(),
-        new Date(task.updated_at).toLocaleString()
+        new Date(task.updated_at).toLocaleString(),
+        taskProgress(task),
+        mapUgc(ugcMap, task.self_assessment || ''),
+        mapUgc(ugcMap, task.comments || ''),
+        task.quality_rating > 0 ? `${task.quality_rating}/5` : ''
       ];
     });
 
@@ -1468,7 +1504,7 @@ const Reports = () => {
       // `employees` is already the 02 · People cohort — unit, active-only and
       // single-person selection are resolved before the snapshot gets here.
       const { timeEntries, tasks, goals, leave, employees } = exportData;
-      const attendance = { leaveRequests: exportData.leaveForAttendance, overtimeLogs: exportData.overtimeLogs, ...filters };
+      const attendance = { leaveRequests: exportData.leaveForAttendance, overtimeLogs: exportData.overtimeLogs, ...filters, scoreScope: scope };
       const exportStats = computeExportStats(timeEntries, tasks, goals, leave, attendance);
 
       if (exportStats.totalRecords === 0) {
@@ -1476,7 +1512,7 @@ const Reports = () => {
         return;
       }
 
-      const ugcMap = await buildUgcTranslateMap(
+      const ugcMap = buildUgcTranslateMap(
         collectExportUgcStrings(timeEntries, tasks, goals, leave, { demo: isDemoMode() })
       );
 
@@ -1487,7 +1523,9 @@ const Reports = () => {
         `"${t('reports.language', 'Report Language')}: ${languageName}"`,
         `"${t('reports.generated', 'Generated')}: ${new Date().toLocaleString()}"`,
         `"${t('reports.period', 'Period')}: ${filters.startDate} ${t('reports.to', 'to')} ${filters.endDate}"`,
-        `"${t('employees.name', 'Name')}:- ${describeExportSubject(employees)}"`
+        `"${t('employees.name', 'Name')}:- ${describeExportSubject(employees)}"`,
+        `"${translationNote}"`,
+        `"${taskPeriodBasis}"`
       ];
 
       const sections = [{
@@ -1537,10 +1575,12 @@ const Reports = () => {
               [t('reports.excel.performance.name', 'Name'), getDemoEmployeeName(employee, t)],
               [t('reports.excel.metrics.totalHours', 'Total Hours Logged'), performance.totalHours.toFixed(1)],
               [t('reports.excel.metrics.totalTasks', 'Total Tasks'), performance.tasksCount],
-              [t('reports.excel.performance.taskCompletionRate', 'Task Completion Rate'), `${performance.taskCompletionRate}%`],
+              [t('reports.excel.performance.approvalRate', 'Approval Rate'), formatPercent(performance.timeApprovalRate)],
+              [t('reports.excel.performance.taskCompletionRate', 'Task Completion Rate'), formatPercent(performance.tasksCount ? performance.taskCompletionRate : null)],
               [t('reports.excel.metrics.totalGoals', 'Total Goals'), performance.goalsCount],
-              [t('reports.excel.performance.avgGoalProgress', 'Average Goal Progress'), `${performance.avgGoalProgress}%`],
-              [t('reports.excel.performance.overallScore', 'Overall Performance Score:'), `${performance.overallScore}%`]
+              ...scoreRows(performance),
+              [t('reports.excel.performance.overallScore', 'Overall Performance Score:'), formatPercent(performance.overallScore)],
+              [t('reports.scoreCalculation', 'Score calculation'), scoreBasis]
             ]
           });
         }
@@ -1565,7 +1605,7 @@ const Reports = () => {
               performance.tasksCount,
               performance.completedTasks,
               performance.goalsCount,
-              `${performance.overallScore}%`
+              formatPercent(performance.overallScore)
             ];
           })
         });
@@ -1604,14 +1644,14 @@ const Reports = () => {
       const goals = exportSnapshot.goals;
       const leave = exportSnapshot.leave;
       const employees = exportSnapshot.employees;
-      const attendance = { leaveRequests: exportSnapshot.leaveForAttendance, overtimeLogs: exportSnapshot.overtimeLogs, ...filters };
+      const attendance = { leaveRequests: exportSnapshot.leaveForAttendance, overtimeLogs: exportSnapshot.overtimeLogs, ...filters, scoreScope: scope };
 
       if (timeEntries.length === 0 && exportSnapshot.overtimeLogs.length === 0 && tasks.length === 0 && goals.length === 0 && leave.length === 0) {
         alert(t('reports.noData', 'No data available for the selected period'));
         return;
       }
 
-      const ugcMap = await buildUgcTranslateMap(
+      const ugcMap = buildUgcTranslateMap(
         collectExportUgcStrings(timeEntries, tasks, goals, leave, { demo: isDemoMode() })
       );
 
@@ -1683,6 +1723,14 @@ const Reports = () => {
       summarySheet.getCell(`A${currentRow}`).font = { bold: true };
       currentRow += 2;
 
+      for (const note of [translationNote, taskPeriodBasis, scoreBasis]) {
+        summarySheet.mergeCells(`A${currentRow}:C${currentRow}`);
+        summarySheet.getCell(`A${currentRow}`).value = note;
+        summarySheet.getCell(`A${currentRow}`).alignment = { wrapText: true, vertical: 'top' };
+        summarySheet.getRow(currentRow).height = note === scoreBasis ? 100 : 35;
+        currentRow += 2;
+      }
+
       summarySheet.getCell('C2').value = tr('reports.excel.visual', 'Visual');
       summarySheet.getCell('C2').font = { bold: true };
       summarySheet.getCell('C2').alignment = { horizontal: 'center' };
@@ -1748,10 +1796,10 @@ const Reports = () => {
       // Tasks Metrics with Styling
       if (tasks.length > 0) {
         const completedTasks = tasks.filter(t => t.status === 'completed').length;
-        const inProgressTasks = tasks.filter(t => t.status === 'in_progress').length;
+        const inProgressTasks = tasks.filter(t => t.status === 'in_progress' || t.status === 'in-progress').length;
         const highPriority = tasks.filter(t => t.priority === 'high').length;
         const { totalEstimated, totalActual } = tasks.reduce((sum, task) => {
-          const duration = getTaskDurationDays(task);
+          const duration = getTaskDurationDays(task, taskAsOf);
           return {
             totalEstimated: sum.totalEstimated + (duration.estimated || 0),
             totalActual: sum.totalActual + (duration.actual || 0)
@@ -1891,6 +1939,7 @@ const Reports = () => {
           const employeeTimeEntries = timeEntries.filter(e => e.employee_id === employee.id);
           const employeeTasks = tasks.filter(t => t.employee_id === employee.id);
           const employeeGoals = goals.filter(g => g.employee_id === employee.id);
+          const performance = computeEmployeePerformance(employee, timeEntries, tasks, goals, attendance);
           
           perfSheet.getCell(`A${perfRow}`).value = tr('reports.excel.performance.performanceMetrics', 'Performance Metrics');
           perfSheet.getCell(`A${perfRow}`).font = { size: 12, bold: true, color: { argb: 'FFFFFFFF' } };
@@ -2016,15 +2065,15 @@ const Reports = () => {
           );
           addMetric(
             perfLabels.taskCompletionRate,
-            `${taskCompletionRate}%`,
-            taskCompletionRate >= 80 ? statusLabels.excellent : taskCompletionRate >= 60 ? statusLabels.good : statusLabels.needsImprovement,
+            formatPercent(employeeTasks.length ? taskCompletionRate : null),
+            !employeeTasks.length ? '—' : taskCompletionRate >= 80 ? statusLabels.excellent : taskCompletionRate >= 60 ? statusLabels.good : statusLabels.needsImprovement,
             `${completedTasks}/${employeeTasks.length} ${perfLabels.completed}`
           );
           perfRow++;
           
           // Goals Performance
           const completedGoals = employeeGoals.filter(g => g.status === 'completed').length;
-          const avgProgress = employeeGoals.length > 0 ? (employeeGoals.reduce((sum, g) => sum + (g.status === 'completed' ? 100 : (g.progress || 0)), 0) / employeeGoals.length).toFixed(1) : 0;
+          const avgProgress = performance.avgGoalProgress;
           
           addMetric(
             perfLabels.totalGoals,
@@ -2034,8 +2083,8 @@ const Reports = () => {
           );
           addMetric(
             perfLabels.avgGoalProgress,
-            `${avgProgress}%`,
-            avgProgress >= 75 ? statusLabels.onTrack : avgProgress >= 50 ? statusLabels.progressing : statusLabels.behind,
+            formatPercent(employeeGoals.length ? avgProgress : null),
+            !employeeGoals.length ? '—' : avgProgress >= 75 ? statusLabels.onTrack : avgProgress >= 50 ? statusLabels.progressing : statusLabels.behind,
             `${employeeGoals.length} ${tr('reports.goals', 'Goals')} ${statusLabels.tracked}`
           );
           perfRow += 2;
@@ -2047,14 +2096,13 @@ const Reports = () => {
           perfSheet.mergeCells(`A${perfRow}:D${perfRow}`);
           perfRow++;
           
-          // Calculate overall score
-          const timeScore = Math.min(100, (approvedEntries / Math.max(1, employeeTimeEntries.length)) * 100);
-          const taskScore = parseFloat(taskCompletionRate);
-          const goalScore = parseFloat(avgProgress);
-          const overallScore = ((timeScore + taskScore + goalScore) / 3).toFixed(1);
+          // Use the same measured categories as CSV, PDF and the overview.
+          const { overallScore } = performance;
+          scoreRows(performance).forEach(([label, value]) => addMetric(label, value, '', ''));
+          perfRow++;
           
           perfSheet.getCell(`A${perfRow}`).value = tr('reports.excel.performance.overallScore', 'Overall Performance Score:');
-          perfSheet.getCell(`B${perfRow}`).value = `${overallScore}%`;
+          perfSheet.getCell(`B${perfRow}`).value = formatPercent(overallScore);
           perfSheet.getCell(`A${perfRow}`).font = { bold: true, size: 14 };
           perfSheet.getCell(`B${perfRow}`).font = { bold: true, size: 16, color: { argb: overallScore >= 80 ? 'FF00B050' : overallScore >= 60 ? 'FFFFC000' : 'FFFF0000' } };
           perfSheet.getCell(`B${perfRow}`).alignment = { horizontal: 'center' };
@@ -2062,7 +2110,7 @@ const Reports = () => {
           perfRow++;
           
           perfSheet.getCell(`A${perfRow}`).value = tr('reports.excel.performance.ratingLabel', 'Rating:');
-          const rating = overallScore >= 90
+          const rating = overallScore == null ? '—' : overallScore >= 90
             ? tr('reports.excel.rating.outstanding', 'Outstanding')
             : overallScore >= 80
             ? tr('reports.excel.rating.excellent', 'Excellent')
@@ -2075,6 +2123,11 @@ const Reports = () => {
           perfSheet.getCell(`A${perfRow}`).font = { bold: true };
           perfSheet.getCell(`B${perfRow}`).font = { bold: true, size: 12 };
           perfSheet.mergeCells(`B${perfRow}:D${perfRow}`);
+          perfRow += 2;
+          perfSheet.mergeCells(`A${perfRow}:D${perfRow}`);
+          perfSheet.getCell(`A${perfRow}`).value = scoreBasis;
+          perfSheet.getCell(`A${perfRow}`).alignment = { wrapText: true, vertical: 'top' };
+          perfSheet.getRow(perfRow).height = 45;
           
           // Set column widths
           perfSheet.columns = [
@@ -2116,8 +2169,8 @@ const Reports = () => {
             performance.tasksCount,
             performance.completedTasks,
             performance.goalsCount,
-            Number(performance.avgGoalProgress),
-            Number(performance.overallScore)
+            performance.goalsCount ? Number(performance.avgGoalProgress) : null,
+            performance.overallScore == null ? null : Number(performance.overallScore)
           ];
 
           rowData.forEach((value, colIdx) => {
@@ -2379,7 +2432,11 @@ const Reports = () => {
           tr('reports.excel.headers.actualHours', 'Actual Days'),
           tr('reports.excel.headers.variance', 'Variance'),
           tr('reports.excel.headers.createdAt', 'Created At'),
-          tr('reports.excel.headers.updatedAt', 'Updated At')
+          tr('reports.excel.headers.updatedAt', 'Updated At'),
+          tr('reports.excel.headers.progress', 'Progress (%)'),
+          tr('taskListing.selfAssessment', 'Self Assessment'),
+          tr('timeTracking.notes', 'Notes'),
+          tr('taskListing.qualityRating', 'Quality Rating')
         ];
         headers.forEach((header, idx) => {
           const cell = tasksSheet.getCell(1, idx + 1);
@@ -2392,7 +2449,7 @@ const Reports = () => {
         // Data rows with conditional formatting
         tasks.forEach((task, idx) => {
           const rowNum = idx + 2;
-          const duration = getTaskDurationDays(task);
+          const duration = getTaskDurationDays(task, taskAsOf);
           const variance = duration.variance;
           const rowData = [
             isDemoMode() ? getDemoEmployeeName(task.employee, t) : (task.employee?.name || 'Unknown'),
@@ -2408,12 +2465,19 @@ const Reports = () => {
             duration.actual ?? '',
             variance ?? '',
             new Date(task.created_at).toLocaleString(),
-            new Date(task.updated_at).toLocaleString()
+            new Date(task.updated_at).toLocaleString(),
+            taskProgress(task),
+            mapUgc(ugcMap, task.self_assessment || ''),
+            mapUgc(ugcMap, task.comments || ''),
+            task.quality_rating > 0 ? `${task.quality_rating}/5` : ''
           ];
           
           rowData.forEach((value, colIdx) => {
             const cell = tasksSheet.getCell(rowNum, colIdx + 1);
             cell.value = value;
+            if ([2, 3, 15, 16].includes(colIdx)) {
+              cell.alignment = { wrapText: true, vertical: 'top' };
+            }
             
             if ([4, 5, 6, 7, 8, 9, 10, 11, 12].includes(colIdx)) {
               cell.alignment = { horizontal: 'center', vertical: 'middle' };
@@ -2437,7 +2501,8 @@ const Reports = () => {
         tasksSheet.columns = [
           { width: 20 }, { width: 15 }, { width: 25 }, { width: 35 },
           { width: 12 }, { width: 12 }, { width: 12 }, { width: 14 },
-          { width: 12 }, { width: 12 }, { width: 12 }, { width: 12 }, { width: 20 }, { width: 20 }
+          { width: 12 }, { width: 12 }, { width: 12 }, { width: 12 }, { width: 20 }, { width: 20 },
+          { width: 26 }, { width: 45 }, { width: 45 }, { width: 14 }
         ];
         
         // Freeze header row
@@ -2641,15 +2706,14 @@ const Reports = () => {
   };
 
   /**
-   * Pre-translates every unique UGC string in an export with the on-device
-   * translator. Cache-first, so anything already seen on screen costs nothing;
-   * the rest are translated one by one before the file is written.
+   * Freeze available translations at export time. Background preparation must
+   * never make the file wait for model startup, downloads, or per-string work.
+   * Manual translations still take priority; uncached text stays intact.
    */
-  const buildUgcTranslateMap = async (strings) => {
+  const buildUgcTranslateMap = (strings) => {
     const unique = [...new Set(strings.filter((s) => typeof s === 'string' && s.trim()))];
     if (unique.length === 0) return new Map();
-    const translated = await translateTexts(unique, currentLanguage);
-    return new Map(unique.map((s, i) => [s, translated[i] ?? s]));
+    return new Map(unique.map((text) => [text, peekCachedTranslation(text, currentLanguage) ?? text]));
   };
 
   // Prepare the selected report while it is being reviewed, rather than
@@ -2673,13 +2737,15 @@ const Reports = () => {
   const exportToPDF = async function() {
     setExporting(true);
     try {
-      const exportSnapshot = await getFilteredExportData();
+      const [exportSnapshot, { jsPDF, autoTable }, companyLogo, profileImage] = await Promise.all([
+        getFilteredExportData(), loadPdfLibs(), loadPdfLogo(), loadPdfProfileImage(cohort),
+      ]);
       const timeEntries = exportSnapshot.timeEntries;
       const tasks = exportSnapshot.tasks;
       const goals = exportSnapshot.goals;
       const leave = exportSnapshot.leave;
       const employees = exportSnapshot.employees;
-      const attendance = { leaveRequests: exportSnapshot.leaveForAttendance, overtimeLogs: exportSnapshot.overtimeLogs, ...filters };
+      const attendance = { leaveRequests: exportSnapshot.leaveForAttendance, overtimeLogs: exportSnapshot.overtimeLogs, ...filters, scoreScope: scope };
       const exportStats = computeExportStats(timeEntries, tasks, goals, leave, attendance);
 
       if (exportStats.totalRecords === 0) {
@@ -2687,15 +2753,10 @@ const Reports = () => {
         return;
       }
 
-      const ugcMap = await buildUgcTranslateMap(
+      const ugcMap = buildUgcTranslateMap(
         collectExportUgcStrings(timeEntries, tasks, goals, leave, { format: 'pdf', demo: isDemoMode() })
       );
 
-      const [{ jsPDF, autoTable }, companyLogo, profileImage] = await Promise.all([
-        loadPdfLibs(),
-        loadPdfLogo(),
-        loadPdfProfileImage(employees)
-      ]);
       const doc = new jsPDF('p', 'mm', 'a4');
       const loadedFonts = await loadPdfFonts(doc, currentLanguage);
       const unicodeFontLoaded = loadedFonts.unicodeReady;
@@ -2895,6 +2956,7 @@ const Reports = () => {
           || performance.tasksCount > 0
           || performance.goalsCount > 0
         ))
+        .filter((performance) => performance.overallScore !== null)
         .map((performance) => Number(performance.overallScore))
         .filter((score) => Number.isFinite(score));
 
@@ -2905,7 +2967,13 @@ const Reports = () => {
           valueText: `${overallScore.toFixed(1)}%`,
           filled: meterFilledBlocks(overallScore)
         });
+        layout.paragraph(cleanTextForPDF(scoreBasis, unicodeFontLoaded));
+        if (selectedEmployee !== 'all' && scoredEmployees.length === 1) {
+          const performance = computeEmployeePerformance(scoredEmployees[0], timeEntries, tasks, goals, attendance);
+          layout.summaryGrid(scoreRows(performance).map(([label, value]) => summaryCell(label, value)));
+        }
       }
+      layout.paragraph(cleanTextForPDF(translationNote, unicodeFontLoaded));
 
       const toChartItems = (countsMap, translateFn) =>
         withBarPercents(
@@ -2965,14 +3033,15 @@ const Reports = () => {
         body,
         fontSize = 7,
         columnStyles = {},
-        { highlightFill = null } = {}
+        { highlightFill = null, rowPageBreak = 'auto', caption = null, keepSpace = null } = {}
       ) => {
         if (body.length === 0) return;
         // Don't leave a heading (or a two-row stub) stranded at the foot of a page.
         const estimatedHeight = 24 + body.length * 5.8;
-        layout.ensure(Math.min(estimatedHeight, 54));
+        layout.ensure(keepSpace ?? Math.min(estimatedHeight, 54));
         layout.sectionRule();
         layout.sectionHeading(title, { fillColor: highlightFill });
+        if (caption) layout.paragraph(cleanTextForPDF(caption, unicodeFontLoaded));
 
         autoTable(doc, {
           startY: layout.y,
@@ -2980,6 +3049,7 @@ const Reports = () => {
           body,
           theme: 'plain',
           showHead: 'everyPage',
+          rowPageBreak,
           columnStyles,
           headStyles: {
             textColor: PDF_TOKENS.ink,
@@ -3052,31 +3122,48 @@ const Reports = () => {
           t('reports.tasks', 'TASKS').toUpperCase(),
           [
             pdfHead('reports.pdf.headers.employee', 'Employee'),
-            pdfHead('reports.pdf.headers.department', 'Department'),
             pdfHead('reports.pdf.headers.taskTitle', 'Task'),
-            pdfHead('reports.pdf.headers.priority', 'Priority'),
             pdfHead('reports.pdf.headers.status', 'Status'),
-            pdfHead('reports.pdf.headers.dueDate', 'Due Date'),
-            pdfHead('reports.pdf.headers.estimatedHours', 'Est. days'),
-            pdfHead('reports.pdf.headers.actualHours', 'Actual days')
           ],
           tasks.map((task) => {
-            const duration = getTaskDurationDays(task);
+            const duration = getTaskDurationDays(task, taskAsOf);
+            const title = isDemoMode() ? getDemoTaskTitle(task, t) : mapUgc(ugcMap, task.title || '');
+            const description = isDemoMode() ? getDemoTaskDescription(task, t) : mapUgc(ugcMap, task.description || '');
+            const details = [
+              title,
+              description,
+              task.self_assessment && `${t('taskListing.selfAssessment', 'Self Assessment')}: ${mapUgc(ugcMap, task.self_assessment)}`,
+              task.comments && `${t('timeTracking.notes', 'Notes')}: ${mapUgc(ugcMap, task.comments)}`,
+            ].filter(Boolean).join('\n\n');
+            const dateLine = (key, label, value) => `${t(key, label)}: ${formatDate(value, currentLanguage, { day: '2-digit', month: 'short', year: 'numeric' }) || '—'}`;
+            const status = [
+              translateStatus(task.status),
+              `${t('reports.pdf.headers.progress', 'Progress')}: ${taskProgress(task)}`,
+              `${t('reports.pdf.headers.priority', 'Priority')}: ${translatePriority(task.priority)}`,
+              dateLine('taskListing.startDate', 'Start Date', task.start_date),
+              dateLine('taskListing.dueDate', 'Due Date', task.due_date),
+              dateLine('taskListing.completionDate', 'Completion Date', task.completion_date),
+              `${t('reports.pdf.headers.estimatedHours', 'Est. days')}: ${daysCell(duration.estimated)}`,
+              `${t('reports.pdf.headers.actualHours', 'Actual days')}: ${daysCell(duration.actual)}`,
+              task.quality_rating > 0 && `${t('taskListing.qualityRating', 'Quality Rating')}: ${task.quality_rating}/5`,
+            ].filter(Boolean).join('\n');
             return [
-              cleanTextForPDF(isDemoMode() ? getDemoEmployeeName(task.employee, t) : (task.employee?.name || t('reports.unknown', 'Unknown')), unicodeFontLoaded),
-              cleanTextForPDF(translateDepartment(task.employee?.department) || '', unicodeFontLoaded),
-              cleanTextForPDF((isDemoMode() ? getDemoTaskTitle(task, t) : mapUgc(ugcMap, task.title || '')).substring(0, 40), unicodeFontLoaded),
-              cleanTextForPDF(translatePriority(task.priority), unicodeFontLoaded),
-              cleanTextForPDF(translateStatus(task.status), unicodeFontLoaded),
-              cleanTextForPDF(formatDate(task.due_date, currentLanguage, { day: '2-digit', month: 'short', year: 'numeric' }) || '-', unicodeFontLoaded),
-              daysCell(duration.estimated),
-              daysCell(duration.actual)
-            ];
+              [isDemoMode() ? getDemoEmployeeName(task.employee, t) : (task.employee?.name || t('reports.unknown', 'Unknown')), translateDepartment(task.employee?.department)].filter(Boolean).join('\n'),
+              details,
+              status,
+            ].map((text) => String(text).split(/\\n|\r?\n/)
+              .map((line) => cleanTextForPDF(line, unicodeFontLoaded)).join('\n'));
           }),
-          7,
+          8,
           {
-            6: { halign: 'center' },
-            7: { halign: 'center' }
+            0: { cellWidth: 30 },
+            1: { cellWidth: 105 },
+            2: { cellWidth: 45 },
+          },
+          {
+            rowPageBreak: 'avoid',
+            keepSpace: 110,
+            caption: `${t('reports.completedTasks', 'Completed Tasks')}: ${exportStats.completedTasks}/${tasks.length} (${exportStats.taskCompletionRate}%) · ${t('reports.inProgress', 'In Progress')}: ${exportStats.inProgressTasks}. ${taskPeriodBasis}`,
           }
         );
       }
@@ -3179,7 +3266,7 @@ const Reports = () => {
               String(performance.tasksCount),
               String(performance.completedTasks),
               String(performance.goalsCount),
-              `${performance.overallScore}%`
+              formatPercent(performance.overallScore)
             ];
           }),
           6
@@ -4182,6 +4269,7 @@ const Reports = () => {
                 : null,
             ].filter(Boolean).join(' · ')}
           </p>
+          <p style={{ ...noteStyle, marginTop: 3 }}>{translationNote}</p>
         </div>
 
         <div className="flex flex-wrap items-center" style={{ gap: 10 }}>
