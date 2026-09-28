@@ -1,4 +1,9 @@
 export default {
+  'translationStudio.sourceGoalComments': "Comentarios de objetivos",
+  'translationStudio.sourceGoalCheckIns': "Seguimiento de objetivos",
+  'translationStudio.field_comment': "Comentario",
+  'translationStudio.field_note': "Nota de seguimiento",
+  'reports.instituteName': 'INSTITUTO DE ECONOMÍA\nDE LA CONSTRUCCIÓN\nY ECONOMÍA URBANA',
   'reports.taskPeriodBasis': "Las tareas completadas usan la fecha de finalización; las demás, el vencimiento o la fecha de inicio/creación si no tienen vencimiento.",
   'reports.scoreBasis': "Tiempo trabajado 50 %, entrega de tareas 45 %, objetivos 5 %; se excluyen objetivos sin datos y se redistribuye su peso. Tiempo = horas normales/teletrabajo más horas extra frente a 176 horas por mes completo (prorrateadas en meses parciales), máximo 100 %. Tareas = promedio de la tasa de finalización y días previstos/reales de tareas completadas; se excluyen duraciones ausentes o inválidas. La dificultad aún no se registra.",
   'reports.translationNote': "Se incluyen las traducciones disponibles. El texto pendiente de traducción conserva su versión original.",

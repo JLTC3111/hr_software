@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 170" width="180" height="170">
+  <g shape-rendering="geometricPrecision">
+    <!-- left block -->
+    <polygon points="61,62 77,70 61,78 45,70" fill="#D7D3D3"/>
+    <polygon points="45,70 61,78 61,106 45,98" fill="#201E1D"/>
+    <polygon points="61,78 77,70 77,98 61,106" fill="#7D7979"/>
+
+    <!-- tall center block -->
+    <polygon points="94,40 111,48.5 94.5,57 78,48.5" fill="#D7D3D3"/>
+    <polygon points="78,48.5 94.5,57 94.5,89 78,81" fill="#201E1D"/>
+    <polygon points="94.5,57 111,48.5 111,81 94.5,89" fill="#7D7979"/>
+
+    <!-- right block -->
+    <polygon points="127,52 144,60 127,68 111,60" fill="#3B86AC"/>
+    <polygon points="111,60 127,68 127,106 111,98" fill="#201E1D"/>
+    <polygon points="127,68 144,60 144,98 127,106" fill="#7D7979"/>
+
+    <!-- front block -->
+    <polygon points="94,89 111,97 94,105 77,97" fill="#D7D3D3"/>
+    <polygon points="77,97 94,105 94,123 77,115" fill="#201E1D"/>
+    <polygon points="94,105 111,97 111,115 94,123" fill="#7D7979"/>
+  </g>
+</svg>

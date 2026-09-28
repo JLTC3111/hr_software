@@ -309,14 +309,16 @@ export const PDF_TOKENS = {
   footerReserve: 20, // kept free at the bottom of every page (rule + footer text)
   footerRule: 14, // measured up from the bottom edge
   footerBaseline: 9.5,
-  titleSize: 18, // masthead headline, in points — the logo is sized off this
-  logoTitleRatio: 1.75, // logo box height as a multiple of the headline size
-  logoGap: 5, // clear space between the logo and the masthead text column
+  titleSize: 18, // report headline, in points
+  brandInk: [18, 27, 46], // navy ICUE wordmark, matching the quadrant symbol
+  letterheadLogoHeight: 40,
+  letterheadLogoGap: 2,
+  letterheadGap: 10, // clear space before the report title and employee photo
   profileSize: 25, // square employee portrait at the masthead's right edge
   profileGap: 7 // clear space between the masthead text and portrait
 };
 
-const PDF_LOGO_SRC = '/logoIcons/pdf-report-logo.png';
+const PDF_LOGO_SRC = '/logoIcons/quadrant-target-icon.svg';
 let pdfLogoPromise = null;
 
 /**
@@ -334,21 +336,34 @@ export const loadPdfLogo = () => {
     if (!response.ok) throw new Error(`Logo fetch failed (${response.status})`);
 
     const blob = await response.blob();
+    const isSvg = blob.type.startsWith('image/svg+xml')
+      || (!blob.type.startsWith('image/') && /\.svg(?:[?#]|$)/i.test(PDF_LOGO_SRC));
     const dataUrl = await new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result);
       reader.onerror = () => reject(reader.error || new Error('Logo read failed'));
-      reader.readAsDataURL(blob);
+      reader.readAsDataURL(isSvg ? new Blob([blob], { type: 'image/svg+xml' }) : blob);
     });
 
-    const size = await new Promise((resolve, reject) => {
-      const image = new Image();
-      image.onload = () => resolve({ width: image.naturalWidth, height: image.naturalHeight });
-      image.onerror = () => reject(new Error('Logo decode failed'));
-      image.src = dataUrl;
-    });
+    const image = await loadImageElement(dataUrl);
+    const width = image.naturalWidth;
+    const height = image.naturalHeight;
+    if (!width || !height) throw new Error('Logo has no dimensions');
 
-    return { dataUrl, ...size };
+    // jsPDF's image writer cannot embed raw SVG. Render it once at print
+    // resolution, retaining transparent pixels and the original aspect ratio.
+    if (isSvg) {
+      const scale = 512 / Math.max(width, height);
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(width * scale));
+      canvas.height = Math.max(1, Math.round(height * scale));
+      const context = canvas.getContext('2d');
+      if (!context) throw new Error('Logo canvas unavailable');
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      return { dataUrl: canvas.toDataURL('image/png'), width, height };
+    }
+
+    return { dataUrl, width, height };
   })().catch((error) => {
     console.warn('PDF logo unavailable — masthead falls back to text only:', error?.message || error);
     pdfLogoPromise = null;
@@ -376,7 +391,7 @@ export const getPdfProfileImageSource = (employees = []) => {
 const loadImageElement = (src) => new Promise((resolve, reject) => {
   const image = new Image();
   image.onload = () => resolve(image);
-  image.onerror = () => reject(new Error('Profile image decode failed'));
+  image.onerror = () => reject(new Error('Image decode failed'));
   image.src = src;
 });
 
@@ -461,9 +476,10 @@ export const meterFilledBlocks = (score, blocks = 10) => {
 };
 
 /**
- * Flow layout for the PDF report. Text is always drawn through the caller's
+ * Flow layout for the PDF report. Localized text is drawn through the caller's
  * `drawText` / `measureText` / `fitText` so per-script font selection (CJK,
- * Thai, Latin) stays with the font loader — this module never touches setFont.
+ * Thai, Latin) stays with the font loader. Only the fixed ICUE wordmark uses
+ * the PDF's built-in Times face.
  *
  * `y` is the top edge of the next block; baselines are derived from font size.
  */
@@ -519,23 +535,54 @@ export const createPdfReportLayout = ({
     newPage,
     ensure,
 
-    /**
-     * Page-1 masthead: company logo flush to the left margin, the employee or
-     * group portrait flush right, and the title/meta column between them.
-     *
-     * The logo box is a multiple of the headline point size, not a fixed
-     * millimetre height, so the lockup keeps its proportions if the title size
-     * is ever retuned. Text is measured against the narrower column the logo
-     * leaves, so a long title truncates instead of colliding with the mark.
-     */
-    titleBlock({ title, metaLines = [], logo = null, profileImage = null }) {
-      const top = 18;
+    /** First-page letterhead: quadrant symbol, serif ICUE, localized full name. */
+    letterhead({ logo = null, instituteName, nameTracking = 0.55 }) {
+      const top = 12;
+      const logoH = T.letterheadLogoHeight;
+      const logoW = logo?.height > 0 ? logo.width / logo.height * logoH : logoH;
+      let textLeft = left;
+      if (logo?.dataUrl) {
+        try {
+          doc.addImage(logo.dataUrl, 'PNG', left, top, logoW, logoH, 'reportLogo', 'FAST');
+          textLeft += logoW + T.letterheadLogoGap;
+        } catch (error) {
+          console.warn('PDF logo could not be drawn:', error?.message || error);
+        }
+      }
+
+      doc.saveGraphicsState();
+      doc.setFont('times', 'normal');
+      doc.setFontSize(50);
+      doc.setTextColor(...T.brandInk);
+      const wordmarkTracking = 2.2;
+      const nameWidth = Math.min(right - textLeft, doc.getTextWidth('ICUE') + 3 * wordmarkTracking);
+      doc.text('ICUE', textLeft, top + 14, { charSpace: wordmarkTracking });
+
+      const lines = String(instituteName || '').split('\n').map(line => line.trim()).filter(Boolean);
+      // Locale-specific line breaks preserve the full institute name. Fit the
+      // whole block to the wordmark width instead of truncating the translation.
+      const nameSize = lines.reduce((size, line) => {
+        const trackingWidth = Math.max(0, Array.from(line).length - 1) * nameTracking;
+        const width = measureText(line, 9.5);
+        return width > 0 ? Math.min(size, 9.5 * Math.max(1, nameWidth - trackingWidth) / width) : size;
+      }, 9.5);
+      doc.setFontSize(nameSize);
+      doc.setTextColor(...T.inkSoft);
+      lines.forEach((line, index) => {
+        drawText(line, textLeft, top + 23 + index * lineHeight(nameSize, 1.6), { charSpace: nameTracking });
+      });
+      doc.restoreGraphicsState();
+      const textBottom = top + 23 + Math.max(0, lines.length - 1) * lineHeight(nameSize, 1.6) + 2;
+      y = Math.max(top + logoH, textBottom) + T.letterheadGap;
+    },
+
+    /** Report title/meta at left, employee portrait at right, below the letterhead. */
+    titleBlock({ title, metaLines = [], profileImage = null, top = 18 }) {
       const titleSize = T.titleSize;
       y = top;
 
-      let textLeft = left;
+      const textLeft = left;
       let textRight = right;
-      let logoBottom = top;
       let profileBottom = top;
 
       if (profileImage?.dataUrl) {
@@ -558,18 +605,6 @@ export const createPdfReportLayout = ({
         }
       }
 
-      if (logo?.dataUrl) {
-        const logoH = ptToMm(titleSize) * T.logoTitleRatio;
-        const logoW = logo.height > 0 ? (logo.width / logo.height) * logoH : logoH;
-        try {
-          doc.addImage(logo.dataUrl, 'PNG', left, top, logoW, logoH, 'reportLogo', 'FAST');
-          textLeft = left + logoW + T.logoGap;
-          logoBottom = top + logoH;
-        } catch (error) {
-          console.warn('PDF logo could not be drawn:', error?.message || error);
-        }
-      }
-
       const textWidth = Math.max(textRight - textLeft, 10);
 
       doc.setFontSize(titleSize);
@@ -584,8 +619,8 @@ export const createPdfReportLayout = ({
         y += lineHeight(8.5, 1.45);
       });
 
-      // Short mastheads must still clear both images before the first section rule.
-      y = Math.max(y, logoBottom, profileBottom);
+      // Short mastheads must still clear the photo before the first section rule.
+      y = Math.max(y, profileBottom);
     },
 
     /** 2px section divider. */

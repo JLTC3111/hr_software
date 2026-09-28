@@ -2420,12 +2420,12 @@ function ReviewModal({
 
   const passages = [
     ['strengths', t('taskReview.strengths', 'Strengths'), review.strengths],
-    ['areas', t('taskReview.areasForImprovement', 'Areas for improvement'), review.areas_for_improvement],
+    ['areas_for_improvement', t('taskReview.areasForImprovement', 'Areas for improvement'), review.areas_for_improvement],
     ['achievements', t('taskReview.achievements', 'Achievements'), review.achievements],
     ['comments', t('taskReview.managerComments', 'Manager comments'), review.comments],
-    ['employee', t('taskReview.employeeSelfAssessment', 'Employee self-assessment'), review.employee_comments],
+    ['employee_comments', t('taskReview.employeeSelfAssessment', 'Employee self-assessment'), review.employee_comments],
   ].filter(([, , text]) => Boolean(text))
-    .filter(([key]) => !managerNote || !['strengths', 'areas', 'employee'].includes(key));
+    .filter(([key]) => !managerNote || !['strengths', 'areas_for_improvement', 'employee_comments'].includes(key));
   const pending = !row.managerDone;
   const canSubmitCalibration = canSignOff && row.managerDone && !row.calibrated && Boolean(row.review?.id);
   const statusLabel = statusOf(row, t);
@@ -2693,7 +2693,10 @@ function ReviewModal({
                 {managerNote.reply && (
                   <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.ink, marginTop: 8 }}>
                     <span style={{ color: ind.inkMuted }}>{t('personalGoals.yourReply', 'Your reply')}: </span>
-                    {managerNote.reply}
+                    <TranslatedText
+                      text={managerNote.reply}
+                      record={{ entityType: 'review', entityId: managerNote.id, field: 'employee_comments' }}
+                    />
                   </p>
                 )}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>

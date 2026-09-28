@@ -2903,10 +2903,15 @@ const Reports = () => {
         onNewPage: drawRunningHeader
       });
 
-      // ── Masthead: bold title left-aligned over meta lines, logo top-right ──
-      layout.titleBlock({
-        title: reportTitle.toUpperCase(),
+      // ── Company letterhead, then report details and employee portrait ──
+      layout.letterhead({
         logo: companyLogo,
+        instituteName: t('reports.instituteName', 'INSTITUTE OF\nCONSTRUCTION &\nURBAN ECONOMICS'),
+        nameTracking: ['jp', 'kr', 'th'].includes(currentLanguage) ? 0 : 0.55,
+      });
+      layout.titleBlock({
+        top: layout.y,
+        title: reportTitle.toUpperCase(),
         profileImage,
         metaLines: [
           `${t('reports.generated', 'Generated')}: ${new Date().toLocaleString()}`,

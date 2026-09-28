@@ -1,9 +1,10 @@
-// Supabase caps each response. Read complete, stably ordered attendance sources.
+// Supabase caps each response. Read complete, stably ordered sources.
 // Callers request count: 'exact', so a smaller server cap is also supported.
-export const fetchAllRows = async (query, { pageSize = 500, run = value => value } = {}) => {
+// Composite-key tables supply their own ordering and pass orderBy: null.
+export const fetchAllRows = async (query, { pageSize = 500, run = value => value, orderBy = 'id' } = {}) => {
   const rows = [];
   let expectedCount;
-  query = query.order('id');
+  if (orderBy) query = query.order(orderBy);
   for (;;) {
     const result = await run(query.range(rows.length, rows.length + pageSize - 1));
     if (result.error) return { ...result, data: null };

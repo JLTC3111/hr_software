@@ -1,4 +1,9 @@
 export default {
+  'translationStudio.sourceGoalComments': "目標のコメント",
+  'translationStudio.sourceGoalCheckIns': "目標の進捗報告",
+  'translationStudio.field_comment': "コメント",
+  'translationStudio.field_note': "進捗メモ",
+  'reports.instituteName': '建設・都市経済研究所',
   'reports.taskPeriodBasis': "完了タスクは完了日、その他は期限日で集計します。期限がない場合は開始日または作成日を使用します。",
   'reports.scoreBasis': "勤務時間50%、タスク実績45%、目標5%。目標データがない場合は目標を除外し、その重みを再配分します。時間は通常勤務・在宅勤務・残業の合計を月176時間（端月は日割り）と比較し、上限100%とします。タスクは完了率と完了タスクの予定日数／実日数の平均で、欠損・不正な期間は除外します。難易度は未記録です。",
   'reports.translationNote': "利用可能な翻訳を含めます。翻訳中の文章は入力された原文のまま表示します。",

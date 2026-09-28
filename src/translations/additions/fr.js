@@ -1,4 +1,9 @@
 export default {
+  'translationStudio.sourceGoalComments': "Commentaires sur les objectifs",
+  'translationStudio.sourceGoalCheckIns': "Suivi des objectifs",
+  'translationStudio.field_comment': "Commentaire",
+  'translationStudio.field_note': "Note de suivi",
+  'reports.instituteName': 'INSTITUT D’ÉCONOMIE\nDE LA CONSTRUCTION\nET D’ÉCONOMIE URBAINE',
   'reports.taskPeriodBasis': "Les tâches terminées sont classées par date de fin ; les autres par échéance, ou date de début/création sans échéance.",
   'reports.scoreBasis': "Temps travaillé 50 %, réalisation des tâches 45 %, objectifs 5 % ; les objectifs sans données sont exclus et leur poids redistribué. Temps = heures normales/télétravail plus heures supplémentaires sur 176 heures par mois complet (au prorata pour un mois partiel), plafonné à 100 %. Tâches = moyenne du taux de réalisation et du rapport jours prévus/réels des tâches terminées ; durées manquantes ou invalides exclues. La difficulté n’est pas encore enregistrée.",
   'reports.translationNote': "Les traductions disponibles sont incluses. Les textes en cours de traduction restent dans leur langue d’origine.",

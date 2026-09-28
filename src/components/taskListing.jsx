@@ -2018,7 +2018,7 @@ const TaskListing = ({ employees, allEmployees }) => {
                   {t('taskListing.notes', 'Notes')}
                 </span>
                 <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkGhost, whiteSpace: 'pre-wrap', margin: 0, lineHeight: 1.5 }}>
-                  {task.comments}
+                  <TranslatedText text={task.comments} record={{ entityType: 'task', entityId: task.id, field: 'comments' }} />
                 </p>
               </div>
             )}

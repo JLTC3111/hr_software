@@ -1,4 +1,9 @@
 export default {
+  'translationStudio.sourceGoalComments': "목표 댓글",
+  'translationStudio.sourceGoalCheckIns': "목표 진행 보고",
+  'translationStudio.field_comment': "댓글",
+  'translationStudio.field_note': "진행 메모",
+  'reports.instituteName': '건설·도시경제연구원',
   'reports.taskPeriodBasis': "완료된 작업은 완료일을, 다른 작업은 마감일을 사용합니다. 마감일이 없으면 시작일 또는 생성일을 사용합니다.",
   'reports.scoreBasis': "근무 시간 50%, 작업 수행 45%, 목표 5%입니다. 목표 데이터가 없으면 목표를 제외하고 해당 가중치를 재분배합니다. 시간은 정규/재택 근무와 초과 근무를 월 176시간(일부 월은 일할 계산)과 비교하며 최대 100%입니다. 작업은 완료율과 완료된 작업의 계획/실제 일수 비율을 동일하게 반영합니다. 누락되거나 잘못된 기간은 제외합니다. 난이도는 아직 기록되지 않습니다.",
   'reports.translationNote': "준비된 번역을 포함합니다. 번역 중인 텍스트는 입력한 원문을 유지합니다.",

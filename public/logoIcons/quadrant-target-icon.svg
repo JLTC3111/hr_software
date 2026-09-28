@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 574 564" width="574" height="564">
+  <g shape-rendering="geometricPrecision">
+    <!-- upper-left -->
+    <path d="M92 53 H248 V207
+             C249 211 252 215 254 218
+             C228 226 207 241 195 259
+             C188 270 185 281 183 291
+             H92 Z"
+          fill="#121B2E"/>
+
+    <!-- upper-right -->
+    <path d="M286 53 H428 L495 121 V291 H357
+             C354 274 348 258 338 248
+             C326 235 308 225 286 218 Z"
+          fill="#46596E"/>
+
+    <!-- lower-left -->
+    <path d="M92 323 H184 V390 H255 V490 H92 Z"
+          fill="#667788"/>
+
+    <!-- lower-right -->
+    <path d="M494 323 V490 H431 V436 H410 V490 H286 V390
+             C307 386 325 376 338 362
+             C348 351 353 337 356 323 Z"
+          fill="#111A2D"/>
+
+    <!-- target -->
+    <g fill="none" stroke="#2E3642" stroke-width="2.2" stroke-linecap="square">
+      <circle cx="270" cy="306" r="48"/>
+      <path d="M201 306 H340 M270 235 V375"/>
+    </g>
+    <circle cx="270" cy="306" r="19.5" fill="#284C83" stroke="#1D365B" stroke-width="1.2"/>
+  </g>
+</svg>

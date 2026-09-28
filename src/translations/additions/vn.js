@@ -1,4 +1,9 @@
 export default {
+  'translationStudio.sourceGoalComments': "Bình luận mục tiêu",
+  'translationStudio.sourceGoalCheckIns': "Cập nhật mục tiêu",
+  'translationStudio.field_comment': "Bình luận",
+  'translationStudio.field_note': "Ghi chú cập nhật",
+  'reports.instituteName': 'VIỆN KINH TẾ\nXÂY DỰNG VÀ ĐÔ THỊ',
   'reports.taskPeriodBasis': "Nhiệm vụ hoàn thành được tính theo ngày hoàn thành; nhiệm vụ khác theo hạn chót, hoặc ngày bắt đầu/tạo nếu chưa có hạn.",
   'reports.scoreBasis': "Thời gian làm việc 50%, thực hiện nhiệm vụ 45%, mục tiêu 5%; loại trừ mục tiêu không có dữ liệu và phân bổ lại trọng số của mục tiêu. Thời gian = giờ làm thường/tại nhà cộng làm thêm so với 176 giờ/tháng (tính tỷ lệ cho tháng không đầy đủ), tối đa 100%. Nhiệm vụ = trung bình tỷ lệ hoàn thành và số ngày dự kiến/thực tế của nhiệm vụ đã hoàn thành; loại trừ thời lượng thiếu hoặc không hợp lệ. Chưa ghi nhận độ khó.",
   'reports.translationNote': "Sử dụng bản dịch có sẵn. Nội dung đang được dịch được giữ nguyên như đã nhập.",

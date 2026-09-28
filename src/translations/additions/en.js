@@ -1,4 +1,9 @@
 export default {
+  'translationStudio.sourceGoalComments': "Goal Comments",
+  'translationStudio.sourceGoalCheckIns': "Goal Check-ins",
+  'translationStudio.field_comment': "Comment",
+  'translationStudio.field_note': "Check-in note",
+  'reports.instituteName': 'INSTITUTE OF\nCONSTRUCTION &\nURBAN ECONOMICS',
   'reports.taskPeriodBasis': "Completed tasks use the completion date; other tasks use the due date, or start/created date when undated.",
   'reports.scoreBasis': "Time worked 50%, task delivery 45%, goals 5%; goals without records are excluded and their weight is redistributed. Time = regular/WFH plus overtime hours against 176 hours per full month (partial months prorated), capped at 100%. Tasks = equal shares of completion rate and planned/actual days for completed tasks; missing or invalid durations are excluded. Difficulty is not yet recorded.",
   'reports.translationNote': "Available translations are included. Text still being translated is kept as originally entered.",

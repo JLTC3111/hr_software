@@ -50,8 +50,8 @@ import { isTranslationEditor } from '../utils/translationAccess';
  * through a queue of dozens of strings in a sitting, and a dialog that traps
  * focus and hides the app behind a scrim is the wrong container for that.
  *
- * The queue is assembled from the same four tables the rest of the app writes
- * to — tasks, personal goals, performance reviews, leave requests — so nothing
+ * The queue is assembled from the records the app writes — tasks, personal
+ * goals and their comments/check-ins, performance reviews, leave requests — so nothing
  * has to be re-entered here. Saved translations land in hr_ugc_translations and
  * outrank the on-device machine translation everywhere UGC is rendered.
  */
@@ -239,7 +239,7 @@ const TranslationStudio = () => {
 
     setEntries(records.data);
     setCoverage(map);
-    // The queue reads the four source tables, which exist regardless; only the
+    // The queue reads the source tables, which exist regardless; only the
     // translations table depends on migration 018. So the Studio can be fully
     // populated and still have nowhere to save to — say so explicitly rather
     // than letting the first Save fail.
@@ -248,7 +248,7 @@ const TranslationStudio = () => {
   }, []);
 
   useEffect(() => {
-    // Non-admins get the access-denied panel, so the queue — four table scans —
+    // Non-admins get the access-denied panel, so the source queue
     // must not be fetched for them at all.
     if (demo || !canEdit) {
       setLoading(false);
@@ -278,6 +278,17 @@ const TranslationStudio = () => {
     () => entries.filter((entry) => sources.has(entry.entityType) && matchesFilters(entry)),
     [entries, sources, matchesFilters]
   );
+
+  // Each non-empty field is a separate item of translation work, even when
+  // several fields belong to one task/review in the Sources record counter.
+  const fieldCounts = useMemo(() => {
+    const counts = new Map();
+    entries.forEach((entry) => {
+      const key = fieldFilterKey(entry.entityType, entry.field);
+      counts.set(key, (counts.get(key) || 0) + 1);
+    });
+    return counts;
+  }, [entries]);
 
   /**
    * Per-source record counts, and how many records are fully covered.
@@ -965,6 +976,7 @@ const TranslationStudio = () => {
                               style={chipStyle(active)}
                             >
                               {t(`translationStudio.field_${fieldName}`, fieldName.replace(/_/g, ' '))}
+                              {` (${fieldCounts.get(fieldFilterKey(entityType, fieldName)) || 0})`}
                             </button>
                           );
                         })}

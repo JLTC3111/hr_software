@@ -1,5 +1,6 @@
 import { supabase } from '../config/supabaseClient';
 import { isDemoMode } from '../utils/demoHelper';
+import { fetchAllRows } from '../utils/fetchAllRows.js';
 
 /**
  * Hand-authored translations of user-generated content, persisted in
@@ -31,6 +32,23 @@ export const TRANSLATABLE_ENTITIES = {
     titleField: 'title',
     fields: ['title', 'description', 'notes', 'success_criteria'],
   },
+  goal_comment: {
+    table: 'performance_comments',
+    labelKey: 'translationStudio.sourceGoalComments',
+    titleField: 'comment',
+    fields: ['comment'],
+    contextColumns: ['goal_id', 'author'],
+    contextSelect: 'goal:goal_id(title, employee:employee_id(id, name))',
+    dateField: 'created_at',
+  },
+  goal_check_in: {
+    table: 'goal_check_ins',
+    labelKey: 'translationStudio.sourceGoalCheckIns',
+    titleField: 'note',
+    fields: ['note'],
+    contextColumns: ['employee_id', 'goal_id'],
+    contextSelect: 'employee:employee_id(id, name), goal:goal_id(title)',
+  },
   review: {
     table: 'performance_reviews',
     labelKey: 'translationStudio.sourceReviews',
@@ -49,6 +67,15 @@ export const ENTITY_TYPES = Object.keys(TRANSLATABLE_ENTITIES);
 
 /** Whitespace-insensitive so a trailing newline never forks a translation. */
 export const normalizeSource = (text) => (text == null ? '' : String(text)).trim();
+
+const translatableSource = (entityType, field, value) => {
+  const text = normalizeSource(value);
+  // Acknowledgement is workflow state; only the employee's written reply is
+  // translation work. The marker remains untouched on the source review.
+  return entityType === 'review' && field === 'employee_comments'
+    ? text.replace(/^\[acknowledged\]\s*/, '')
+    : text;
+};
 
 /** Stable key for the per-record index. */
 export const recordKey = (entityType, entityId, field) =>
@@ -94,9 +121,9 @@ export const isTranslationStoreAvailable = () => !tableMissing;
 /**
  * Every stored translation for one locale.
  *
- * Loaded wholesale rather than per-string: the row count is bounded by how much
- * text humans have actually translated (tens to low thousands), and a single
- * request is what lets peekManualTranslation() stay synchronous — a translation
+ * Loaded as a complete snapshot rather than per-string, including every page
+ * when the translations exceed the server's row limit. Loading it together
+ * lets peekManualTranslation() stay synchronous — a translation
  * that arrives one render late shows the machine draft first and then visibly
  * swaps, which is exactly the flicker this table exists to remove.
  */
@@ -104,10 +131,12 @@ export const fetchLocaleTranslations = async (locale) => {
   if (isDemoMode() || !locale || tableMissing) return ok([]);
 
   try {
-    const { data, error } = await supabase
+    const { data, error } = await fetchAllRows(supabase
       .from('hr_ugc_translations')
-      .select('entity_type, entity_id, field, locale, body, source_text, provider, updated_at')
-      .eq('locale', locale);
+      .select('entity_type, entity_id, field, locale, body, source_text, provider, updated_at', { count: 'exact' })
+      .eq('locale', locale)
+      .order('entity_type').order('entity_id').order('field'),
+    { orderBy: null });
 
     if (error) throw error;
     return ok(data || []);
@@ -128,27 +157,15 @@ export const fetchLocaleTranslations = async (locale) => {
 export const fetchTranslationCoverage = async () => {
   if (isDemoMode() || tableMissing) return ok([]);
 
-  const pageSize = 1000;
-  const rows = [];
-
   try {
-    for (let from = 0; ; from += pageSize) {
-      const { data, error } = await supabase
-        .from('hr_ugc_translations')
-        .select('entity_type, entity_id, field, locale, body')
-        .order('entity_type')
-        .order('entity_id')
-        .order('field')
-        .order('locale')
-        .range(from, from + pageSize - 1);
+    const { data, error } = await fetchAllRows(supabase
+      .from('hr_ugc_translations')
+      .select('entity_type, entity_id, field, locale, body', { count: 'exact' })
+      .order('entity_type').order('entity_id').order('field').order('locale'),
+    { orderBy: null });
 
-      if (error) throw error;
-      const page = data || [];
-      rows.push(...page);
-      if (page.length < pageSize) break;
-    }
-
-    return ok(rows);
+    if (error) throw error;
+    return ok(data || []);
   } catch (error) {
     return fail(error, 'fetchTranslationCoverage');
   }
@@ -293,13 +310,13 @@ export const saveTranslationBatch = async (entries, updatedBy = null) => {
 };
 
 /**
- * The Studio's work queue: every translatable string across all four sources,
+ * The Studio's work queue: every translatable string across the configured sources,
  * flattened to one row per (record, field).
  *
  * Employee names are joined in for display only — they are proper nouns and are
  * never themselves translatable.
  */
-export const fetchTranslatableRecords = async ({ entityTypes = ENTITY_TYPES, limit = 500 } = {}) => {
+export const fetchTranslatableRecords = async ({ entityTypes = ENTITY_TYPES } = {}) => {
   if (isDemoMode()) return ok([]);
 
   try {
@@ -308,30 +325,29 @@ export const fetchTranslatableRecords = async ({ entityTypes = ENTITY_TYPES, lim
         const config = TRANSLATABLE_ENTITIES[entityType];
         if (!config) return [];
 
-        const columns = [...new Set(['id', 'employee_id', config.titleField, ...config.fields])];
+        const columns = [...new Set(['id', ...(config.contextColumns || ['employee_id']), config.titleField, ...config.fields])];
+        const dateField = config.dateField || 'updated_at';
+        const contextSelect = config.contextSelect || 'employee:employee_id(id, name)';
 
         // The employee embed and the updated_at sort are both presentational,
         // and both depend on schema PostgREST may not expose (a declared FK, an
         // updated_at column). Losing them must not cost the whole source, so
         // the request degrades to plain columns rather than failing.
         let data = null;
-        const rich = await supabase
+        const rich = await fetchAllRows(supabase
           .from(config.table)
-          .select(`${columns.join(', ')}, updated_at, employee:employee_id(id, name)`)
-          .order('updated_at', { ascending: false })
-          .limit(limit);
+          .select(`${columns.join(', ')}, ${dateField}, ${contextSelect}`, { count: 'exact' })
+          .order(dateField, { ascending: false }));
 
         if (rich.error) {
-          const plain = await supabase
+          const plain = await fetchAllRows(supabase
             .from(config.table)
-            .select(columns.join(', '))
-            .limit(limit);
+            .select(columns.join(', '), { count: 'exact' }));
 
           if (plain.error) {
-            // One unusable table must not blank the whole queue — the other
-            // three sources are still perfectly good.
-            console.warn(`ugcTranslationService: skipping ${config.table}`, plain.error.message);
-            return [];
+            // An absent source must not masquerade as an empty, fully counted
+            // queue. The Studio already shows a retry state for failed loads.
+            throw new Error(`${config.table}: ${plain.error.message}`);
           }
           data = plain.data;
         } else {
@@ -340,16 +356,16 @@ export const fetchTranslatableRecords = async ({ entityTypes = ENTITY_TYPES, lim
 
         return (data || []).flatMap((row) =>
           config.fields
-            .map((field) => ({ field, text: normalizeSource(row[field]) }))
+            .map((field) => ({ field, text: translatableSource(entityType, field, row[field]) }))
             .filter(({ text }) => text.length > 0)
             .map(({ field, text }) => ({
               entityType,
               entityId: String(row.id),
               field,
               sourceText: text,
-              recordLabel: normalizeSource(row[config.titleField]) || String(row.id),
-              employeeName: row.employee?.name || '',
-              updatedAt: row.updated_at || null,
+              recordLabel: normalizeSource(row.goal?.title || row[config.titleField]) || String(row.id),
+              employeeName: row.employee?.name || row.goal?.employee?.name || row.author || '',
+              updatedAt: row[dateField] || null,
               key: recordKey(entityType, row.id, field),
             }))
         );
@@ -358,7 +374,8 @@ export const fetchTranslatableRecords = async ({ entityTypes = ENTITY_TYPES, lim
 
     return ok(results.flat());
   } catch (error) {
-    return fail(error, 'fetchTranslatableRecords');
+    console.error('ugcTranslationService: fetchTranslatableRecords', error);
+    return { success: false, error: error?.message || String(error) };
   }
 };
 
