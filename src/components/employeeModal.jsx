@@ -1,4 +1,4 @@
-import _React, { useState, useCallback, useEffect, useMemo } from 'react'
+import _React, { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { Mail, Phone, MapPin, Briefcase, Calendar, Award, Edit2, Save, X, User } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext.jsx'
 import { useTheme } from '../contexts/ThemeContext.jsx'
@@ -22,6 +22,9 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState({});
   const [currentEmployee, setCurrentEmployee] = useState(employee); // Track current employee data
+  const [photoDraft, setPhotoDraft] = useState(null);
+  const [readingPhoto, setReadingPhoto] = useState(false);
+  const photoReader = useRef(null);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -65,6 +68,9 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
 
   // Initialize form data when employee changes
   useEffect(() => {
+    photoReader.current?.abort();
+    setPhotoDraft(null);
+    setReadingPhoto(false);
     if (employee) {
       setCurrentEmployee(employee);
       setFormData({
@@ -81,12 +87,13 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
         dob: employee.dob || ''
       });
     }
+    return () => photoReader.current?.abort();
   }, [employee]);
 
   // Handle initialEditMode changes
   useEffect(() => {
-    setIsEditing(initialEditMode);
-  }, [initialEditMode]);
+    setIsEditing(initialEditMode && canEdit);
+  }, [initialEditMode, canEdit]);
 
   // Handle ESC key press to close modal
   useEffect(() => {
@@ -143,7 +150,33 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
     return Object.keys(newErrors).length === 0;
   };
 
+  const handlePhoto = (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file || !canEdit || isSaving) return;
+    photoReader.current?.abort();
+    setReadingPhoto(false);
+    const error = !file.type.startsWith('image/')
+      ? t('errors.invalidFileType', 'Please select an image file')
+      : file.size > 5 * 1024 * 1024 ? t('errors.fileTooLarge', 'File size must be less than 5MB') : null;
+    setErrors((prev) => ({ ...prev, photo: error }));
+    if (error) return;
+    const reader = new FileReader();
+    photoReader.current = reader;
+    setReadingPhoto(true);
+    reader.onload = () => {
+      setPhotoDraft(reader.result);
+      setReadingPhoto(false);
+    };
+    reader.onerror = () => {
+      setErrors((prev) => ({ ...prev, photo: t('errors.fileReadError', 'Error reading file') }));
+      setReadingPhoto(false);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSave = async () => {
+    if (!canEdit || isSaving || readingPhoto) return;
     if (!validateForm()) {
       return;
     }
@@ -164,11 +197,18 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
         dob: formData.dob
       };
 
+      if (photoDraft) {
+        const upload = await employeeService.uploadEmployeePhoto(photoDraft, employee.id);
+        if (!upload.success) throw new Error(upload.error);
+        updates.photo = upload.url;
+      }
+      const savedPhoto = updates.photo;
       const result = await employeeService.updateEmployee(employee.id, updates);
       
       if (result.success) {
         // Update current employee data with saved changes
-        setCurrentEmployee(result.data);
+        setCurrentEmployee({ ...result.data, photo: savedPhoto || result.data.photo || currentEmployee?.photo });
+        setPhotoDraft(null);
         setIsEditing(false);
         if (onUpdate) {
           onUpdate(result.data);
@@ -188,6 +228,9 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
   };
 
   const handleCancel = () => {
+    photoReader.current?.abort();
+    setPhotoDraft(null);
+    setReadingPhoto(false);
     // Reset form data to original employee data
     if (employee) {
       setFormData({
@@ -244,6 +287,9 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
     >
       <Blueprint
         ind={ind}
+        role="dialog"
+        aria-modal="true"
+        aria-label={t('employees.editEmployee', 'Edit Employee')}
         style={{
           background: ind.ground, width: '100%', maxWidth: 672, maxHeight: '90vh',
           overflowY: 'auto', color: ind.ink, fontFamily: BODY,
@@ -269,19 +315,29 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
           </div>
 
           <div className="flex items-center" style={{ gap: 14, marginBottom: 20 }}>
-            <div
-              style={{
-                width: 64, height: 64, flex: 'none', overflow: 'hidden',
-                border: `1px solid ${ind.hairline}`,
-                background: currentEmployee?.photo ? 'transparent' : ind.accentWash,
-                display: 'grid', placeItems: 'center',
-              }}
-            >
-              {currentEmployee?.photo ? (
-                <img src={currentEmployee.photo} alt={currentEmployee.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              ) : (
-                <User size={22} strokeWidth={1.5} style={{ color: ind.inkMuted }} />
+            <div>
+              <div
+                style={{
+                  width: 64, height: 64, flex: 'none', overflow: 'hidden',
+                  border: `1px solid ${ind.hairline}`,
+                  background: (photoDraft || currentEmployee?.photo) ? 'transparent' : ind.accentWash,
+                  display: 'grid', placeItems: 'center',
+                }}
+              >
+                {(photoDraft || currentEmployee?.photo) ? (
+                  <img src={photoDraft || currentEmployee.photo} alt={currentEmployee.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <User size={22} strokeWidth={1.5} style={{ color: ind.inkMuted }} />
+                )}
+              </div>
+              {isEditing && canEdit && (
+                <label style={{ display: 'block', color: ind.accentDeep, fontSize: 11, marginTop: 6, cursor: isSaving ? 'default' : 'pointer' }}>
+                  {t('employees.uploadPhoto', 'Upload photo')}
+                  <input type="file" accept="image/*" className="sr-only" disabled={isSaving}
+                    aria-label={t('employees.uploadPhoto', 'Upload photo')} onChange={handlePhoto} />
+                </label>
               )}
+              {errors.photo && <p role="alert" style={{ ...fieldError, maxWidth: 130 }}>{errors.photo}</p>}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               {isEditing ? (
@@ -446,7 +502,7 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
                   <X size={13} strokeWidth={1.5} />
                   {t('common.cancel', 'Cancel')}
                 </Btn>
-                <Btn ind={ind} variant="primary" onClick={handleSave} disabled={isSaving} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <Btn ind={ind} variant="primary" onClick={handleSave} disabled={isSaving || readingPhoto} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                   <Save size={13} strokeWidth={1.5} />
                   {isSaving ? t('common.saving', 'Saving...') : t('common.save', 'Save')}
                 </Btn>

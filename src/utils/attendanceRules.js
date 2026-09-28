@@ -28,6 +28,13 @@
 export const localDateKey = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
 export const attendancePeriodRange = (period, now = new Date()) => {
+  if (period === 'quarter') {
+    const month = Math.floor(now.getMonth() / 3) * 3;
+    return {
+      startDate: localDateKey(new Date(now.getFullYear(), month, 1)),
+      endDate: localDateKey(new Date(now.getFullYear(), month + 3, 0)),
+    };
+  }
   const start = period === 'week'
     ? new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay())
     : new Date(now.getFullYear(), now.getMonth(), 1);

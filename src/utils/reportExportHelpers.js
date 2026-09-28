@@ -299,10 +299,10 @@ export const PDF_TOKENS = {
   ink: [24, 24, 27],
   inkSoft: [72, 72, 80],
   muted: [128, 128, 138],
-  accent: [199, 32, 39], // section headings, bars, meter fill
-  accentDark: [124, 20, 25], // overall performance score
+  accent: [24, 44, 72], // section headings, bars, meter fill
+  accentDark: [18, 27, 46], // overall performance score
   track: [230, 231, 235],
-  leaveHighlight: [255, 239, 242], // restrained pale-pink leave section card
+  leaveHighlight: [240, 243, 247], // neutral blue-grey section fill
   headerBaseline: 13, // running header text baseline on continuation pages
   headerRule: 16,
   contentTop: 23, // first content row on continuation pages
@@ -311,10 +311,11 @@ export const PDF_TOKENS = {
   footerBaseline: 9.5,
   titleSize: 18, // report headline, in points
   brandInk: [18, 27, 46], // navy ICUE wordmark, matching the quadrant symbol
-  letterheadLogoHeight: 40,
-  letterheadLogoGap: 2,
-  letterheadGap: 10, // clear space before the report title and employee photo
-  profileSize: 25, // square employee portrait at the masthead's right edge
+  letterheadLogoHeight: 28,
+  letterheadLogoGap: 6,
+  letterheadGap: 20, // clear space before the report title
+  profileSize: 28, // square employee portrait at the masthead's right edge
+  cellPadding: 3,
   profileGap: 7 // clear space between the masthead text and portrait
 };
 
@@ -360,7 +361,23 @@ export const loadPdfLogo = () => {
       const context = canvas.getContext('2d');
       if (!context) throw new Error('Logo canvas unavailable');
       context.drawImage(image, 0, 0, canvas.width, canvas.height);
-      return { dataUrl: canvas.toDataURL('image/png'), width, height };
+      // SVG viewBoxes can include large transparent margins. Trim those here
+      // so the visible mark, text and portrait share the same header grid.
+      const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+      let x0 = canvas.width, y0 = canvas.height, x1 = -1, y1 = -1;
+      for (let yy = 0; yy < canvas.height; yy += 1) {
+        for (let xx = 0; xx < canvas.width; xx += 1) {
+          if (pixels[(yy * canvas.width + xx) * 4 + 3] === 0) continue;
+          x0 = Math.min(x0, xx); x1 = Math.max(x1, xx);
+          y0 = Math.min(y0, yy); y1 = Math.max(y1, yy);
+        }
+      }
+      if (x1 < x0) throw new Error('Logo is empty');
+      const cropped = document.createElement('canvas');
+      cropped.width = x1 - x0 + 1;
+      cropped.height = y1 - y0 + 1;
+      cropped.getContext('2d').drawImage(canvas, x0, y0, cropped.width, cropped.height, 0, 0, cropped.width, cropped.height);
+      return { dataUrl: cropped.toDataURL('image/png'), width: cropped.width, height: cropped.height };
     }
 
     return { dataUrl, width, height };
@@ -536,44 +553,52 @@ export const createPdfReportLayout = ({
     ensure,
 
     /** First-page letterhead: quadrant symbol, serif ICUE, localized full name. */
-    letterhead({ logo = null, instituteName, nameTracking = 0.55 }) {
-      const top = 12;
-      const logoH = T.letterheadLogoHeight;
-      const logoW = logo?.height > 0 ? logo.width / logo.height * logoH : logoH;
-      let textLeft = left;
-      if (logo?.dataUrl) {
-        try {
-          doc.addImage(logo.dataUrl, 'PNG', left, top, logoW, logoH, 'reportLogo', 'FAST');
-          textLeft += logoW + T.letterheadLogoGap;
-        } catch (error) {
-          console.warn('PDF logo could not be drawn:', error?.message || error);
-        }
-      }
+    letterhead({ logo = null, instituteName, nameTracking = 0.35, profileImage = null }) {
+      const top = T.margin;
+      const headerH = T.letterheadLogoHeight;
+      const lines = String(instituteName || '').split('\n').map(line => line.trim()).filter(Boolean);
+      const logoW = logo?.height > 0 ? logo.width / logo.height * headerH : headerH;
+      const textLeft = left + (logo?.dataUrl ? logoW + T.letterheadLogoGap : 0);
+      const textRight = profileImage?.dataUrl ? right - T.profileSize - T.profileGap : right;
 
       doc.saveGraphicsState();
       doc.setFont('times', 'normal');
-      doc.setFontSize(50);
-      doc.setTextColor(...T.brandInk);
-      const wordmarkTracking = 2.2;
-      const nameWidth = Math.min(right - textLeft, doc.getTextWidth('ICUE') + 3 * wordmarkTracking);
-      doc.text('ICUE', textLeft, top + 14, { charSpace: wordmarkTracking });
-
-      const lines = String(instituteName || '').split('\n').map(line => line.trim()).filter(Boolean);
-      // Locale-specific line breaks preserve the full institute name. Fit the
-      // whole block to the wordmark width instead of truncating the translation.
+      doc.setFontSize(40);
+      const wordmarkTracking = 5;
+      const nameWidth = Math.min(textRight - textLeft, doc.getTextWidth('ICUE') + 3 * wordmarkTracking);
       const nameSize = lines.reduce((size, line) => {
         const trackingWidth = Math.max(0, Array.from(line).length - 1) * nameTracking;
-        const width = measureText(line, 9.5);
-        return width > 0 ? Math.min(size, 9.5 * Math.max(1, nameWidth - trackingWidth) / width) : size;
-      }, 9.5);
+        const width = measureText(line, 9);
+        return width > 0 ? Math.min(size, 9 * Math.max(1, nameWidth - trackingWidth) / width) : size;
+      }, 9);
+      const nameLineHeight = lineHeight(nameSize, 1.5);
+      const textH = 14 + Math.max(0, lines.length - 1) * nameLineHeight + ptToMm(nameSize);
+      const textTop = top + (headerH - textH) / 2;
+      doc.setFont('times', 'normal');
+      doc.setFontSize(40);
+      doc.setTextColor(...T.brandInk);
+      doc.text('ICUE', textLeft, textTop + 9.6, { charSpace: wordmarkTracking });
       doc.setFontSize(nameSize);
       doc.setTextColor(...T.inkSoft);
       lines.forEach((line, index) => {
-        drawText(line, textLeft, top + 23 + index * lineHeight(nameSize, 1.6), { charSpace: nameTracking });
+        drawText(line, textLeft, textTop + 14 + ptToMm(nameSize) * 0.78 + index * nameLineHeight, { charSpace: nameTracking });
       });
       doc.restoreGraphicsState();
-      const textBottom = top + 23 + Math.max(0, lines.length - 1) * lineHeight(nameSize, 1.6) + 2;
-      y = Math.max(top + logoH, textBottom) + T.letterheadGap;
+
+      if (logo?.dataUrl) {
+        // Match the visible symbol to the text block, both centred in the header.
+        const markH = Math.min(headerH, textH);
+        const markW = logoW * markH / headerH;
+        try {
+          doc.addImage(logo.dataUrl, 'PNG', left, top + (headerH - markH) / 2, markW, markH, 'reportLogo', 'FAST');
+        } catch (error) { console.warn('PDF logo could not be drawn:', error?.message || error); }
+      }
+      if (profileImage?.dataUrl) {
+        try {
+          doc.addImage(profileImage.dataUrl, 'PNG', right - T.profileSize, top, T.profileSize, T.profileSize, 'reportProfile', 'FAST');
+        } catch (error) { console.warn('PDF profile image could not be drawn:', error?.message || error); }
+      }
+      y = top + headerH + T.letterheadGap;
     },
 
     /** Report title/meta at left, employee portrait at right, below the letterhead. */
@@ -637,20 +662,18 @@ export const createPdfReportLayout = ({
       const padTop = fillColor ? 3 : 0;
       const padBottom = fillColor ? 2 : 0;
       const blockHeight = textHeight + padTop + padBottom;
-      const top = y;
       ensure(blockHeight);
+      const top = y;
 
       if (fillColor) {
         doc.setFillColor(...fillColor);
-        doc.roundedRect(left, top, contentWidth, blockHeight, 3, 3, 'F');
-        // Square the lower corners so the title band joins the filled table cleanly.
-        doc.rect(left, top + 3, contentWidth, blockHeight - 3, 'F');
+        doc.rect(left, top, contentWidth, blockHeight, 'F');
         y += padTop;
       }
 
       doc.setFontSize(11);
       doc.setTextColor(...T.accent);
-      const inset = fillColor ? 4 : 0;
+      const inset = fillColor ? T.cellPadding : 0;
       drawText(
         fitText(text, contentWidth - inset * 2, 11),
         left + inset,
@@ -701,8 +724,8 @@ export const createPdfReportLayout = ({
         if (!cell) return;
         const row = Math.floor(index / 2);
         const col = index % 2;
-        const cellLeft = left + col * colW + 3.5;
-        const cellRight = left + (col + 1) * colW - 3.5;
+        const cellLeft = left + col * colW + T.cellPadding;
+        const cellRight = left + (col + 1) * colW - T.cellPadding;
         const baseline = top + row * rowH + rowH / 2 + 1.2;
         const valueText = String(cell.value ?? '');
         const valueWidth = measureText(valueText, 9.5);
@@ -739,12 +762,12 @@ export const createPdfReportLayout = ({
       const gap = 1.2;
       const blocksWidth = blocks * blockW + (blocks - 1) * gap;
       const valueWidth = measureText(valueText, 10);
-      const blocksX = right - 4 - valueWidth - 5 - blocksWidth;
+      const blocksX = right - T.cellPadding - valueWidth - 5 - blocksWidth;
       const midY = top + rowH / 2;
 
       doc.setFontSize(9);
       doc.setTextColor(...T.accentDark);
-      drawText(fitText(label, Math.max(blocksX - left - 8, 10), 9), left + 4, midY + 1.2, { bold: true });
+      drawText(fitText(label, Math.max(blocksX - left - 8, 10), 9), left + T.cellPadding, midY + 1.2, { bold: true });
 
       for (let i = 0; i < blocks; i += 1) {
         doc.setFillColor(...(i < filled ? T.accent : T.track));
@@ -753,7 +776,7 @@ export const createPdfReportLayout = ({
 
       doc.setFontSize(10);
       doc.setTextColor(...T.accentDark);
-      drawText(valueText, right - 4, midY + 1.4, { align: 'right', bold: true });
+      drawText(valueText, right - T.cellPadding, midY + 1.4, { align: 'right', bold: true });
 
       y = top + rowH;
     },
@@ -773,8 +796,8 @@ export const createPdfReportLayout = ({
 
       const labelW = 46;
       const valueW = 20;
-      const trackX = left + labelW;
-      const trackW = contentWidth - labelW - valueW;
+      const trackX = left + T.cellPadding + labelW;
+      const trackW = contentWidth - 2 * T.cellPadding - labelW - valueW;
       const trackH = 4.5;
 
       items.forEach((item) => {
@@ -784,7 +807,7 @@ export const createPdfReportLayout = ({
 
         doc.setFontSize(8);
         doc.setTextColor(...T.inkSoft);
-        drawText(fitText(item.label, labelW - 3, 8), left, midY + 1.1);
+        drawText(fitText(item.label, labelW - 3, 8), left + T.cellPadding, midY + 1.1);
 
         doc.setFillColor(...T.track);
         doc.rect(trackX, midY - trackH / 2, trackW, trackH, 'F');
@@ -798,7 +821,7 @@ export const createPdfReportLayout = ({
 
         doc.setFontSize(8);
         doc.setTextColor(...T.ink);
-        drawText(item.valueText, right, midY + 1.1, { align: 'right' });
+        drawText(item.valueText, right - T.cellPadding, midY + 1.1, { align: 'right' });
 
         y = top + rowH;
       });

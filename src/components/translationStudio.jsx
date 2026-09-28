@@ -1,6 +1,7 @@
 import _React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertTriangle,
+  Bell,
   Check,
   Download,
   Languages,
@@ -40,6 +41,7 @@ import {
 } from '../services/translateService';
 import { isTranslationStoreAvailable } from '../services/ugcTranslationService';
 import { isTranslationEditor } from '../utils/translationAccess';
+import { publishTranslationQueueCount } from '../utils/translationQueueStatus.js';
 
 /**
  * Translation Studio — the full-page editor for hand-authored translations of
@@ -703,6 +705,12 @@ const TranslationStudio = () => {
 
   /** A locale is "target" when it is one of the ones an entry must carry. */
   const targetLocaleCount = Math.max(1, locales.length - 1);
+  const pendingCount = useMemo(() => entries.filter(
+    (entry) => (coverage.get(entry.key)?.size || 0) < targetLocaleCount
+  ).length, [entries, coverage, targetLocaleCount]);
+  useEffect(() => {
+    if (!loading && !loadError && canEdit && !demo) publishTranslationQueueCount(user?.id, pendingCount);
+  }, [loading, loadError, canEdit, demo, user?.id, pendingCount]);
 
   /** How much of the whole queue is finished — the ticker's one live figure. */
   const coveragePercent = useMemo(() => {
@@ -728,6 +736,13 @@ const TranslationStudio = () => {
       </TickerCell>
       <TickerCell ind={ind} label={t('translationStudio.strings', 'Strings')} value={entries.length} />
       <TickerCell ind={ind} label={t('translationStudio.inQueue', 'In queue')} value={visible.length} />
+      <TickerCell ind={ind}>
+        <span role="status" title={t('translationStudio.pendingHint', 'Fields still missing translations')}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+          <Bell size={15} aria-hidden="true" />
+          {t('translationStudio.pending', 'To translate')} ({pendingCount})
+        </span>
+      </TickerCell>
       <TickerCell ind={ind} label={t('translationStudio.locales', 'Locales')} value={targetLocaleCount} />
       <TickerCell
         ind={ind}
@@ -893,7 +908,7 @@ const TranslationStudio = () => {
             <div style={{ padding: '14px 14px 10px', borderBottom: `1px solid ${ind.hairline}` }}>
               <span style={fieldLabelStyle}>{t('translationStudio.sources', 'Sources')}</span>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {ENTITY_TYPES.map((entityType) => {
+                {ENTITY_TYPES.filter((entityType) => sourceCounts[entityType].total > 0).map((entityType) => {
                   const { done, total } = sourceCounts[entityType];
                   const on = sources.has(entityType);
                   return (
@@ -947,11 +962,11 @@ const TranslationStudio = () => {
               </div>
             </div>
 
-            {sources.size > 0 && (
+            {ENTITY_TYPES.some((entityType) => sources.has(entityType) && sourceCounts[entityType].total > 0) && (
               <div style={{ padding: '12px 14px', borderBottom: `1px solid ${ind.hairline}` }}>
                 <span style={fieldLabelStyle}>{t('translationStudio.fields', 'Fields')}</span>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {ENTITY_TYPES.filter((entityType) => sources.has(entityType)).map((entityType) => (
+                  {ENTITY_TYPES.filter((entityType) => sources.has(entityType) && sourceCounts[entityType].total > 0).map((entityType) => (
                     <div key={entityType}>
                       {sources.size > 1 && (
                         <span

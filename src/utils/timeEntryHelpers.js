@@ -1,5 +1,17 @@
 const SECONDS_PER_DAY = 86400;
 
+// Calendar date and shift start are the chronology, not the time a row was
+// created. This also keeps an evening shift above a daytime shift on that date.
+export const compareTimeEntryStart = (a, b) => {
+  const key = (entry) => {
+    const date = String(entry.date || entry.created_at || '').slice(0, 10);
+    const clock = String(entry.clock_in || entry.clockIn || '');
+    const time = /(?:T|^)(\d{1,2}):(\d{2})(?::(\d{2}))?/.exec(clock);
+    return `${date}T${time ? `${time[1].padStart(2, '0')}:${time[2]}:${time[3] || '00'}` : '00:00:00'}`;
+  };
+  return key(a).localeCompare(key(b)) || String(a.created_at || '').localeCompare(String(b.created_at || ''));
+};
+
 // Database DATE values are calendar dates, not UTC instants. Converting local
 // midnight with toISOString() moves the date back a day in Vietnam.
 export const getMonthDateRange = (month, year) => {

@@ -1,3 +1,4 @@
+import { compareTimeEntryStart } from '../utils/timeEntryHelpers.js';
 import { fetchAllRows } from '../utils/fetchAllRows.js';
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { flushSync } from 'react-dom';
@@ -431,6 +432,7 @@ const Reports = () => {
   const [activeOnly, setActiveOnly] = useState(true);
   // 03 · Period
   const [dateRange, setDateRange] = useState('this-month');
+  const [customReportPeriod, setCustomReportPeriod] = useState('month');
   const [filters, setFilters] = useState({
     startDate: localDateKey(new Date(new Date().getFullYear(), new Date().getMonth(), 1)),
     endDate: localDateKey(new Date())
@@ -2855,7 +2857,9 @@ const Reports = () => {
       const dotSeparator = unicodeFontLoaded ? '·' : '|';
       const arrowSeparator = unicodeFontLoaded ? '→' : '->';
 
-      const reportTitle = t('reports.performanceReport', 'HR PERFORMANCE REPORT');
+      const reportPeriod = dateRange === 'this-quarter' ? 'quarter' : dateRange === 'this-year' ? 'year'
+        : dateRange === 'custom' ? customReportPeriod : dateRange === 'today' ? 'day' : dateRange === 'this-week' ? 'week' : 'month';
+      const reportTitle = t(`reports.${reportPeriod}Report`, { day: 'Daily Report', week: 'Weekly Report', month: 'Monthly Report', quarter: 'Quarterly Report', year: 'Annual Report' }[reportPeriod]);
 
       // Who the report is about, as the running header says it: a person, a unit
       // or the whole roster.
@@ -2907,16 +2911,16 @@ const Reports = () => {
       layout.letterhead({
         logo: companyLogo,
         instituteName: t('reports.instituteName', 'INSTITUTE OF\nCONSTRUCTION &\nURBAN ECONOMICS'),
-        nameTracking: ['jp', 'kr', 'th'].includes(currentLanguage) ? 0 : 0.55,
+        nameTracking: ['jp', 'kr', 'th'].includes(currentLanguage) ? 0 : 0.35,
+        profileImage,
       });
       layout.titleBlock({
         top: layout.y,
         title: reportTitle.toUpperCase(),
-        profileImage,
         metaLines: [
           `${t('reports.generated', 'Generated')}: ${new Date().toLocaleString()}`,
           `${t('reports.period', 'Period')}: ${filters.startDate} ${t('reports.to', 'to')} ${filters.endDate}`,
-          `${t('employees.name', 'Name')}:- ${displayEmployeeName}`
+          `${t('employees.name', 'Name')}: ${displayEmployeeName}`
         ]
       });
 
@@ -3053,11 +3057,12 @@ const Reports = () => {
           head: [head],
           body,
           theme: 'plain',
+          tableWidth: layout.contentWidth,
           showHead: 'everyPage',
           rowPageBreak,
           columnStyles,
           headStyles: {
-            textColor: PDF_TOKENS.ink,
+            textColor: PDF_TOKENS.brandInk,
             fillColor: highlightFill || false,
             lineColor: PDF_TOKENS.ink,
             lineWidth: { bottom: PDF_TOKENS.ruleHeavy },
@@ -3072,7 +3077,7 @@ const Reports = () => {
           },
           styles: {
             fontSize,
-            cellPadding: { top: 1.6, right: 1.6, bottom: 1.6, left: 1.6 },
+            cellPadding: { top: 2, right: PDF_TOKENS.cellPadding, bottom: 2, left: PDF_TOKENS.cellPadding },
             font: getTableFont(),
             fontStyle: 'normal',
             overflow: 'linebreak'
@@ -3093,29 +3098,8 @@ const Reports = () => {
           }
         });
 
-        if (highlightFill) {
-          // Close the card with a small rounded footer, without covering the last row.
-          const footerTop = doc.lastAutoTable.finalY;
-          doc.setFillColor(...highlightFill);
-          doc.roundedRect(
-            PDF_TOKENS.margin,
-            footerTop,
-            pageWidth - PDF_TOKENS.margin * 2,
-            4,
-            3,
-            3,
-            'F'
-          );
-          doc.rect(
-            PDF_TOKENS.margin,
-            footerTop,
-            pageWidth - PDF_TOKENS.margin * 2,
-            2,
-            'F'
-          );
-        }
 
-        layout.y = doc.lastAutoTable.finalY + (highlightFill ? 8 : 4);
+        layout.y = doc.lastAutoTable.finalY + 4;
       };
 
       const pdfHead = (key, fallback) => cleanTextForPDF(t(key, fallback), unicodeFontLoaded);
@@ -3186,7 +3170,7 @@ const Reports = () => {
             pdfHead('reports.pdf.headers.hourType', 'Type'),
             pdfHead('reports.pdf.headers.status', 'Status')
           ],
-          timeEntries.map((entry) => [
+          [...timeEntries].sort((a, b) => compareTimeEntryStart(b, a)).map((entry) => [
             cleanTextForPDF(isDemoMode() ? getDemoEmployeeName(entry.employee, t) : (entry.employee?.name || t('reports.unknown', 'Unknown')), unicodeFontLoaded),
             cleanTextForPDF(translateDepartment(entry.employee?.department) || '', unicodeFontLoaded),
             entry.date,
@@ -3701,12 +3685,22 @@ const Reports = () => {
                 { value: 'this-month', label: t('reports.thisMonth', 'This Month') },
                 { value: 'last-month', label: t('reports.lastMonth', 'Last Month') },
                 { value: 'this-quarter', label: t('reports.quarter', 'Quarter') },
+                { value: 'this-year', label: t('reports.year', 'Year') },
                 { value: 'custom', label: t('reports.custom', 'Custom') },
               ]}
             />
 
             {dateRange === 'custom' ? (
               <div className="flex flex-wrap items-end" style={{ gap: 10, marginTop: 12 }}>
+                <label style={fieldLabelStyle}>{t('reports.reportType', 'Report type')}
+                  <FlatListbox ind={ind} value={customReportPeriod}
+                    aria-label={t('reports.reportType', 'Report type')}
+                    onChange={(event) => setCustomReportPeriod(event.target.value)}>
+                    <option value="month">{t('reports.monthReport', 'Monthly Report')}</option>
+                    <option value="quarter">{t('reports.quarterReport', 'Quarterly Report')}</option>
+                    <option value="year">{t('reports.yearReport', 'Annual Report')}</option>
+                  </FlatListbox>
+                </label>
                 <div style={{ width: 148 }}>
                   <label htmlFor="report-start" style={fieldLabelStyle}>{t('reports.startDate', 'Start Date')}</label>
                   <DatePicker
@@ -3745,7 +3739,6 @@ const Reports = () => {
               {[
                 { value: 'today', label: t('reports.today', 'Today') },
                 { value: 'this-week', label: t('reports.thisWeek', 'This Week') },
-                { value: 'this-year', label: t('reports.thisYear', 'This Year') },
               ].map((preset) => (
                 <button
                   key={preset.value}

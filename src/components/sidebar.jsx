@@ -13,7 +13,7 @@
  * ambiguity. Radius is 0 everywhere. The active child is a solid steel block —
  * one of only two solid objects in the system (the other is .btn-primary).
  */
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useSyncExternalStore } from 'react'
 import { NavLink } from 'react-router-dom'
 import {
   TrendingUp, Users, FileText, AlarmClock, ChevronDown, ChevronRight,
@@ -24,6 +24,7 @@ import { useLanguage } from '../contexts/LanguageContext.jsx'
 import { useNotifications } from '../contexts/NotificationContext.jsx'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import { isTranslationEditor } from '../utils/translationAccess.js'
+import { subscribeTranslationQueue, getTranslationQueueCount } from '../utils/translationQueueStatus.js'
 import { getIndustry, DISPLAY, BODY } from '../theme/industry.js'
 
 const RAIL_COLLAPSED = 64;
@@ -53,6 +54,7 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
   const { unreadCount } = useNotifications();
   const { user } = useAuth();
   const canEditTranslations = isTranslationEditor(user);
+  const translationCount = useSyncExternalStore(subscribeTranslationQueue, () => getTranslationQueueCount(user?.id));
 
   const ind = getIndustry(isDarkMode);
 
@@ -278,7 +280,7 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
           fontVariantNumeric: 'tabular-nums',
         }}
       >
-        {count > 9 ? '9+' : count}
+        {count}
       </span>
     );
   };
@@ -379,7 +381,7 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
                 const hasSubItems = item.subItems && item.subItems.length > 0;
                 // Submenus are expanded by default; only collapsed when explicitly toggled off
                 const isExpanded = expandedMenus[item.name] !== false;
-                const badgeCount = item.path === '/notifications' ? unreadCount : 0;
+                const badgeCount = item.path === '/notifications' ? unreadCount : item.path === '/translations' ? translationCount : 0;
 
                 return (
                   <div key={item.name} style={{ position: 'relative', flex: 'none' }}>

@@ -11,6 +11,12 @@ import {
   summarizeAttendance,
 } from '../src/utils/attendanceRules.js';
 
+test('quarter ranges include the complete calendar quarter across year boundaries', () => {
+  assert.deepEqual(attendancePeriodRange('quarter', new Date(2026, 8, 29)), { startDate: '2026-07-01', endDate: '2026-09-30' });
+  assert.deepEqual(attendancePeriodRange('quarter', new Date(2026, 11, 31)), { startDate: '2026-10-01', endDate: '2026-12-31' });
+  assert.deepEqual(attendancePeriodRange('quarter', new Date(2024, 1, 29)), { startDate: '2024-01-01', endDate: '2024-03-31' });
+});
+
 test('cohort totals keep each employee separate on the same calendar date', () => {
   const totals = summarizeAttendance({
     timeEntries: ['a', 'b', 'c'].map(employee_id => ({ employee_id, date: '2026-10-01', hours: 8, hour_type: 'regular', status: 'approved' })),

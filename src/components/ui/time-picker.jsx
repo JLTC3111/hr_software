@@ -77,19 +77,27 @@ function WheelColumn({
   formatItem = (v) => String(v),
 }) {
   const listRef = useRef(null);
+  const loop = items.length > 2;
+  const rowHeight = 40;
+  const copies = loop ? [0, 1, 2] : [0];
+  const focusAfterChange = useRef(false);
 
   useEffect(() => {
     const el = listRef.current;
     if (!el) return;
     const idx = items.findIndex((item) => item === value);
     if (idx < 0) return;
-    const child = el.children[idx];
+    const child = el.children[idx + (loop ? items.length : 0)];
     if (!child) return;
     // Scroll only inside the wheel list — never scrollIntoView (that jumps the page)
     const top =
       child.offsetTop - el.clientHeight / 2 + child.clientHeight / 2;
     el.scrollTop = Math.max(0, top);
-  }, [value, items]);
+    if (focusAfterChange.current) {
+      child.focus({ preventScroll: true });
+      focusAfterChange.current = false;
+    }
+  }, [value, items, loop]);
 
   return (
     <div className="flex flex-col items-center min-w-[4.5rem] flex-1">
@@ -111,15 +119,37 @@ function WheelColumn({
         )}
         role="listbox"
         aria-label={label}
+        style={{ position: 'relative', overscrollBehavior: 'contain' }}
+        onScroll={(event) => {
+          if (!loop) return;
+          const el = event.currentTarget;
+          const cycleHeight = items.length * rowHeight;
+          // Identical adjacent cycles let the wheel continue past either end.
+          // Recenter without animation so the visible values do not jump.
+          if (el.scrollTop < cycleHeight / 2) el.scrollTop += cycleHeight;
+          else if (el.scrollTop > cycleHeight * 1.5) el.scrollTop -= cycleHeight;
+        }}
+        onKeyDown={(event) => {
+          if (!['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return;
+          event.preventDefault();
+          const index = items.indexOf(value);
+          const next = event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1
+            : (index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+          focusAfterChange.current = true;
+          onChange(items[next]);
+        }}
       >
-        {items.map((item) => {
+        {copies.flatMap((copy) => items.map((item) => {
           const selected = item === value;
           return (
             <button
-              key={String(item)}
+              key={`${copy}:${item}`}
               type="button"
               role="option"
               aria-selected={selected}
+              aria-hidden={loop && copy !== 1 ? true : undefined}
+              tabIndex={selected && (!loop || copy === 1) ? 0 : -1}
+              style={{ height: rowHeight, display: 'block', flexShrink: 0 }}
               onClick={() => onChange(item)}
               className={cn(
                 'w-full py-2 text-sm snap-center tabular-nums transition-colors',
@@ -133,7 +163,7 @@ function WheelColumn({
               {formatItem(item)}
             </button>
           );
-        })}
+        }))}
       </div>
     </div>
   );
@@ -162,6 +192,7 @@ export function TimePicker({
   defaultOpenTime = '09:00',
   flat = false,
 }) {
+  const PickerIcon = Icon;
   const { currentLanguage, t } = useLanguage();
   const { isDarkMode, bg, text, border } = useTheme();
   // See DatePicker: `flat` renders the control in the "Industry" grammar.
@@ -243,10 +274,10 @@ export function TimePicker({
     const panelHeight = 280;
     const spaceBelow = window.innerHeight - rect.bottom;
     const openUp = spaceBelow < panelHeight && rect.top > spaceBelow;
-    const width = Math.max(rect.width, hour12 ? 300 : 240);
+    const width = Math.min(window.innerWidth - 16, Math.max(rect.width, hour12 ? 300 : 240));
     setPanelStyle({
       position: 'fixed',
-      left: Math.min(rect.left, window.innerWidth - width - 8),
+      left: Math.max(8, Math.min(rect.left, window.innerWidth - width - 8)),
       top: openUp ? Math.max(8, rect.top - panelHeight - 6) : rect.bottom + 6,
       width,
       zIndex: 9999,
@@ -333,7 +364,7 @@ export function TimePicker({
         </span>
       </button>
       {showIcon && (
-        <Icon
+        <PickerIcon
           size={flat ? 14 : undefined}
           strokeWidth={flat ? 1.5 : undefined}
           className={flat

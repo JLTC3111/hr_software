@@ -5,6 +5,7 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import ExcelJS from 'exceljs';
 import * as helpers from '../src/utils/reportExportHelpers.js';
+import * as timeEntryHelpers from '../src/utils/timeEntryHelpers.js';
 import * as attendance from '../src/utils/attendanceRules.js';
 import * as industry from '../src/theme/industry.js';
 import * as employeeStatus from '../src/utils/employeeStatus.js';
@@ -23,7 +24,7 @@ function find(tree, predicate) {
   }
 }
 
-function exportFixture({ failEntries = false, failSource = null, employeeId = null, format = 'csv', entryCount = 584, tasks = [], cached = true } = {}) {
+function exportFixture({ failEntries = false, failSource = null, employeeId = null, format = 'csv', entryCount = 584, tasks = [], cached = true, period = 'this-month', customPeriod = 'month' } = {}) {
   const employees = ['a', 'b'].map(id => ({ id, name: `Employee ${id}`, department: 'Operations', status: 'Active' }));
   const entries = Array.from({ length: entryCount }, (_, id) => ({
     id, employee_id: employees[id % 2].id, employee: employees[id % 2], date: '2026-07-06',
@@ -55,10 +56,13 @@ function exportFixture({ failEntries = false, failSource = null, employeeId = nu
   const errors = [];
   const translations = [];
   const tables = [];
+  const texts = [];
   let modelCalls = 0;
   class ReportPdf extends jsPDF {
     constructor(...args) {
       super(...args);
+      const text = this.text;
+      this.text = (...args) => { texts.push(args[0]); return text.apply(this, args); };
       this.save = name => { filename = name; downloaded = new Blob([this.output('arraybuffer')]); };
     }
   }
@@ -92,7 +96,7 @@ function exportFixture({ failEntries = false, failSource = null, employeeId = nu
     '../utils/retryHelper': {}, '../config/supabaseClient': { supabase: client },
     '../utils/fetchAllRows.js': { fetchAllRows },
     '../utils/reportExportHelpers.js': { ...helpers, loadPdfLogo: async () => null, loadPdfProfileImage: async () => null },
-    '../utils/attendanceRules.js': attendance, '../utils/localeFormat.js': locale,
+    '../utils/attendanceRules.js': attendance, '../utils/timeEntryHelpers.js': timeEntryHelpers, '../utils/localeFormat.js': locale,
     '../services/translateService.js': {
       translateTexts: () => { modelCalls++; return new Promise(() => {}); },
       peekCachedTranslation: text => { translations.push(text); return cached ? `Translated ${text}` : null; },
@@ -131,9 +135,15 @@ function exportFixture({ failEntries = false, failSource = null, employeeId = nu
     find(screen, node => node.props?.ariaLabel === en.reports.format).props.onChange(format);
     screen = render();
   }
+  find(screen, node => node.props?.ariaLabel === en.reports.dateRange).props.onChange(period);
+  screen = render();
+  if (period === 'custom') {
+    find(screen, node => node.props?.['aria-label'] === en.reports.reportType).props.onChange({ target: { value: customPeriod } });
+    screen = render();
+  }
   const button = find(screen, node => node.props?.title === en.reports.exportingIncludes);
   assert.ok(button);
-  return { started, gate, client, alerts, errors, translations, tables, run: button.props.onClick, content: () => downloaded?.text(), bytes: () => downloaded?.arrayBuffer(), filename: () => filename, modelCalls: () => modelCalls };
+  return { started, gate, client, alerts, errors, translations, tables, texts, run: button.props.onClick, content: () => downloaded?.text(), bytes: () => downloaded?.arrayBuffer(), filename: () => filename, modelCalls: () => modelCalls };
 }
 
 test('actual CSV export starts all sources together and writes all 584 rows beyond the first page', async () => {
@@ -236,4 +246,23 @@ test('monthly task output follows completion dates instead of old due dates', as
   const csv = await fixture.content();
   assert.ok(csv.includes('Delivered this period'));
   assert.ok(!csv.includes('Delivered next period'));
+});
+
+
+test('PDF titles follow the export period choice, including custom annual reports', async () => {
+  for (const [period, customPeriod, title] of [
+    ['today', 'month', 'DAILY REPORT'],
+    ['this-week', 'month', 'WEEKLY REPORT'],
+    ['this-month', 'month', 'MONTHLY REPORT'],
+    ['last-month', 'month', 'MONTHLY REPORT'],
+    ['this-quarter', 'month', 'QUARTERLY REPORT'],
+    ['this-year', 'month', 'ANNUAL REPORT'],
+    ['custom', 'year', 'ANNUAL REPORT'],
+  ]) {
+    const fixture = exportFixture({ format: 'pdf', entryCount: 4, period, customPeriod });
+    fixture.gate.resolve();
+    await fixture.run();
+    assert.ok(fixture.texts.includes(title), `${period}: ${title}`);
+    assert.ok(!fixture.texts.includes('HR PERFORMANCE REPORT'));
+  }
 });

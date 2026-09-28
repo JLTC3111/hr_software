@@ -29,7 +29,7 @@
  */
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
-  AlertCircle, Calendar, Check, Clock, FileCheck, Loader2, Pencil, Search, Upload, Users, X,
+  AlertCircle, Calendar, Check, Clock, Eye, EyeOff, FileCheck, Loader2, Pencil, Search, Upload, Users, X,
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext.jsx';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
@@ -49,7 +49,6 @@ import { DocumentLink } from './ui/document-link.jsx';
 import { TimePicker } from './ui/time-picker.jsx';
 import { COL } from '../utils/tableColumns.js';
 import { TableScroll, StackedDetail } from './ui/responsive-table.jsx';
-import { cn } from '@/lib/utils';
 import { useNotifications } from '../contexts/NotificationContext';
 import { getIndustry, DISPLAY, BODY, figure, rampAt } from '../theme/industry.js';
 import {
@@ -59,6 +58,7 @@ import { FetchElapsedPill } from './ui/fetch-elapsed-pill';
 import { formatDate } from '../utils/localeFormat.js';
 import {
   getHoursWorked,
+  compareTimeEntryStart,
   toExtendedInterval,
   extendedIntervalsOverlap,
 } from '../utils/timeEntryHelpers.js';
@@ -240,6 +240,13 @@ const TimeClockEntry = () => {
   const historySectionRef = useRef(null);
   const reviewScrollDoneRef = useRef(false);
   
+  const [historyLimit, setHistoryLimit] = useState(50);
+  const [summaryPeriod, setSummaryPeriod] = useState('month');
+  const [showMissingProof, setShowMissingProof] = useState(() => {
+    try { return localStorage.getItem('time-clock-show-missing-proof') !== 'false'; }
+    catch { return true; }
+  });
+
   // Sorting state for history table
   const [sortKey, setSortKey] = useState('date');
   const [sortDirection, setSortDirection] = useState('desc'); // 'asc' or 'desc'
@@ -450,10 +457,10 @@ const TimeClockEntry = () => {
       }
       if (canManageTimeTracking || userEmployeeId) {
         const week = attendancePeriodRange('week');
-        const month = attendancePeriodRange('month');
+        const quarter = attendancePeriodRange('quarter');
         const logs = await timeTrackingService.getOvertimeLogs(canManageTimeTracking ? null : userEmployeeId, {
-          startDate: week.startDate < month.startDate ? week.startDate : month.startDate,
-          endDate: week.endDate > month.endDate ? week.endDate : month.endDate,
+          startDate: week.startDate < quarter.startDate ? week.startDate : quarter.startDate,
+          endDate: week.endDate > quarter.endDate ? week.endDate : quarter.endDate,
         });
         if (!logs.success) throw new Error(logs.error);
         setOvertimeLogs(logs.data || []);
@@ -1238,17 +1245,23 @@ const TimeClockEntry = () => {
     }
   };
 
-  const periodAttendance = (period) => summarizeAttendance({
-    timeEntries,
-    overtimeLogs,
-    leaveRequests,
-    ...attendancePeriodRange(period),
-  });
+  const scopeEmployeeId = selectedEmployeeFilter === 'all'
+    ? null
+    : selectedEmployeeFilter === 'self' ? (userEmployeeId || userId) : selectedEmployeeFilter;
+  const todayKey = localDateKey(new Date());
+  // Aggregate once per period when the data/scope changes, never for a theme
+  // toggle, time-picker change, or each individual breakdown row.
+  const attendanceByPeriod = useMemo(() => Object.fromEntries(
+    ['week', 'month', 'quarter'].map((period) => [period, summarizeAttendance({
+      timeEntries, overtimeLogs, leaveRequests, employeeId: scopeEmployeeId,
+      ...attendancePeriodRange(period, new Date(`${todayKey}T12:00:00`)),
+    })])
+  ), [timeEntries, overtimeLogs, leaveRequests, scopeEmployeeId, todayKey]);
   const calculateTotals = (filterType = 'all', period = 'week') => {
-    const totals = periodAttendance(period);
+    const totals = attendanceByPeriod[period];
     return filterType === 'all' ? totals.total_hours : (totals.hours_by_type[filterType] ?? 0);
   };
-  const calculateLeaveDays = (period = 'week') => periodAttendance(period).leave_days;
+  const calculateLeaveDays = (period = 'week') => attendanceByPeriod[period].leave_days;
 
   // Chip order, not database order: the type you pick nine times out of ten sits
   // first, then the two the system can usually infer, then the exceptions.
@@ -1326,9 +1339,7 @@ const TimeClockEntry = () => {
       let aValue, bValue;
       switch (sortKey) {
         case 'date':
-          aValue = new Date(a.date || a.created_at).getTime();
-          bValue = new Date(b.date || b.created_at).getTime();
-          break;
+          return compareTimeEntryStart(a, b) * (sortDirection === 'asc' ? 1 : -1);
         case 'employee':
           aValue = (a.employee_name || a.employee?.name || '').toLowerCase();
           bValue = (b.employee_name || b.employee?.name || '').toLowerCase();
@@ -1356,12 +1367,10 @@ const TimeClockEntry = () => {
     return sorted;
   }, [filteredEntries, onLeaveForSelectedDate, selectedEmployeeFilter, statusFilter, userEmployeeId, userId, sortKey, sortDirection, formData.date]);
 
-  // Eight columns do not fit a phone, so Time and Type drop out and reappear as
-  // stacked detail under the date. While a row is being edited they are forced
-  // back: those two cells hold the inline time pickers and hour-type select, and
-  // hiding them would make an entry uneditable on a small screen.
-  const colTimeClass = editingEntryId ? COL.always : COL.lg;
-  const colTypeClass = editingEntryId ? COL.always : COL.md;
+  const colTimeClass = COL.lg;
+  const colTypeClass = COL.md;
+  useEffect(() => { setHistoryLimit(50); }, [selectedEmployeeFilter, statusFilter, sortKey, sortDirection]);
+  const visibleHistory = getSortedEntries.slice(0, historyLimit);
 
   // Helper function to translate status
   const translateStatus = (status) => {
@@ -1615,14 +1624,15 @@ const TimeClockEntry = () => {
   const weekRemaining = Math.max(0, CONTRACT_WEEK_HOURS - weekProjected);
 
   const boardStats = useMemo(() => {
-    const list = Array.isArray(timeEntries) ? timeEntries : [];
-    const pending = list.filter((e) => (e.status || '').toLowerCase() === 'pending');
+    const list = (timeEntries || []).filter((entry) => scopeEmployeeId == null
+      || String(entry.employee_id || entry.employeeId) === String(scopeEmployeeId));
     return {
-      pending: pending.length,
-      // Only pending rows count: an approved entry no longer needs its paperwork.
-      missingProof: pending.filter((e) => !e.proof_file_url && !e.proofFile).length,
+      pending: list.filter((entry) => entry.status === 'pending').length,
+      missingProof: list.filter((entry) => !['rejected', 'cancelled'].includes(entry.status)
+        && !['on_leave', 'vacation', 'sick_leave'].includes(entry.hour_type || entry.hourType)
+        && !entry.proof_file_url && !entry.proofFile).length,
     };
-  }, [timeEntries]);
+  }, [timeEntries, scopeEmployeeId]);
 
   const hasRealData = initialLoadComplete && Array.isArray(timeEntries) && timeEntries.length > 0;
 
@@ -1775,7 +1785,17 @@ const TimeClockEntry = () => {
           <LiveClock ind={ind} live={hasRealData} />
         </TickerCell>
         <TickerCell ind={ind} label={t('timeClock.thisWeek', 'This Week')} value={`${weekTotal.toFixed(1)}h`} />
-        <TickerCell ind={ind} label={t('timeClock.thisMonth', 'This Month')} value={`${monthTotal.toFixed(1)}h`} />
+        <TickerCell ind={ind}>
+          <FlatListbox ind={ind} onDark value={summaryPeriod}
+            onChange={(event) => setSummaryPeriod(event.target.value)}
+            aria-label={t('reports.period', 'Period')}>
+            <option value="month">{t('timeClock.thisMonth', 'This Month')}</option>
+            <option value="quarter">{t('timeClock.thisQuarter', 'This Quarter')}</option>
+          </FlatListbox>
+          <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 22, marginLeft: 8 }}>
+            {attendanceByPeriod[summaryPeriod].total_hours.toFixed(1)}h
+          </span>
+        </TickerCell>
         <TickerCell
           ind={ind}
           label={t('timeClock.awaitingApproval', 'Awaiting approval')}
@@ -1783,11 +1803,11 @@ const TimeClockEntry = () => {
           // The one figure on the strip that asks somebody to decide.
           valueColor={boardStats.pending > 0 ? ind.tickerUp : undefined}
         />
-        <TickerCell ind={ind} label={t('timeClock.missingProof', 'Missing proof')} value={boardStats.missingProof} />
+        {showMissingProof && <TickerCell ind={ind} label={t('timeClock.missingProof', 'Missing proof')} value={boardStats.missingProof} />}
         <TickerCell
           ind={ind}
-          label={t('timeClock.leaveDays', 'Leave Days')}
-          value={`${leaveWeek.toFixed(1)}${t('timeClock.dayShort', 'd')}`}
+          label={t(summaryPeriod === 'quarter' ? 'timeClock.quarterLeave' : 'timeClock.monthLeave', summaryPeriod === 'quarter' ? 'Leave this quarter' : 'Leave this month')}
+          value={`${attendanceByPeriod[summaryPeriod].leave_days.toFixed(1)}${t('timeClock.dayShort', 'd')}`}
         />
 
         <div
@@ -1797,6 +1817,16 @@ const TimeClockEntry = () => {
             borderLeft: `1px solid ${ind.tickerRule}`,
           }}
         >
+          <button type="button" aria-pressed={showMissingProof}
+            aria-label={t('timeClock.showMissingProof', 'Show missing proof')}
+            title={t('timeClock.showMissingProof', 'Show missing proof')}
+            onClick={() => {
+              setShowMissingProof(!showMissingProof);
+              try { localStorage.setItem('time-clock-show-missing-proof', String(!showMissingProof)); } catch { /* storage unavailable */ }
+            }}
+            style={{ background: 'none', border: 0, color: ind.tickerInk, cursor: 'pointer', padding: 6 }}>
+            {showMissingProof ? <Eye size={15} /> : <EyeOff size={15} />}
+          </button>
           <FetchElapsedPill active={loading} isDarkMode label={t('common.fetching', 'Fetching')} />
           {canManageTimeTracking ? (
             <FlatListbox
@@ -1806,7 +1836,6 @@ const TimeClockEntry = () => {
               onChange={(e) => {
                 setSelectedEmployeeFilter(e.target.value);
                 setBulkOpen(false);
-                setTimeout(() => fetchTimeEntries(), 100);
               }}
               aria-label={t('timeClock.viewEntries', 'View Entries')}
               style={{ maxWidth: 220 }}
@@ -2197,6 +2226,50 @@ const TimeClockEntry = () => {
                     </div>
                   )}
 
+                  {editingEntryId && (
+                    <div role="group" aria-label={t('timeClock.editEntry', 'Edit time entry')}
+                      style={{ padding: 14, marginTop: 14, background: ind.accentWash, border: `1px solid ${ind.hairline}` }}>
+                      <div style={{ ...captionStyle, marginBottom: 10 }}>
+                        {t('timeClock.editEntry', 'Edit time entry')} · {timeEntries.find((entry) => entry.id === editingEntryId)?.employee_name || ''}
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3" style={{ gap: 12 }}>
+                        <label style={captionStyle}>{t('timeClock.date', 'Date')}
+                          <DatePicker flat value={editForm.date} disabled={Boolean(savingEntryId)}
+                            onChange={(event) => setEditForm((prev) => ({ ...prev, date: event.target.value }))} />
+                        </label>
+                        <label style={captionStyle}>{t('timeClock.clockIn', 'Clock In')}
+                          <TimePicker flat value={editForm.clockIn} disabled={Boolean(savingEntryId) || editForm.hourType === 'on_leave'}
+                            aria-label={t('timeClock.clockIn', 'Clock In')}
+                            onChange={(event) => handleEditTimeChange('clockIn', event.target.value)} />
+                        </label>
+                        <label style={captionStyle}>{t('timeClock.clockOut', 'Clock Out')}
+                          <TimePicker flat value={editForm.clockOut} disabled={Boolean(savingEntryId) || editForm.hourType === 'on_leave'}
+                            aria-label={t('timeClock.clockOut', 'Clock Out')}
+                            onChange={(event) => handleEditTimeChange('clockOut', event.target.value)} />
+                        </label>
+                        <label style={captionStyle}>{t('timeClock.hours', 'Hours')}
+                          <input type="number" min="0" step="0.25" value={editForm.hours}
+                            disabled={Boolean(savingEntryId) || editForm.hourType === 'on_leave'}
+                            onChange={(event) => handleEditHoursChange(event.target.value)}
+                            className={editInputClass} style={{ ...editInputStyle, width: '100%' }} />
+                        </label>
+                        <label style={captionStyle}>{t('timeClock.type', 'Type')}
+                          <FlatListbox ind={ind} value={editForm.hourType} disabled={Boolean(savingEntryId)}
+                            onChange={(event) => handleEditTypeChange(event.target.value)}
+                            style={{ ...editInputStyle, width: '100%' }}>
+                            {hourTypes.map((type) => <option key={type.value} value={type.value}>{type.label}</option>)}
+                          </FlatListbox>
+                        </label>
+                      </div>
+                      <div className="flex justify-end" style={{ gap: 8, marginTop: 14 }}>
+                        <Btn ind={ind} onClick={cancelEditEntry} disabled={Boolean(savingEntryId)}>{t('common.cancel', 'Cancel')}</Btn>
+                        <Btn ind={ind} variant="primary" onClick={saveEditEntry} disabled={Boolean(savingEntryId)}>
+                          {savingEntryId ? t('common.saving', 'Saving...') : t('common.save', 'Save')}
+                        </Btn>
+                      </div>
+                    </div>
+                  )}
+
                   {getSortedEntries.length === 0 ? (
                     <div style={{ padding: '48px 0', textAlign: 'center' }}>
                       <Clock size={28} strokeWidth={1} style={{ color: ind.inkFaint, margin: '0 auto 10px' }} />
@@ -2234,7 +2307,7 @@ const TimeClockEntry = () => {
                           </tr>
                         </thead>
                         <tbody>
-                          {getSortedEntries.map((entry) => {
+                          {visibleHistory.map((entry) => {
                             const isEditing = editingEntryId === entry.id;
                             const editable = canEditEntry(entry);
                             const entryType = entry.hour_type || entry.hourType;
@@ -2246,20 +2319,9 @@ const TimeClockEntry = () => {
                             return (
                               <tr key={entry.id} style={isEditing ? { background: ind.accentWash } : undefined}>
                                 <td style={{ ...tdStyle, fontFamily: DISPLAY, fontWeight: 600, fontSize: 13, fontVariantNumeric: 'tabular-nums' }}>
-                                  {isEditing ? (
-                                    <DatePicker
-                                      flat
-                                      value={editForm.date}
-                                      onChange={(e) => setEditForm((prev) => ({ ...prev, date: e.target.value }))}
-                                    />
-                                  ) : (
-                                    <>
-                                      {entry.date || formatDate(entry.created_at, currentLanguage)}
-                                      {/* Stand-ins for the columns this viewport dropped */}
-                                      <StackedDetail showUntil="md" label={t('timeClock.type', 'Type')} value={typeLabel} />
-                                      <StackedDetail showUntil="lg" label={t('timeClock.time', 'Time')} value={timeText} />
-                                    </>
-                                  )}
+                                  {entry.date || formatDate(entry.created_at, currentLanguage)}
+                                  <StackedDetail showUntil="md" label={t('timeClock.type', 'Type')} value={typeLabel} />
+                                  <StackedDetail showUntil="lg" label={t('timeClock.time', 'Time')} value={timeText} />
                                 </td>
 
                                 {showEmployeeColumn && (
@@ -2274,54 +2336,15 @@ const TimeClockEntry = () => {
                                 )}
 
                                 <td className={colTimeClass} style={{ ...tdStyle, color: ind.inkGhost }}>
-                                  {isEditing ? (
-                                    editForm.hourType === 'on_leave' ? '—' : (
-                                      <div className="flex items-center" style={{ gap: 4 }}>
-                                        <TimePicker flat value={editForm.clockIn} onChange={(e) => handleEditTimeChange('clockIn', e.target.value)} />
-                                        <TimePicker flat value={editForm.clockOut} onChange={(e) => handleEditTimeChange('clockOut', e.target.value)} />
-                                      </div>
-                                    )
-                                  ) : timeText}
+                                  {timeText}
                                 </td>
 
                                 <td style={{ ...tdStyle, fontFamily: DISPLAY, fontWeight: 600, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                                  {isEditing ? (
-                                    <input
-                                      type="number"
-                                      min="0"
-                                      step="0.25"
-                                      value={editForm.hours}
-                                      disabled={editForm.hourType === 'on_leave'}
-                                      onChange={(e) => handleEditHoursChange(e.target.value)}
-                                      className={cn(editInputClass, 'text-right')}
-                                      style={editInputStyle}
-                                    />
-                                  ) : Number(entry.hours || 0).toFixed(1)}
+                                  {Number(entry.hours || 0).toFixed(1)}
                                 </td>
 
                                 <td className={colTypeClass} style={tdStyle}>
-                                  {isEditing ? (
-                                    <FlatListbox
-                                      ind={ind}
-                                      value={editForm.hourType}
-                                      onChange={(e) => handleEditTypeChange(e.target.value)}
-                                      aria-label={t('timeClock.type', 'Type')}
-                                      style={{
-                                        ...editInputStyle,
-                                        width: '100%',
-                                        minWidth: '7rem',
-                                        padding: '4px 8px',
-                                        textTransform: 'none',
-                                        letterSpacing: '.02em',
-                                      }}
-                                    >
-                                      {hourTypes.map((type) => (
-                                        <option key={type.value} value={type.value}>{type.label}</option>
-                                      ))}
-                                    </FlatListbox>
-                                  ) : (
-                                    <span style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkGhost }}>{typeLabel}</span>
-                                  )}
+                                  <span style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkGhost }}>{typeLabel}</span>
                                 </td>
 
                                 <td style={tdStyle}>
@@ -2405,25 +2428,6 @@ const TimeClockEntry = () => {
 
                                 <td style={{ ...tdStyle, textAlign: 'right' }}>
                                   <div className="flex items-center justify-end" style={{ gap: 4 }}>
-                                    {isEditing ? (
-                                      <>
-                                        <button
-                                          type="button"
-                                          onClick={saveEditEntry}
-                                          disabled={savingEntryId === entry.id}
-                                          title={t('common.save', 'Save')}
-                                          style={iconBtnStyle}
-                                        >
-                                          {savingEntryId === entry.id
-                                            ? <Loader2 size={12} className="animate-spin" />
-                                            : <Check size={12} strokeWidth={1.5} />}
-                                        </button>
-                                        <button type="button" onClick={cancelEditEntry} title={t('common.cancel', 'Cancel')} style={iconBtnStyle}>
-                                          <X size={12} strokeWidth={1.5} />
-                                        </button>
-                                      </>
-                                    ) : (
-                                      <>
                                         {entry.status === 'pending' && canApprove(entry) && (
                                           <button
                                             type="button"
@@ -2452,8 +2456,6 @@ const TimeClockEntry = () => {
                                             <X size={12} strokeWidth={1.5} />
                                           </button>
                                         )}
-                                      </>
-                                    )}
                                   </div>
                                 </td>
                               </tr>
@@ -2472,10 +2474,15 @@ const TimeClockEntry = () => {
                   >
                     <span style={{ fontFamily: BODY, fontSize: 11.5, color: ind.inkFaint }}>
                       {t('timeClock.showingCount', 'Showing {n} of {total} entries')
-                        .replace('{n}', String(getSortedEntries.length))
-                        .replace('{total}', String(Array.isArray(timeEntries) ? timeEntries.length : 0))}
+                        .replace('{n}', String(visibleHistory.length))
+                        .replace('{total}', String(getSortedEntries.length))}
                       {ledgerRangeLabel && ` · ${ledgerRangeLabel}`}
                     </span>
+                    {historyLimit < getSortedEntries.length && (
+                      <Btn ind={ind} onClick={() => setHistoryLimit((limit) => limit + 50)}>
+                        {t('common.loadMore', 'Load more')}
+                      </Btn>
+                    )}
                     {(statusFilter !== 'all' || reviewMode) && (
                       <button
                         type="button"

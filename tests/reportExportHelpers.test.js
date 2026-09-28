@@ -235,8 +235,8 @@ test('highlighted PDF section heading draws a pale card band with inset text', (
   layout.sectionHeading('LEAVE REQUESTS', { fillColor: PDF_TOKENS.leaveHighlight });
 
   assert.deepEqual(fills, [PDF_TOKENS.leaveHighlight]);
-  assert.equal(roundedRectangles.length, 1);
+  assert.equal(roundedRectangles.length, 0);
   assert.equal(rectangles.length, 1);
-  assert.equal(drawnText[0][1], PDF_TOKENS.margin + 4);
-  assert.equal(fittedWidths[0], 210 - (PDF_TOKENS.margin * 2) - 8);
+  assert.equal(drawnText[0][1], PDF_TOKENS.margin + PDF_TOKENS.cellPadding);
+  assert.equal(fittedWidths[0], 210 - (PDF_TOKENS.margin * 2) - PDF_TOKENS.cellPadding * 2);
 });
