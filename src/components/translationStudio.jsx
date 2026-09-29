@@ -1,7 +1,6 @@
 import _React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertTriangle,
-  Bell,
   Check,
   Download,
   Languages,
@@ -736,13 +735,12 @@ const TranslationStudio = () => {
       </TickerCell>
       <TickerCell ind={ind} label={t('translationStudio.strings', 'Strings')} value={entries.length} />
       <TickerCell ind={ind} label={t('translationStudio.inQueue', 'In queue')} value={visible.length} />
-      <TickerCell ind={ind}>
-        <span role="status" title={t('translationStudio.pendingHint', 'Fields still missing translations')}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-          <Bell size={15} aria-hidden="true" />
-          {t('translationStudio.pending', 'To translate')} ({pendingCount})
-        </span>
-      </TickerCell>
+      <TickerCell
+        ind={ind}
+        label={t('translationStudio.pending', 'To translate')}
+        value={pendingCount}
+        title={t('translationStudio.pendingHint', 'Fields still missing translations')}
+      />
       <TickerCell ind={ind} label={t('translationStudio.locales', 'Locales')} value={targetLocaleCount} />
       <TickerCell
         ind={ind}

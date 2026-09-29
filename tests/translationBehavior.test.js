@@ -76,6 +76,13 @@ test('Personal Goals formats goal dates in the UI language', () => {
   assert.doesNotMatch(personalGoals, /toLocaleDateString\(undefined/);
 });
 
+test('Translation Studio pending count uses the industry ticker cell', () => {
+  const studio = source('src/components/translationStudio.jsx');
+  assert.match(studio, /label=\{t\('translationStudio.pending'/);
+  assert.match(studio, /value=\{pendingCount\}/);
+  assert.doesNotMatch(studio, /<Bell\b/);
+});
+
 test('segmented controls wrap instead of overflowing their panel', () => {
   const industry = source('src/components/ui/industry.jsx');
   assert.match(industry, /flexWrap:\s*['"]wrap['"]/);
