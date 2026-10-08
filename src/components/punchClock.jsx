@@ -27,9 +27,9 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { RefreshCw, ArrowRight, AlertCircle, X } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext.jsx';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
-import { useAuth } from '../contexts/AuthContext.jsx';
 import * as timeTrackingService from '../services/timeTrackingService.js';
-import * as punchClockService from '../services/punchClockService.js';
+import { usePunchSession } from '../contexts/PunchSessionContext.js';
+import { minutesToClock as minToClock } from '../utils/punchSession.js';
 import { validateAndRefreshSession } from '../utils/sessionHelper.js';
 import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
 import { isDemoMode, getDemoEmployeeName } from '../utils/demoHelper.js';
@@ -58,8 +58,6 @@ const CONTRACT_DAY_MIN = 8 * 60;
 const CHART_MAX_MIN = CONTRACT_DAY_MIN / 0.8;
 const CONTRACT_WEEK_MIN = 40 * 60;
 
-const SESSION_KEY = (employeeId) => `punchclock.session.${employeeId}`;
-
 /* ------------------------------------------------------------------ *
  * Time helpers — everything internal is "minutes since midnight"
  * ------------------------------------------------------------------ */
@@ -77,7 +75,6 @@ function toMin(value) {
   return h * 60 + min;
 }
 
-const minToClock = (min) => `${pad2(Math.floor(min / 60) % 24)}:${pad2(Math.round(min) % 60)}`;
 const nowMin = (d) => d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60;
 const isoDate = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 
@@ -92,35 +89,6 @@ function durLabel(min) {
 /** Position on the 08–19 axis, clamped, as a 0–100 percentage. */
 const axisPct = (min) =>
   Math.max(0, Math.min(100, ((min - AXIS_START_MIN) / AXIS_SPAN_MIN) * 100));
-
-/* ------------------------------------------------------------------ *
- * Session — the one piece of state the schema cannot hold
- * ------------------------------------------------------------------ */
-
-function readSession(employeeId, today) {
-  if (!employeeId || typeof window === 'undefined') return null;
-  try {
-    const raw = window.localStorage.getItem(SESSION_KEY(employeeId));
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    // A session never survives midnight; a forgotten punch-out is the floor
-    // supervisor's problem, not something to silently carry into a new day.
-    if (!parsed || parsed.date !== today) return null;
-    return parsed;
-  } catch {
-    return null;
-  }
-}
-
-function writeSession(employeeId, session) {
-  if (!employeeId || typeof window === 'undefined') return;
-  try {
-    if (session) window.localStorage.setItem(SESSION_KEY(employeeId), JSON.stringify(session));
-    else window.localStorage.removeItem(SESSION_KEY(employeeId));
-  } catch {
-    /* storage full or blocked — the screen still works, it just forgets */
-  }
-}
 
 /**
  * Splits a session into the worked and break intervals that both the day strip
@@ -364,7 +332,6 @@ function QueuedRow({ ind, title, meta, onClick }) {
  * ------------------------------------------------------------------ */
 
 const PunchClock = ({ employees = [], allEmployees = [], showNotes = false }) => {
-  const { user } = useAuth();
   const { isDarkMode } = useTheme();
   const { t, currentLanguage } = useLanguage();
   const { handleSessionAuthError } = useSessionGuard();
@@ -378,71 +345,14 @@ const PunchClock = ({ employees = [], allEmployees = [], showNotes = false }) =>
   const [scope, setScope] = useState('mine');
   const [tick, setTick] = useState(() => new Date());
 
-  const employeeId = String(user?.employeeId || user?.id || '');
+  const { employeeId, session, commit: saveSession, busy: syncBusy } = usePunchSession();
   const today = useMemo(() => isoDate(tick), [tick]);
-  const [session, setSession] = useState(() => readSession(employeeId, isoDate(new Date())));
 
   // One interval drives every live figure on the screen.
   useEffect(() => {
     const id = setInterval(() => setTick(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
-
-  /**
-   * Restore the open punch whenever the identity or the day changes.
-   *
-   * Two sources, in this order:
-   *
-   *   localStorage  instant, so the clock is already running on the first paint
-   *                 and there is no flash of "not punched in". The useState
-   *                 initialiser above only runs once, with whatever `employeeId`
-   *                 held at that instant, so reading again here is what removes
-   *                 the assumption that auth had already rehydrated the user
-   *                 before this screen mounted — after an idle logout it has
-   *                 not, and the punch used to sit in storage with a stopped
-   *                 clock on screen.
-   *
-   *   open_punches  authoritative, because it is the only copy that survives a
-   *                 different browser or machine, or cleared site data. It wins
-   *                 when both exist, and when only the local copy exists it gets
-   *                 pushed up — that is the punch that was started while the
-   *                 table was unreachable.
-   *
-   * Elapsed time is measured from `clockIn` against the wall clock, so putting
-   * the session back is all it takes for time away to be counted.
-   */
-  useEffect(() => {
-    if (!employeeId) return undefined;
-
-    const local = readSession(employeeId, today);
-    setSession((current) => {
-      if (local) return local;
-      // Nothing stored for this identity and day: drop anything held in memory
-      // from a previous one, which is also what rolls a session over at midnight.
-      return current && current.date === today ? current : null;
-    });
-
-    let cancelled = false;
-    (async () => {
-      const result = await punchClockService.getOpenPunch(employeeId, today);
-      if (cancelled || !result.success) return;
-
-      if (result.data) {
-        setSession(result.data);
-        writeSession(employeeId, result.data);
-      } else if (local) {
-        // Started on this device while the table was out of reach. Publish it
-        // rather than letting the next machine find nothing.
-        punchClockService.saveOpenPunch(employeeId, local);
-      } else if (result.stale) {
-        // A punch from an earlier day. The screen never resumes one, and leaving
-        // the row behind would keep answering this query for ever.
-        punchClockService.clearOpenPunch(employeeId);
-      }
-    })();
-
-    return () => { cancelled = true; };
-  }, [employeeId, today]);
 
   const now = nowMin(tick);
 
@@ -691,24 +601,12 @@ const PunchClock = ({ employees = [], allEmployees = [], showNotes = false }) =>
 
   /* ---------------- actions ---------------- */
 
-  /**
-   * The one way the punch changes. Writes both copies: localStorage first
-   * because it is synchronous and the screen reads it back on the next mount,
-   * then the table, which is what another machine will find. A failed write to
-   * the table is logged rather than surfaced — the punch is safe locally either
-   * way, and interrupting someone clocking on to report a sync problem would
-   * cost more than it explains.
-   */
+  // The global reminder and this screen use the same live punch and mirror.
   const commit = useCallback((next) => {
-    setSession(next);
-    writeSession(employeeId, next);
-    const remote = next
-      ? punchClockService.saveOpenPunch(employeeId, next)
-      : punchClockService.clearOpenPunch(employeeId);
-    remote.then((result) => {
+    saveSession(next).then((result) => {
       if (!result?.success) console.warn('Open punch did not reach the server:', result?.error);
     });
-  }, [employeeId]);
+  }, [saveSession]);
 
   const handlePunchIn = useCallback(() => {
     if (!employeeId) {
@@ -729,7 +627,7 @@ const PunchClock = ({ employees = [], allEmployees = [], showNotes = false }) =>
   }, [commit, session, now]);
 
   const handlePunchOut = useCallback(async () => {
-    if (!session || busy) return;
+    if (!session || busy || syncBusy) return;
     setBusy(true);
     try {
       const closed = { ...session, breaks: (session.breaks || []).map((b) => (b.end == null ? { ...b, end: Math.round(now) } : b)) };
@@ -761,7 +659,7 @@ const PunchClock = ({ employees = [], allEmployees = [], showNotes = false }) =>
     } finally {
       setBusy(false);
     }
-  }, [session, busy, now, employeeId, today, breakMin, commit, fetchAll, t]);
+  }, [session, busy, syncBusy, now, employeeId, today, breakMin, commit, fetchAll, t]);
 
   /* ---------------- presentation helpers ---------------- */
 
@@ -940,7 +838,7 @@ const PunchClock = ({ employees = [], allEmployees = [], showNotes = false }) =>
                 </div>
                 <div className="flex items-center" style={{ gap: 8 }}>
                   {punchedIn && (
-                    <Btn ind={ind} onClick={handleBreak} style={{ padding: '10px 18px' }}>
+                    <Btn ind={ind} onClick={handleBreak} disabled={busy || syncBusy} style={{ padding: '10px 18px' }}>
                       {onBreak ? t('punchClock.endBreak', 'End break') : t('punchClock.startBreak', 'Start break')}
                     </Btn>
                   )}
@@ -948,7 +846,7 @@ const PunchClock = ({ employees = [], allEmployees = [], showNotes = false }) =>
                   <Btn
                     ind={ind}
                     variant="primary"
-                    disabled={busy}
+                    disabled={busy || syncBusy}
                     onClick={punchedIn ? handlePunchOut : handlePunchIn}
                     style={{ padding: '10px 30px', fontSize: 15 }}
                   >

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Sun, Moon } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion as Motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../contexts/ThemeContext';
 import { cn } from '@/lib/utils';
 
@@ -29,7 +29,7 @@ const ThemeToggle = ({ variant = 'default' }) => {
     >
       <AnimatePresence mode="wait" initial={false}>
         {isDarkMode ? (
-          <motion.div
+          <Motion.div
             key="moon"
             initial={{ opacity: 0, rotate: -360 }}
             animate={{ opacity: 1, rotate: 0 }}
@@ -37,9 +37,9 @@ const ThemeToggle = ({ variant = 'default' }) => {
             transition={{ duration: 0.5, ease: 'easeInOut' }}
           >
             <Moon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-          </motion.div>
+          </Motion.div>
         ) : (
-          <motion.div
+          <Motion.div
             key="sun"
             initial={{ opacity: 0, rotate: 360 }}
             animate={{ opacity: 1, rotate: 0 }}
@@ -47,7 +47,7 @@ const ThemeToggle = ({ variant = 'default' }) => {
             transition={{ duration: 0.5, ease: 'easeInOut' }}
           >
             <Sun className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-          </motion.div>
+          </Motion.div>
         )}
       </AnimatePresence>
     </button>

@@ -14,6 +14,8 @@ import ErrorBoundary from './components/ErrorBoundary.jsx'
 import { AuthProvider } from './contexts/AuthProvider.jsx'
 import { LanguageProvider } from './contexts/LanguageContext'
 import { ThemeProvider } from './contexts/ThemeContext'
+import { PunchSessionProvider } from './contexts/PunchSessionProvider.jsx'
+import ManualTranslationLoader from './contexts/ManualTranslationLoader.jsx'
 
 // Suppress browser extension errors
 window.addEventListener('error', (e) => {
@@ -38,7 +40,10 @@ createRoot(document.getElementById('root')).render(
       <ThemeProvider>
         <ErrorBoundary>
           <AuthProvider>
-            <App />
+            <ManualTranslationLoader />
+            <PunchSessionProvider>
+              <App />
+            </PunchSessionProvider>
           </AuthProvider>
         </ErrorBoundary>
       </ThemeProvider>

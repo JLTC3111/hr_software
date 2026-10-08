@@ -1,9 +1,5 @@
 import _React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
-import { prepareTranslation, setManualTranslations } from '../services/translateService.js';
-import {
-  buildTranslationIndex,
-  fetchLocaleTranslations,
-} from '../services/ugcTranslationService.js';
+import { prepareTranslation } from '../services/translateService.js';
 
 const LanguageContext = createContext();
 
@@ -81,27 +77,6 @@ export const LanguageProvider = ({ children }) => {
     return () => { cancelled = true; };
   }, [currentLanguage]);
 
-  // Install the hand-authored UGC overrides for this language.
-  //
-  // Separate from the UI translation bundles above: those ship with the app and
-  // cover fixed chrome, these are database rows covering text employees typed.
-  // A failure here is not fatal — every string falls back to its on-device
-  // machine translation, and then to the original.
-  useEffect(() => {
-    let cancelled = false;
-
-    fetchLocaleTranslations(currentLanguage)
-      .then(({ success, data }) => {
-        if (cancelled) return;
-        setManualTranslations(currentLanguage, buildTranslationIndex(success ? data : []));
-      })
-      .catch(() => {
-        if (!cancelled) setManualTranslations(currentLanguage, null);
-      });
-
-    return () => { cancelled = true; };
-  }, [currentLanguage, overridesVersion]);
-
   // Tell the document what language it is in. Without this the <html> element
   // stays lang="en" whatever the user picks, which is what screen readers,
   // hyphenation and the browser's own translate prompt actually read.
@@ -165,8 +140,9 @@ export const LanguageProvider = ({ children }) => {
     languages: SUPPORTED_LANGUAGES,
     isRTL: currentLanguage === 'ar', // Add if Arabic support needed
     isChanging,
-    refreshManualTranslations
-  }), [currentLanguage, changeLanguage, t, isChanging, refreshManualTranslations]);
+    refreshManualTranslations,
+    manualTranslationsVersion: overridesVersion,
+  }), [currentLanguage, changeLanguage, t, isChanging, refreshManualTranslations, overridesVersion]);
 
   return (
     <LanguageContext.Provider value={value}>

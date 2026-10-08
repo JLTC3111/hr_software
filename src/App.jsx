@@ -15,6 +15,7 @@ import Sidebar from './components/sidebar.jsx';
 import Login from './components/login.jsx';
 import EmployeeModal from './components/employeeModal.jsx';
 import RouteErrorBoundary from './components/RouteErrorBoundary.jsx';
+import AttendanceReminder from './components/attendanceReminder.jsx';
 import { filterActiveEmployees } from './utils/employeeStatus.js';
 import { lazyWithRetry } from './utils/lazyWithRetry.js';
 
@@ -496,6 +497,7 @@ const AppContent = ({ employees, activeEmployees, applications, selectedEmployee
                   await refetchEmployees();
                 }}
               />
+              <AttendanceReminder />
             </div>
           ) : (
             <RedirectToLogin />

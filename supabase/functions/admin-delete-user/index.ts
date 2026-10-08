@@ -13,6 +13,10 @@ const jsonResponse = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
+const isAbsentOptionalTable = (error: { code?: string; message?: string }, table: string) =>
+  ["42P01", "PGRST205"].includes(error.code || "")
+  && new RegExp(`["'](?:public\\.)?${table}["']`).test(error.message || "");
+
 Deno.serve(async (request: Request) => {
   if (request.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -76,7 +80,12 @@ Deno.serve(async (request: Request) => {
       adminClient.from("phase_milestones").update({ assigned_to: null }).in("assigned_to", authUserIds),
       adminClient.from("phase_resources").update({ uploaded_by: null }).in("uploaded_by", authUserIds),
     ]);
-    const referenceError = referenceUpdates.find(result => result.error)?.error;
+    // Phase tables belong to the shared project's other applications and are
+    // absent in an HR-only installation. Only an absent relation is optional:
+    // permissions, missing columns and connection errors must still stop deletion.
+    const optionalTables = [null, "phase_milestones", "phase_resources"];
+    const referenceError = referenceUpdates.find((result, index) => result.error
+      && !(optionalTables[index] && isAbsentOptionalTable(result.error, optionalTables[index]!)))?.error;
     if (referenceError) throw referenceError;
 
     for (const authUserId of authUserIds) {

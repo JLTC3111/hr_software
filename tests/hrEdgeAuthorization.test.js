@@ -122,3 +122,48 @@ test('actual delete handler removes every target login alias after resolving the
   assert.equal(clearedReferences.length, 3);
   for (const call of clearedReferences) assert.deepEqual(call.args[1], ['target-one', 'target-two']);
 });
+
+for (const code of ['42P01', 'PGRST205']) {
+  test(`actual delete handler supports an HR-only database with absent optional tables (${code})`, async () => {
+    const errors = Object.fromEntries(['phase_milestones', 'phase_resources'].map(table => [table,
+      { code, message: code === '42P01' ? `relation "public.${table}" does not exist` : `Could not find the table 'public.${table}' in the schema cache` },
+    ]));
+    const client = queryFixture({ hr_users: [profile, { id: 'target' }], user_emails: [actorLink] }, errors);
+    const deleted = [];
+    client.admin = { deleteUser: async id => { deleted.push(id); return { error: null }; } };
+    const result = await edgeHandler('admin-delete-user', client)(request({ userId: 'target' }));
+    assert.equal(result.status, 200);
+    assert.deepEqual(deleted, ['target']);
+  });
+}
+
+for (const [table, error] of [
+  ['visits', { code: '42P01', message: 'relation "public.visits" does not exist' }],
+  ['phase_resources', { code: '42501', message: 'Permission denied' }],
+  ['phase_milestones', { code: 'PGRST204', message: 'Missing assigned_to column' }],
+  ['phase_milestones', { code: '42P01', message: 'relation "public.required_dependency" does not exist' }],
+]) {
+  test(`actual delete handler rejects genuine reference cleanup failure: ${table} ${error.code}`, async () => {
+    const client = queryFixture({ hr_users: [profile, { id: 'target' }], user_emails: [actorLink] }, { [table]: error });
+    let deleted = false;
+    client.admin = { deleteUser: async () => { deleted = true; return { error: null }; } };
+    const result = await edgeHandler('admin-delete-user', client)(request({ userId: 'target' }));
+    assert.equal(result.status, 500);
+    assert.equal(deleted, false);
+  });
+}
+
+test('actual record-visit handler returns success only after a successful insert', async () => {
+  for (const fail of [false, true]) {
+    const client = queryFixture({}, fail ? { visits: { code: 'PGRST204', message: 'Schema unavailable' } } : {});
+    const result = await edgeHandler('record-visit', client)(new Request('https://fixture.test/function', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'x-real-ip': '192.0.2.7' },
+      body: JSON.stringify({ path: '/dashboard' }),
+    }));
+    assert.equal(result.status, fail ? 500 : 204);
+    const payload = client.calls.find(call => call.method === 'insert').args[0];
+    assert.equal(payload.anonymized_ip, '192.0.2.0');
+    assert.equal(payload.path, '/dashboard');
+    if (fail) assert.equal((await result.json()).success, false);
+  }
+});

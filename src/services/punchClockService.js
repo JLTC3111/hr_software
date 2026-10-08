@@ -23,6 +23,7 @@
 import { supabase } from '../config/supabaseClient';
 import { isDemoMode } from '../utils/demoHelper';
 import { withTimeout } from '../utils/supabaseTimeout.js';
+import { fetchAllRows } from '../utils/fetchAllRows.js';
 
 const toEmployeeId = (id) => (id ? String(id) : null);
 
@@ -155,9 +156,9 @@ export const getOpenPunches = async (today) => {
   if (isDemoMode()) return { success: true, data: [] };
 
   try {
-    let query = supabase.from('open_punches').select('employee_id, date, clock_in, breaks');
+    let query = supabase.from('open_punches').select('employee_id, date, clock_in, breaks', { count: 'exact' });
     if (today) query = query.eq('date', today);
-    const { data, error } = await withTimeout(query);
+    const { data, error } = await fetchAllRows(query, { orderBy: 'employee_id', run: withTimeout });
     if (error) throw error;
     return {
       success: true,

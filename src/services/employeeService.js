@@ -1,4 +1,5 @@
 import { supabase } from '../config/supabaseClient.js';
+import { fetchAllRows } from '../utils/fetchAllRows.js';
 import { withTimeout } from '../utils/supabaseTimeout.js';
 import { DEFAULT_REQUEST_TIMEOUT } from '../config/requestTimeouts.js';
 import { isDemoMode, MOCK_EMPLOYEES, getDemoEmployees, addDemoEmployee, updateDemoEmployee, deleteDemoEmployee, getDemoEmployeeById } from '../utils/demoHelper.js';
@@ -158,7 +159,7 @@ export const getAllEmployees = async (filters = {}) => {
   try {
     let query = supabase
       .from('employees')
-      .select(EMPLOYEE_LIST_COLUMNS)
+      .select(EMPLOYEE_LIST_COLUMNS, { count: 'exact' })
       .order('name');
 
     // Apply filters
@@ -172,7 +173,9 @@ export const getAllEmployees = async (filters = {}) => {
       query = query.eq('position', filters.position);
     }
 
-    const { data, error } = await withTimeout(query, DEFAULT_REQUEST_TIMEOUT);
+    const { data, error } = await fetchAllRows(query, {
+      run: page => withTimeout(page, DEFAULT_REQUEST_TIMEOUT),
+    });
 
     if (error) throw error;
 
@@ -244,13 +247,13 @@ export const getEmployeePhotos = async () => {
   const cache = photoCache;
   cache.inflight = (async () => {
     try {
-      const { data, error } = await withTimeout(supabase
+      const { data, error } = await fetchAllRows(supabase
         .from('employees')
         .select(`
           id,
           photo,
           hr_user:hr_users!employee_id(avatar_url)
-        `), DEFAULT_REQUEST_TIMEOUT);
+        `, { count: 'exact' }), { run: page => withTimeout(page, DEFAULT_REQUEST_TIMEOUT) });
 
       if (error) throw error;
       if (cache !== photoCache) return { success: false, data: {}, error: 'Portrait request superseded' };
@@ -619,11 +622,11 @@ export const deleteEmployee = async (employeeId) => {
  */
 export const searchEmployees = async (searchTerm) => {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await fetchAllRows(supabase
       .from('employees')
-      .select('*')
+      .select('*', { count: 'exact' })
       .or(`name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`)
-      .order('name');
+      .order('name'));
 
     if (error) throw error;
     return { success: true, data };
@@ -638,11 +641,11 @@ export const searchEmployees = async (searchTerm) => {
  */
 export const getEmployeesByDepartment = async (department) => {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await fetchAllRows(supabase
       .from('employees')
-      .select('*')
+      .select('*', { count: 'exact' })
       .eq('department', department)
-      .order('name');
+      .order('name'));
 
     if (error) throw error;
     return { success: true, data };
@@ -657,11 +660,11 @@ export const getEmployeesByDepartment = async (department) => {
  */
 export const getEmployeesByStatus = async (status) => {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await fetchAllRows(supabase
       .from('employees')
-      .select('*')
+      .select('*', { count: 'exact' })
       .eq('status', status)
-      .order('name');
+      .order('name'));
 
     if (error) throw error;
     return { success: true, data };
@@ -1296,10 +1299,10 @@ export const getEmployeeStats = async () => {
  */
 export const getDepartmentDistribution = async () => {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await fetchAllRows(supabase
       .from('employees')
-      .select('department')
-      .eq('status', 'Active');
+      .select('department', { count: 'exact' })
+      .eq('status', 'Active'));
 
     if (error) throw error;
 

@@ -6,7 +6,7 @@
  * colour does not carry meaning.
  */
 import _React, { useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { motion as Motion } from 'framer-motion';
 import { Clock3, UploadCloud, BarChart3, CheckCircle2, FileBarChart } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { useTheme } from '../contexts/ThemeContext.jsx';
@@ -149,7 +149,7 @@ const FeatureShowcase = () => {
                 borderRadius: 0,
               }}
             />
-            <motion.div
+            <Motion.div
               className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
               animate={{ scale: [1, 1.02, 1] }}
               transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut' }}
@@ -166,10 +166,10 @@ const FeatureShowcase = () => {
                   {t('help.showcase.syncDesc', 'Entries, files, and goals update dashboards and reports instantly.')}
                 </p>
               </Blueprint>
-            </motion.div>
+            </Motion.div>
 
             {features.map((feature) => (
-              <motion.div
+              <Motion.div
                 key={feature.id}
                 className={`absolute ${feature.position} max-w-[250px]`}
                 initial={{ opacity: 0, y: 14, scale: 0.96 }}
@@ -189,10 +189,10 @@ const FeatureShowcase = () => {
                   </div>
                   <p style={{ ...caption, marginTop: 8 }}>{feature.description}</p>
                 </Blueprint>
-              </motion.div>
+              </Motion.div>
             ))}
 
-            <motion.div
+            <Motion.div
               className="absolute inset-0"
               animate={{ opacity: [0.35, 0.8, 0.35] }}
               transition={{ duration: 3.6, repeat: Infinity, ease: 'easeInOut' }}
@@ -202,7 +202,7 @@ const FeatureShowcase = () => {
               <div style={{ position: 'absolute', right: 40, top: 80, width: 64, height: 1, background: ind.hairline }} />
               <div style={{ position: 'absolute', left: 32, bottom: 64, width: 56, height: 1, background: ind.hairline }} />
               <div style={{ position: 'absolute', right: 24, bottom: 48, height: 40, width: 1, background: ind.hairline }} />
-            </motion.div>
+            </Motion.div>
           </div>
         </div>
         </div>

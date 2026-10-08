@@ -1,0 +1,43 @@
+.hr-mascot-widget, .hr-reminder-backdrop { --hr-ground:#f7f9fc; --hr-ink:#1d2d3d; --hr-muted:#526579; --hr-line:#dbe4ee; --hr-accent:#2d5f86; font-family:'Barlow',system-ui,sans-serif; }
+.hr-reminder-dark { --hr-ground:#1b2631; --hr-ink:#edf4fc; --hr-muted:#bbcadb; --hr-line:#35475a; --hr-accent:#9acbf0; }
+.hr-mascot-widget { position:fixed; right:20px; bottom:18px; z-index:40; display:flex; flex-direction:column; align-items:center; background:transparent; border:0; cursor:pointer; padding:0; color:var(--hr-ink); }
+.hr-mascot-widget img { object-fit:contain; filter:drop-shadow(0 5px 7px #14263a25); transition:transform .18s ease; }
+.hr-mascot-widget:hover img { transform:translateY(-4px); }
+.hr-mascot-widget>span { display:flex; align-items:center; gap:6px; padding:5px 9px; background:var(--hr-ground); border:1px solid var(--hr-line); border-radius:20px; font-size:11px; font-weight:600; box-shadow:0 2px 12px #14263a12; }
+.hr-reminder-backdrop { position:fixed; inset:0; z-index:90; display:grid; place-items:center; padding:20px; background:#0b192c73; backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); }
+.hr-reminder-dialog { position:relative; display:grid; grid-template-columns:43% 57%; width:100%; max-width:690px; max-height:calc(100dvh - 40px); overflow:auto; border:1px solid var(--hr-line); border-radius:22px; background:var(--hr-ground); color:var(--hr-ink); box-shadow:0 24px 100px #0b192c45; }
+.hr-reminder-close { position:absolute; top:14px; right:14px; z-index:1; display:grid; place-items:center; width:32px; height:32px; background:transparent; color:var(--hr-muted); border:1px solid var(--hr-line); border-radius:50%; cursor:pointer; }
+.hr-reminder-art { position:relative; display:flex; flex-direction:column; justify-content:center; align-items:center; overflow:hidden; min-height:365px; background:radial-gradient(ellipse at 50% 45%,#c1e2f8aa,transparent 70%); }
+.hr-reminder-dark .hr-reminder-art { background:radial-gradient(ellipse at 50% 45%,#376b98aa,transparent 70%); }
+.hr-reminder-art img { position:relative; z-index:1; width:100%; max-width:260px; height:auto; object-fit:contain; filter:drop-shadow(0 16px 14px #14263a20); }
+.hr-reminder-orbit { position:absolute; width:235px; height:235px; border:1px solid var(--hr-line); border-radius:50%; box-shadow:0 0 0 22px #7fafd510,0 0 0 44px #7fafd50a; }
+.hr-reminder-art-label { position:relative; margin-top:13px; color:var(--hr-muted); font-size:10px; font-weight:600; letter-spacing:.18em; }
+.hr-reminder-content { padding:44px 34px 30px 12px; }
+.hr-reminder-kicker { display:flex; align-items:center; gap:7px; font-size:10px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--hr-accent); }
+.hr-reminder-time { margin:17px 0 20px; font-family:'Barlow Condensed',system-ui,sans-serif; font-size:43px; font-weight:600; line-height:1; font-variant-numeric:tabular-nums; }
+.hr-reminder-time>span { display:block; margin-top:7px; font-family:'Barlow',system-ui,sans-serif; font-size:11px; font-weight:400; color:var(--hr-muted); }
+.hr-reminder-content h2 { margin:0 0 12px; font-size:26px; line-height:1.15; font-weight:600; letter-spacing:-.025em; }
+.hr-reminder-content p { margin:0 0 18px; color:var(--hr-muted); font-size:14px; line-height:1.6; }
+.hr-reminder-status { display:flex; align-items:center; gap:7px; margin-bottom:20px; color:var(--hr-muted); font-size:11px; }
+.hr-reminder-status>span { height:6px; width:6px; border-radius:50%; background:var(--hr-accent); }
+.hr-reminder-primary { display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; padding:13px 15px; border:0; border-radius:9px; background:var(--hr-accent); color:#fff; cursor:pointer; font-size:14px; font-weight:600; }
+.hr-reminder-dark .hr-reminder-primary { color:#13263b; }
+.hr-reminder-later { display:block; width:100%; padding:13px 0; border:0; background:transparent; color:var(--hr-muted); font-size:12px; cursor:pointer; }
+.hr-reminder-footnote { display:block; padding-top:12px; border-top:1px solid var(--hr-line); color:var(--hr-muted); font-size:10px; line-height:1.5; }
+.hr-reminder-content .hr-reminder-error { padding:9px; font-size:12px; border:1px solid var(--hr-line); color:var(--hr-ink); }
+.hr-reminder-dialog button:disabled { opacity:.5; cursor:wait; }
+.hr-reminder-dialog button:focus-visible, .hr-mascot-widget:focus-visible { outline:2px solid var(--hr-accent); outline-offset:4px; }
+@media(max-width:560px) {
+  .hr-reminder-backdrop { padding:12px; }
+  .hr-reminder-dialog { grid-template-columns:1fr; max-height:calc(100dvh - 24px); max-width:380px; }
+  .hr-reminder-art { min-height:155px; padding:15px 0 0; }
+  .hr-reminder-art img { max-width:148px; }
+  .hr-reminder-orbit { width:140px; height:140px; }
+  .hr-reminder-art-label { display:none; }
+  .hr-reminder-content { padding:16px 25px 22px; }
+  .hr-reminder-time { font-size:35px; margin:13px 0; }
+  .hr-reminder-content h2 { font-size:24px; }
+  .hr-mascot-widget { right:12px; bottom:12px; }
+  .hr-mascot-widget img { width:66px; height:66px; }
+}
+@media(prefers-reduced-motion:reduce) { .hr-mascot-widget img { transition:none; } }

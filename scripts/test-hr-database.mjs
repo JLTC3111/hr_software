@@ -115,6 +115,7 @@ try {
   }
   console.log(psql(database, readFileSync(path.join(root, 'tests/database/hr-access.sql'), 'utf8')));
   console.log(psql(database, sqlFile('tests/database/translation-comments.sql')));
+  console.log(psql(database, sqlFile('tests/database/audit-fixes.sql')));
   console.log(psql(database, sqlFile('tests/database/time-clock-read-policy.sql')));
 
   // Separate databases keep the original access regressions independent from

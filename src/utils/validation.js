@@ -27,7 +27,7 @@ export const validateEmail = (email) => {
  * Validate phone number format (international)
  */
 export const validatePhone = (phone) => {
-  const regex = /^[\d\s\-\+\(\)]+$/;
+  const regex = /^[\d\s+()-]+$/;
   return regex.test(phone);
 };
 

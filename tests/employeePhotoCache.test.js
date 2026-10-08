@@ -2,9 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { loadSource } from './helpers/loadSource.js';
 import { queryFixture } from './helpers/queryFixture.js';
+import { fetchAllRows } from '../src/utils/fetchAllRows.js';
 
 const photoService = (client, withTimeout = query => query, globals = {}) => loadSource('src/services/employeeService.js', {
   '../config/supabaseClient.js': { supabase: client },
+  '../utils/fetchAllRows.js': { fetchAllRows },
   '../utils/supabaseTimeout.js': { withTimeout },
   '../config/requestTimeouts.js': { DEFAULT_REQUEST_TIMEOUT: 1000 },
   '../utils/demoHelper.js': { isDemoMode: () => false },

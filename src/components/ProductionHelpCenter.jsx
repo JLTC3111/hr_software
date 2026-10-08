@@ -16,7 +16,7 @@ import {
   Gauge,
   ShieldCheck,
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion as Motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -222,7 +222,7 @@ const ProductionHelpCenter = ({ isDarkMode: isDarkModeProp = null }) => {
         <section aria-label={t('prodHelp.cards', 'Production guidance')}>
           <div className="grid gap-3 md:grid-cols-2">
             {PRODUCTION_TIPS.map((tip, idx) => (
-              <motion.div
+              <Motion.div
                 key={tip.id}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -264,7 +264,7 @@ const ProductionHelpCenter = ({ isDarkMode: isDarkModeProp = null }) => {
                     ))}
                   </div>
                 </Blueprint>
-              </motion.div>
+              </Motion.div>
             ))}
           </div>
         </section>

@@ -1,4 +1,5 @@
 import { supabase } from '../config/supabaseClient';
+import { fetchAllRows } from '../utils/fetchAllRows.js';
 import { isDemoMode, getDemoGoals, addDemoGoal, updateDemoGoal, deleteDemoGoal, MOCK_GOALS, MOCK_PERFORMANCE_REVIEWS, MOCK_SKILLS, MOCK_FEEDBACK, getDemoReviews, addDemoReview, updateDemoReview, deleteDemoReview, getDemoSkills, upsertDemoSkill, deleteDemoSkill } from '../utils/demoHelper';
 
 const toEmployeeId = (id) => {
@@ -176,7 +177,7 @@ export const getAllPerformanceReviews = async (filters = {}) => {
         *,
         employee:employees!performance_reviews_employee_id_fkey(id, name, position, department),
         reviewer:employees!performance_reviews_reviewer_id_fkey(id, name, position)
-      `)
+      `, { count: 'exact' })
       .order('review_date', { ascending: false });
 
     if (filters.employeeId) {
@@ -189,7 +190,7 @@ export const getAllPerformanceReviews = async (filters = {}) => {
       query = query.eq('status', filters.status);
     }
 
-    const { data, error } = await query;
+    const { data, error } = await fetchAllRows(query);
 
     if (error) throw error;
     return { success: true, data };
@@ -409,7 +410,7 @@ export const getAllPerformanceGoals = async (filters = {}) => {
         *,
         employee:employees!performance_goals_employee_id_fkey(id, name, position, department),
         assigned_by_employee:employees!performance_goals_assigned_by_fkey(id, name)
-      `)
+      `, { count: 'exact' })
       .order('target_date', { ascending: true });
 
     if (filters.employeeId) {
@@ -422,7 +423,7 @@ export const getAllPerformanceGoals = async (filters = {}) => {
       query = query.eq('category', filters.category);
     }
 
-    const { data, error } = await query;
+    const { data, error } = await fetchAllRows(query);
 
     if (error) throw error;
     return { success: true, data: (data || []).map(mapGoalProgress) };
@@ -596,11 +597,11 @@ export const getMilestonesByGoal = async (goalId) => {
   }
 
   try {
-    const { data, error } = await supabase
+    const { data, error } = await fetchAllRows(supabase
       .from('goal_milestones')
-      .select('*')
+      .select('*', { count: 'exact' })
       .eq('goal_id', goalId)
-      .order('sort_order', { ascending: true });
+      .order('sort_order', { ascending: true }));
 
     if (error) throw error;
     return { success: true, data };
@@ -733,11 +734,11 @@ export const getSkillsByEmployee = async (employeeId) => {
   }
 
   try {
-    const { data, error } = await supabase
+    const { data, error } = await fetchAllRows(supabase
       .from('skills_assessments')
-      .select('*')
+      .select('*', { count: 'exact' })
       .eq('employee_id', toEmployeeId(employeeId))
-      .order('rating', { ascending: false });
+      .order('rating', { ascending: false }));
 
     if (error) throw error;
     return { success: true, data };
@@ -770,7 +771,7 @@ export const getAllSkillsAssessments = async (filters = {}) => {
       .select(`
         *,
         employee:employees!skills_assessments_employee_id_fkey(id, name, position, department)
-      `)
+      `, { count: 'exact' })
       .order('assessment_date', { ascending: false });
 
     if (filters.employeeId) {
@@ -780,7 +781,7 @@ export const getAllSkillsAssessments = async (filters = {}) => {
       query = query.eq('skill_category', filters.skillCategory);
     }
 
-    const { data, error } = await query;
+    const { data, error } = await fetchAllRows(query);
 
     if (error) throw error;
     return { success: true, data };
@@ -868,14 +869,14 @@ export const getFeedbackByEmployee = async (employeeId) => {
   }
 
   try {
-    const { data, error } = await supabase
+    const { data, error } = await fetchAllRows(supabase
       .from('employee_feedback')
       .select(`
         *,
         feedback_from_employee:employees!employee_feedback_feedback_from_fkey(id, name, position)
-      `)
+      `, { count: 'exact' })
       .eq('employee_id', toEmployeeId(employeeId))
-      .order('feedback_date', { ascending: false });
+      .order('feedback_date', { ascending: false }));
 
     if (error) throw error;
     return { success: true, data };
@@ -908,13 +909,13 @@ export const getEmployeePerformanceSummary = async (employeeId = null) => {
   try {
     let query = supabase
       .from('employee_performance_summary')
-      .select('*');
+      .select('*', { count: 'exact' });
 
     if (employeeId) {
       query = query.eq('employee_id', toEmployeeId(employeeId));
     }
 
-    const { data, error } = await query;
+    const { data, error } = await fetchAllRows(query, { orderBy: 'employee_id' });
 
     if (error) throw error;
     return { success: true, data: employeeId ? data[0] : data };
@@ -939,13 +940,13 @@ export const getGoalsWithProgress = async (employeeId = null) => {
   try {
     let query = supabase
       .from('goals_with_progress')
-      .select('*');
+      .select('*', { count: 'exact' });
 
     if (employeeId) {
       query = query.eq('employee_id', toEmployeeId(employeeId));
     }
 
-    const { data, error } = await query;
+    const { data, error } = await fetchAllRows(query);
 
     if (error) throw error;
     return { success: true, data };
@@ -966,13 +967,14 @@ export const getSkillsMatrix = async (department = null) => {
   try {
     let query = supabase
       .from('skills_matrix')
-      .select('*');
+      .select('*', { count: 'exact' })
+      .order('department').order('skill_name').order('skill_category');
 
     if (department) {
       query = query.eq('department', department);
     }
 
-    const { data, error } = await query;
+    const { data, error } = await fetchAllRows(query, { orderBy: null });
 
     if (error) throw error;
     return { success: true, data };

@@ -1,4 +1,5 @@
 import { supabase } from '../config/supabaseClient';
+import { fetchAllRows } from '../utils/fetchAllRows.js';
 import { isDemoMode, getDemoTasks, addDemoTask, updateDemoTask, deleteDemoTask, MOCK_TASKS } from '../utils/demoHelper';
 
 /**
@@ -13,11 +14,11 @@ export const getEmployeeTasks = async (employeeId) => {
   }
 
   try {
-    const { data, error } = await supabase
+    const { data, error } = await fetchAllRows(supabase
       .from('workload_tasks')
-      .select('*')
+      .select('*', { count: 'exact' })
       .eq('employee_id', employeeId)
-      .order('due_date', { ascending: true });
+      .order('due_date', { ascending: true }));
 
     if (error) throw error;
 
@@ -56,7 +57,7 @@ export const getAllTasks = async (filters = {}) => {
       .select(`
         *,
         employee:employee_id(id, name, department, position)
-      `)
+      `, { count: 'exact' })
       .order('due_date', { ascending: true });
 
     // Apply filters
@@ -76,7 +77,7 @@ export const getAllTasks = async (filters = {}) => {
       query = query.lte('due_date', filters.endDate);
     }
 
-    const { data, error } = await query;
+    const { data, error } = await fetchAllRows(query);
 
     if (error) throw error;
 
@@ -286,10 +287,10 @@ export const getEmployeeTaskStats = async (employeeId) => {
   }
 
   try {
-    const { data: tasks, error } = await supabase
+    const { data: tasks, error } = await fetchAllRows(supabase
       .from('workload_tasks')
-      .select('status, priority, quality_rating, due_date')
-      .eq('employee_id', employeeId);
+      .select('status, priority, quality_rating, due_date', { count: 'exact' })
+      .eq('employee_id', employeeId));
 
     if (error) throw error;
 
@@ -337,9 +338,9 @@ export const getOrganizationTaskStats = async () => {
   }
 
   try {
-    const { data: tasks, error } = await supabase
+    const { data: tasks, error } = await fetchAllRows(supabase
       .from('workload_tasks')
-      .select('employee_id, status, priority, quality_rating, due_date');
+      .select('employee_id, status, priority, quality_rating, due_date', { count: 'exact' }));
 
     if (error) throw error;
 

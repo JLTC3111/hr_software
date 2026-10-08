@@ -91,7 +91,7 @@ const foldLocation = (value) => {
 };
 
 const locationHayHas = (hay, needle) => {
-  if (/[^\x00-\x7F]/.test(needle)) return hay.includes(needle);
+  if (Array.from(needle).some(character => character.codePointAt(0) > 0x7f)) return hay.includes(needle);
   const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   return new RegExp(`(?:^|[^a-z0-9])${escaped}(?:$|[^a-z0-9])`, 'i').test(hay);
 };
@@ -339,4 +339,3 @@ export const formatStoredSalaryRange = (range, language = 'en') => {
   if (max) return formatSalaryAmount(max, language, code);
   return text;
 };
-

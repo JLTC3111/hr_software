@@ -17,7 +17,7 @@ import {
   SquarePen,
   UserCog,
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion as Motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { useTheme } from '../contexts/ThemeContext.jsx';
@@ -145,13 +145,13 @@ const AdvancedHelpCenter = ({ contextHint = null }) => {
           <p data-i18n="help.showcase.subtitle" style={caption}>
             {t('help.showcase.subtitle', 'Animated path across time, files, dashboards, goals, and reporting.')}
           </p>
-          <motion.div
+          <Motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35, ease: 'easeOut' }}
           >
             <FeatureShowcase />
-          </motion.div>
+          </Motion.div>
         </section>
 
         <section aria-label={t('help.demoRestrictions', 'Demo Restrictions')}>
@@ -192,7 +192,7 @@ const AdvancedHelpCenter = ({ contextHint = null }) => {
 
           <div className="grid gap-3 md:grid-cols-2">
             {filteredFeatures.map((feature, idx) => (
-              <motion.div
+              <Motion.div
                 key={feature.id}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -232,7 +232,7 @@ const AdvancedHelpCenter = ({ contextHint = null }) => {
                     ))}
                   </div>
                 </Blueprint>
-              </motion.div>
+              </Motion.div>
             ))}
 
             {filteredFeatures.length === 0 && (

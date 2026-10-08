@@ -102,7 +102,7 @@ serve(async (req) => {
 
     const anonIp = anonymizeIp(realIp);
 
-    await supabaseAdmin.from("visits").insert({
+    const { error: insertError } = await supabaseAdmin.from("visits").insert({
       ip: realIp,
       anonymized_ip: anonIp,
       user_agent: ua,
@@ -112,6 +112,14 @@ serve(async (req) => {
       role: userRole,
       user_id: userId,
     });
+
+    if (insertError) {
+      console.error("record-visit insert failed", insertError);
+      return new Response(JSON.stringify({ success: false, error: "Failed to record visit" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     return new Response(null, { status: 204, headers: corsHeaders });
   } catch (error) {

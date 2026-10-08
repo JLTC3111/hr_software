@@ -1142,7 +1142,7 @@ const TaskReview = ({ employees, allEmployees }) => {
         .map((row) => ({ row, userId: accountFor.get(String(row.id)) }))
         .filter(({ userId }) => Boolean(userId));
 
-      await Promise.all(sent.map(({ row, userId }) => notifyUser(
+      await Promise.all(sent.map(({ userId }) => notifyUser(
         userId,
         t('taskReview.selfReminderTitle', 'Self-assessment outstanding'),
         t('taskReview.selfReminderBody', 'Please submit your self-assessment for {cycle}.')
