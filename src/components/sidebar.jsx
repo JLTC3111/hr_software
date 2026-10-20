@@ -17,7 +17,7 @@ import React, { useState, useRef, useEffect, useSyncExternalStore } from 'react'
 import { NavLink } from 'react-router-dom'
 import {
   TrendingUp, Users, FileText, AlarmClock, ChevronDown, ChevronRight,
-  Bell, Cog, CheckSquare, X, UserPlus, Languages,
+  Bell, Cog, CheckSquare, X, UserPlus, Languages, Globe, ArrowUpRight,
 } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext.jsx'
 import { useLanguage } from '../contexts/LanguageContext.jsx'
@@ -26,6 +26,7 @@ import { useAuth } from '../contexts/AuthContext.jsx'
 import { isTranslationEditor } from '../utils/translationAccess.js'
 import { subscribeTranslationQueue, getTranslationQueueCount } from '../utils/translationQueueStatus.js'
 import { getIndustry, DISPLAY, BODY } from '../theme/industry.js'
+import { getAppNavigation } from './app-switcher/appLinks.js'
 
 const RAIL_COLLAPSED = 64;
 const RAIL_EXPANDED = 236;
@@ -50,7 +51,7 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef(null);
   const { isDarkMode } = useTheme();
-  const { t } = useLanguage();
+  const { t, currentLanguage } = useLanguage();
   const { unreadCount } = useNotifications();
   const { user } = useAuth();
   const canEditTranslations = isTranslationEditor(user);
@@ -161,6 +162,12 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
           : []),
         { path: '/settings', name: t('nav.settings', 'Settings'), icon: Cog },
       ]
+    },
+    {
+      section: 'ICUE',
+      items: getAppNavigation(currentLanguage).apps.filter(app => app.id !== 'hr').map(app => ({
+        href: app.href, name: app.label, icon: app.id === 'website' ? Globe : FileText,
+      })),
     },
   ];
 
@@ -382,6 +389,24 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
                 // Submenus are expanded by default; only collapsed when explicitly toggled off
                 const isExpanded = expandedMenus[item.name] !== false;
                 const badgeCount = item.path === '/notifications' ? unreadCount : item.path === '/translations' ? translationCount : 0;
+
+                if (item.href) return (
+                  <a
+                    key={item.href}
+                    href={item.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={item.name}
+                    title={isCollapsed ? item.name : undefined}
+                    onClick={closeMobileMenu}
+                    onMouseEnter={() => setHoverKey(item.name)}
+                    onMouseLeave={() => setHoverKey(null)}
+                    style={{ ...rowBase, minHeight: 44, textDecoration: 'none', color: ind.ink, background: rowBg(item.name, false) }}
+                  >
+                    <IconCell><Icon size={18} strokeWidth={1.5} aria-hidden="true" style={{ color: ind.inkGhost }} /></IconCell>
+                    {!isCollapsed && <><span style={labelStyle(false)}>{item.name}</span><ArrowUpRight size={13} aria-hidden="true" style={{ flex: 'none', color: ind.inkGhost }} /></>}
+                  </a>
+                );
 
                 return (
                   <div key={item.name} style={{ position: 'relative', flex: 'none' }}>

@@ -380,7 +380,11 @@ const Login = () => {
         >
           {/* Logo and Title */}
           <div className="relative text-center mb-8">
-            <div
+            <a
+              href="https://icue.vn"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="icue.vn"
               className="inline-flex h-14 w-14 items-center justify-center mb-4"
               style={{
                 background: ind.tickerBg,
@@ -389,7 +393,7 @@ const Login = () => {
               }}
             >
               <Building2 className="w-7 h-7" strokeWidth={1.5} />
-            </div>
+            </a>
             <TextEffect
               key={`login-title-${t('login.title', 'HR Manager')}`}
               as="h1"
