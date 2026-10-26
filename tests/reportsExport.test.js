@@ -25,7 +25,7 @@ function find(tree, predicate) {
   }
 }
 
-function exportFixture({ failEntries = false, failSource = null, employeeId = null, format = 'csv', entryCount = 584, tasks = [], overtimeLogs = [], cached = true, period = 'this-month', customPeriod = 'month', taskRead = null } = {}) {
+function exportFixture({ failEntries = false, failSource = null, employeeId = null, format = 'csv', entryCount = 584, tasks = [], goals = [], overtimeLogs = [], cached = true, period = 'this-month', customPeriod = 'month', taskRead = null } = {}) {
   const employees = ['a', 'b'].map(id => ({ id, name: `Employee ${id}`, department: 'Operations', status: 'Active' }));
   const entries = Array.from({ length: entryCount }, (_, id) => ({
     id, employee_id: employees[id % 2].id, employee: employees[id % 2], date: '2026-07-06',
@@ -49,7 +49,10 @@ function exportFixture({ failEntries = false, failSource = null, employeeId = nu
     started.add(name);
     await gate.promise;
     if (name === failSource) return { success: false, error: 'Read failed' };
-    return { success: true, data: name === 'tasks' ? tasks.map(task => ({ ...task, employee_id: task.employee_id || 'a', employee: employees[0] })) : name === 'overtime' ? overtimeLogs : [] };
+    const records = name === 'tasks' ? tasks : name === 'goals' ? goals : null;
+    return { success: true, data: records
+      ? records.map(record => ({ ...record, employee_id: record.employee_id || 'a', employee: employees[0] }))
+      : name === 'overtime' ? overtimeLogs : [] };
   };
   const states = [];
   const refs = [];
@@ -74,7 +77,7 @@ function exportFixture({ failEntries = false, failSource = null, employeeId = nu
       const index = cursor++;
       if (!(index in states)) {
         let value = typeof initial === 'function' ? initial() : initial;
-        if (value?.timeEntries && value?.employees) value = { timeEntries: entries, employees, tasks, goals: [], leave: [], overtimeLogs };
+        if (value?.timeEntries && value?.employees) value = { timeEntries: entries, employees, tasks, goals, leave: [], overtimeLogs };
         if (value?.startDate && value?.endDate) value = { startDate: '2026-07-01', endDate: '2026-09-30' };
         states[index] = value;
       }
@@ -207,6 +210,27 @@ const detailedTasks = [
   { id: 2, title: 'In progress task', description: 'Build the remaining screens', status: 'in-progress', start_date: '2026-07-01', due_date: '2026-07-20', self_assessment: 'Three screens complete', comments: 'Two screens remain' },
 ];
 
+const detailedGoals = [
+  { id: 'goal-1', title: 'Improve onboarding', description: 'Update the induction process', status: 'in_progress', progress: 45, progress_percentage: 45, target_date: '2026-07-25', category: 'technical', priority: 'high', notes: 'Checklist reviewed' },
+];
+
+test('CSV keeps task details only in the work summary and retains the existing goal section', async () => {
+  const fixture = exportFixture({ entryCount: 2, tasks: detailedTasks, goals: detailedGoals, employeeId: 'a' });
+  fixture.gate.resolve();
+  await fixture.run();
+  const csv = await fixture.content();
+  assert.ok(csv.includes('\nWork summary\n'));
+  assert.equal(csv.includes(`\n${en.reports.tasks.toUpperCase()}\n`), false);
+  for (const task of detailedTasks) {
+    assert.equal(csv.split(task.title).length - 1, 1, task.title);
+    assert.ok(csv.includes(`Translated ${task.description}`));
+    assert.ok(csv.includes(`Translated ${task.self_assessment}`));
+    assert.ok(csv.includes(`Translated ${task.comments}`));
+  }
+  assert.ok(csv.includes(`\n${en.reports.personalGoals.toUpperCase()}\n`));
+  assert.ok(csv.includes(`Translated ${detailedGoals[0].title}`));
+});
+
 test('PDF exports full task work, status and progress notes without waiting for a stalled translator', async () => {
   const fixture = exportFixture({ format: 'pdf', entryCount: 26, tasks: detailedTasks, cached: false });
   fixture.gate.resolve();
@@ -230,24 +254,26 @@ test('PDF exports full task work, status and progress notes without waiting for 
   assert.doesNotMatch(progress[2], /50%|100%/);
 });
 
-test('Excel keeps task assessments, progress notes and ratings with the full work description', async () => {
-  const fixture = exportFixture({ format: 'xlsx', entryCount: 2, tasks: detailedTasks, employeeId: 'a' });
+test('Excel keeps task descriptions and notes in the work summary without a duplicate Tasks worksheet', async () => {
+  const fixture = exportFixture({ format: 'xlsx', entryCount: 2, tasks: detailedTasks, goals: detailedGoals, employeeId: 'a' });
   fixture.gate.resolve();
   await fixture.run();
   assert.match(fixture.filename(), /\.xlsx$/);
   assert.equal(fixture.modelCalls(), 0);
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(await fixture.bytes());
-  const sheet = workbook.getWorksheet(en.reports.excel.sheets.tasks);
-  assert.ok(sheet);
-  assert.equal(sheet.getCell('D2').value, `Translated ${detailedTasks[0].description}`);
-  assert.equal(sheet.getCell('P2').value, 'Translated All checks complete');
-  assert.equal(sheet.getCell('Q3').value, 'Translated Two screens remain');
-  assert.equal(sheet.getCell('R2').value, '4/5');
+  assert.equal(workbook.getWorksheet(en.reports.excel.sheets.tasks), undefined);
+  assert.ok(workbook.getWorksheet(en.reports.excel.sheets.goals));
   const summarySheet = workbook.getWorksheet('Work summary');
   assert.ok(summarySheet);
   assert.ok(summarySheet.getColumn(3).values.some(value => String(value).includes('Completed 1 of 2 tasks')));
   assert.ok(summarySheet.getColumn(3).values.some(value => String(value).includes('Translated All checks complete')));
+  const summary = summarySheet.getColumn(3).values.join('\n');
+  for (const task of detailedTasks) {
+    assert.equal(summary.split(task.title).length - 1, 1, task.title);
+    assert.ok(summary.includes(`Translated ${task.description}`));
+    assert.ok(summary.includes(`Translated ${task.comments}`));
+  }
   assert.equal(workbook.worksheets[0].name, en.reports.excel.sheets.summary, 'preserve the existing first worksheet');
 });
 
@@ -295,17 +321,22 @@ test('a slower previous employee request cannot overwrite the latest employee su
   assert.equal(panel.props.loading, false);
 });
 
-test('PDF work summaries contain full recorded work notes and separate employees', async () => {
-  const fixture = exportFixture({ format: 'pdf', entryCount: 4, tasks: detailedTasks, cached: false });
+test('PDF keeps its original task, goal and time tables without the added work summary', async () => {
+  const fixture = exportFixture({ format: 'pdf', entryCount: 4, tasks: detailedTasks, goals: detailedGoals, cached: false });
   fixture.gate.resolve();
   await fixture.run();
   const text = fixture.texts.flat().join('\n');
-  assert.match(text, /Employee a.*Work summary/);
-  assert.match(text, /Employee b.*Work summary/);
-  assert.match(text, /Employee a recorded 16\.0 hours/);
-  assert.match(text, /Record 0/);
-  assert.match(text, /Record 3/);
-  assert.match(text, /Completed work/);
+  assert.doesNotMatch(text, /Work summary|Recorded work notes|Employee a recorded/);
+  const taskTables = fixture.tables.filter(table => table.head[0].includes(en.reports.pdf.headers.taskTitle));
+  const goalTables = fixture.tables.filter(table => table.head[0].includes(en.reports.pdf.headers.goalTitle));
+  const timeTables = fixture.tables.filter(table => table.head[0].includes(en.reports.pdf.headers.clockIn));
+  assert.equal(taskTables.length, 1);
+  assert.equal(taskTables[0].body.length, 2);
+  assert.equal(goalTables.length, 1);
+  assert.equal(goalTables[0].body[0][goalTables[0].head[0].indexOf(en.reports.pdf.headers.goalTitle)], detailedGoals[0].title);
+  assert.equal(timeTables.length, 1);
+  assert.equal(timeTables[0].body.length, 4);
+  assert.equal(fixture.translations.includes('Record 0'), false, 'PDF no longer prepares notes it does not export');
 });
 
 test('overtime-only work can be summarised and exported in every format', async () => {
@@ -320,7 +351,10 @@ test('overtime-only work can be summarised and exported in every format', async 
     await fixture.run();
     assert.match(fixture.filename() || '', new RegExp(`\\.${format}$`), fixture.errors.join('\n'));
     if (format === 'csv') assert.match(await fixture.content(), /Overnight production support/);
-    if (format === 'pdf') assert.match(fixture.texts.flat().join('\n'), /Overnight production support/);
+    if (format === 'pdf') {
+      assert.match(fixture.texts.flat().join('\n'), /3\.0h/);
+      assert.doesNotMatch(fixture.texts.flat().join('\n'), /Work summary|Overnight production support/);
+    }
   }
 });
 

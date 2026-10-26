@@ -1433,57 +1433,6 @@ const Reports = () => {
     return { headers, rows };
   };
 
-  const buildTaskCsvRows = (tasks, ugcMap = null) => {
-    const headers = [
-      t('reports.excel.headers.dataType', 'Data Type'),
-      t('employees.name', 'Name'),
-      t('employees.department', 'Department'),
-      t('reports.excel.headers.taskTitle', 'Task Title'),
-      t('reports.excel.headers.description', 'Description'),
-      t('reports.excel.headers.priority', 'Priority'),
-      t('reports.excel.headers.status', 'Status'),
-      t('taskListing.startDate', 'Start Date'),
-      t('reports.excel.headers.dueDate', 'Due Date'),
-      t('taskListing.completionDate', 'Completion Date'),
-      t('reports.excel.headers.estimatedHours', 'Estimated Days'),
-      t('reports.excel.headers.actualHours', 'Actual Days'),
-      t('reports.excel.headers.variance', 'Variance'),
-      t('reports.excel.headers.createdAt', 'Created At'),
-      t('reports.excel.headers.updatedAt', 'Updated At'),
-      t('reports.excel.headers.progress', 'Progress (%)'),
-      t('taskListing.selfAssessment', 'Self Assessment'),
-      t('timeTracking.notes', 'Notes'),
-      t('taskListing.qualityRating', 'Quality Rating')
-    ];
-
-    const rows = tasks.map((task) => {
-      const duration = getTaskDurationDays(task, taskAsOf);
-      return [
-        t('reports.tasks', 'Tasks'),
-        isDemoMode() ? getDemoEmployeeName(task.employee, t) : (task.employee?.name || 'Unknown'),
-        translateDepartment(task.employee?.department) || '',
-        isDemoMode() ? getDemoTaskTitle(task, t) : mapUgc(ugcMap, task.title || ''),
-        isDemoMode() ? getDemoTaskDescription(task, t) : mapUgc(ugcMap, task.description || ''),
-        translatePriority(task.priority) || '',
-        translateStatus(task.status) || '',
-        task.start_date || '',
-        task.due_date || '',
-        task.completion_date || '',
-        duration.estimated ?? '',
-        duration.actual ?? '',
-        duration.variance ?? '',
-        new Date(task.created_at).toLocaleString(),
-        new Date(task.updated_at).toLocaleString(),
-        taskProgress(task),
-        mapUgc(ugcMap, task.self_assessment || ''),
-        mapUgc(ugcMap, task.comments || ''),
-        task.quality_rating > 0 ? `${task.quality_rating}/5` : ''
-      ];
-    });
-
-    return { headers, rows };
-  };
-
   const buildGoalCsvRows = (goals, ugcMap = null) => {
     const headers = [
       t('reports.excel.headers.dataType', 'Data Type'),
@@ -1603,10 +1552,6 @@ const Reports = () => {
       if (timeEntries.length > 0) {
         const timeSection = buildTimeEntryCsvRows(timeEntries, ugcMap);
         sections.push({ title: t('reports.timeEntries', 'TIME ENTRIES').toUpperCase(), ...timeSection });
-      }
-      if (tasks.length > 0) {
-        const taskSection = buildTaskCsvRows(tasks, ugcMap);
-        sections.push({ title: t('reports.tasks', 'TASKS').toUpperCase(), ...taskSection });
       }
       if (goals.length > 0) {
         const goalSection = buildGoalCsvRows(goals, ugcMap);
@@ -1736,7 +1681,6 @@ const Reports = () => {
         performance: tr('reports.excel.sheets.performance', 'Employee Performance'),
         charts: tr('reports.excel.sheets.charts', 'Charts & Metrics'),
         timeEntries: tr('reports.excel.sheets.timeEntries', 'Time Entries'),
-        tasks: tr('reports.excel.sheets.tasks', 'Tasks'),
         goals: tr('reports.excel.sheets.goals', 'Goals')
       };
       
@@ -2469,102 +2413,6 @@ const Reports = () => {
         timeEntriesSheet.views = [{ state: 'frozen', xSplit: 0, ySplit: 1 }];
       }
 
-      // ==================== TASKS SHEET WITH STYLING ====================
-      if (tasks.length > 0) {
-        const tasksSheet = workbook.addWorksheet(sheetNames.tasks);
-        
-        // Headers
-        const headers = [
-          tr('reports.excel.headers.employee', 'Employee'),
-          tr('reports.excel.headers.department', 'Department'),
-          tr('reports.excel.headers.taskTitle', 'Task Title'),
-          tr('reports.excel.headers.description', 'Description'),
-          tr('reports.excel.headers.priority', 'Priority'),
-          tr('reports.excel.headers.status', 'Status'),
-          tr('taskListing.startDate', 'Start Date'),
-          tr('reports.excel.headers.dueDate', 'Due Date'),
-          tr('taskListing.completionDate', 'Completion Date'),
-          tr('reports.excel.headers.estimatedHours', 'Estimated Days'),
-          tr('reports.excel.headers.actualHours', 'Actual Days'),
-          tr('reports.excel.headers.variance', 'Variance'),
-          tr('reports.excel.headers.createdAt', 'Created At'),
-          tr('reports.excel.headers.updatedAt', 'Updated At'),
-          tr('reports.excel.headers.progress', 'Progress (%)'),
-          tr('taskListing.selfAssessment', 'Self Assessment'),
-          tr('timeTracking.notes', 'Notes'),
-          tr('taskListing.qualityRating', 'Quality Rating')
-        ];
-        headers.forEach((header, idx) => {
-          const cell = tasksSheet.getCell(1, idx + 1);
-          cell.value = header;
-          cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFC000' } };
-          cell.alignment = { horizontal: 'center', vertical: 'middle' };
-        });
-        
-        // Data rows with conditional formatting
-        tasks.forEach((task, idx) => {
-          const rowNum = idx + 2;
-          const duration = getTaskDurationDays(task, taskAsOf);
-          const variance = duration.variance;
-          const rowData = [
-            isDemoMode() ? getDemoEmployeeName(task.employee, t) : (task.employee?.name || 'Unknown'),
-            translateDepartment(task.employee?.department) || '',
-            isDemoMode() ? getDemoTaskTitle(task, t) : mapUgc(ugcMap, task.title || ''),
-            isDemoMode() ? getDemoTaskDescription(task, t) : mapUgc(ugcMap, task.description || ''),
-            translatePriority(task.priority) || '',
-            translateStatus(task.status) || '',
-            task.start_date || '',
-            task.due_date || '',
-            task.completion_date || '',
-            duration.estimated ?? '',
-            duration.actual ?? '',
-            variance ?? '',
-            new Date(task.created_at).toLocaleString(),
-            new Date(task.updated_at).toLocaleString(),
-            taskProgress(task),
-            mapUgc(ugcMap, task.self_assessment || ''),
-            mapUgc(ugcMap, task.comments || ''),
-            task.quality_rating > 0 ? `${task.quality_rating}/5` : ''
-          ];
-          
-          rowData.forEach((value, colIdx) => {
-            const cell = tasksSheet.getCell(rowNum, colIdx + 1);
-            cell.value = value;
-            if ([2, 3, 15, 16].includes(colIdx)) {
-              cell.alignment = { wrapText: true, vertical: 'top' };
-            }
-            
-            if ([4, 5, 6, 7, 8, 9, 10, 11, 12].includes(colIdx)) {
-              cell.alignment = { horizontal: 'center', vertical: 'middle' };
-            }
-            
-            if (idx % 2 === 0) {
-              cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFF0' } };
-            }
-            
-            if (colIdx === 11 && variance != null) {
-              if (variance > 0) {
-                cell.font = { color: { argb: 'FFFF0000' } }; // Red for over
-              } else if (variance < 0) {
-                cell.font = { color: { argb: 'FF00B050' } }; // Green for under
-              }
-            }
-          });
-        });
-        
-        // Set column widths
-        tasksSheet.columns = [
-          { width: 20 }, { width: 15 }, { width: 25 }, { width: 35 },
-          { width: 12 }, { width: 12 }, { width: 12 }, { width: 14 },
-          { width: 12 }, { width: 12 }, { width: 12 }, { width: 12 }, { width: 20 }, { width: 20 },
-          { width: 26 }, { width: 45 }, { width: 45 }, { width: 14 }
-        ];
-        
-        // Freeze header row
-        tasksSheet.views = [{ state: 'frozen', xSplit: 0, ySplit: 1 }];
-      }
-
       // ==================== GOALS SHEET WITH STYLING ====================
       if (goals.length > 0) {
         const goalsSheet = workbook.addWorksheet(sheetNames.goals);
@@ -2999,20 +2847,11 @@ const Reports = () => {
         ]
       });
 
-      for (const summary of exportWorkSummaries(exportSnapshot, ugcMap)) {
-        layout.ensure(30);
-        layout.sectionRule();
-        layout.sectionHeading(`${summary.employeeName} — ${t('reports.workSummary.title', 'Work summary')}`);
-        for (const [label, text] of employeeWorkSummaryRows(summary, t)) {
-          layout.paragraph(`${label}: ${text}`);
-        }
-      }
-
       // ── Summary overview: 2-column label/value grid + performance meter ────
       const summaryCell = (label, value) => ({ label, value: String(value) });
       const summaryCells = [
         summaryCell(t('reports.totalRecords', 'Total Records'), exportStats.totalRecords),
-        timeEntries.length > 0
+        timeEntries.length > 0 || exportSnapshot.overtimeLogs.length > 0
           ? summaryCell(t('reports.totalHours', 'Total Hours'), `${exportStats.totalHours}h`)
           : null,
         ...(tasks.length > 0 ? [
@@ -3032,7 +2871,7 @@ const Reports = () => {
           null
         ] : [])
       ];
-      // A work summary can fill the page. Keep the next heading with its grid.
+      // Keep the overview heading with its grid.
       layout.ensure(20 + Math.ceil(summaryCells.length / 2) * 9);
       layout.sectionRule();
       layout.sectionHeading(t('reports.summaryOverview', 'SUMMARY OVERVIEW').toUpperCase());

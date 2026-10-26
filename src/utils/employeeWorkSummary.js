@@ -20,7 +20,7 @@ const countedStatus = (row) => row.status === undefined || ['pending', 'approved
 
 /**
  * A record-based summary: no invented achievements or inferred task progress.
- * The same model feeds the screen and every export, without a model/API call.
+ * The same model feeds the screen and CSV/Excel exports without a model/API call.
  * textForField lets callers supply demo labels or cached UGC translations.
  */
 export const buildEmployeeWorkSummary = (employee, data = {}, {
@@ -120,7 +120,7 @@ export const buildEmployeeWorkSummary = (employee, data = {}, {
     metrics: { totalHours: attendance.total_hours, completedTasks: completedTasks.length, tasks: tasks.length, goals: goals.length } };
 };
 
-/** Plain, complete rows shared by copy, CSV, Excel and PDF. */
+/** Plain, complete rows shared by copy, CSV and Excel. */
 export const employeeWorkSummaryRows = (summary, t = fallbackText) => summary ? [
   ...summary.overview.map(text => [t('reports.excel.sheets.summary', 'Summary'), text]),
   ...summary.sections.flatMap(section => section.items.map(item => [section.title,

@@ -2,18 +2,20 @@ import { summarizeAttendance, workingDateKeys } from './attendanceRules.js';
 export { workingDateKeys } from './attendanceRules.js';
 
 // Only translate authored fields actually written by the selected format.
-// Work summaries include attendance notes and full task/goal details in every
-// format. PDF still omits leave reasons.
+// CSV/Excel work summaries include attendance notes and full task/goal details.
+// PDF uses its existing tables, omitting attendance notes and leave reasons.
 // Demo task/goal titles and descriptions already come from the UI translations.
 export const collectExportUgcStrings = (timeEntries = [], tasks = [], goals = [], leave = [], { format = 'csv', demo = false, overtimeLogs = [] } = {}) => {
   const strings = [];
   const includeDetails = format !== 'pdf';
-  timeEntries.forEach(({ notes }) => {
-    if (!notes) return;
-    const match = String(notes).match(/^Entered by admin:?\s*/i);
-    strings.push(match ? notes.slice(match[0].length) : notes);
-  });
-  overtimeLogs.forEach(({ reason }) => { if (reason) strings.push(reason); });
+  if (includeDetails) {
+    timeEntries.forEach(({ notes }) => {
+      if (!notes) return;
+      const match = String(notes).match(/^Entered by admin:?\s*/i);
+      strings.push(match ? notes.slice(match[0].length) : notes);
+    });
+    overtimeLogs.forEach(({ reason }) => { if (reason) strings.push(reason); });
+  }
   if (!demo) {
     tasks.forEach(({ title, description }) => {
       if (title) strings.push(title);
@@ -21,8 +23,8 @@ export const collectExportUgcStrings = (timeEntries = [], tasks = [], goals = []
     });
     goals.forEach(({ title, description, notes }) => {
       if (title) strings.push(title);
-      if (description) strings.push(description);
-      if (notes) strings.push(notes);
+      if (includeDetails && description) strings.push(description);
+      if (includeDetails && notes) strings.push(notes);
     });
   }
   tasks.forEach(({ self_assessment, comments }) => {
