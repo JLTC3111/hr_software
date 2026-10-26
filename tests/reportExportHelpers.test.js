@@ -17,21 +17,24 @@ import {
 
 const now = new Date(2026, 7, 28); // 28 Aug 2026, local
 
-test('PDF includes full task details and progress notes in translation preparation', () => {
+test('all work summary formats prepare full tasks, goals and work notes for translation', () => {
   const records = [
     [{ notes: 'Entered by admin: Evening shift' }, { notes: 'Manual entry' }],
     [{ title: 'Task title', description: 'Task detail', self_assessment: 'Tested changes', comments: '8 of 10 finished' }],
     [{ title: 'Goal title', description: 'Goal detail', notes: 'Goal notes' }],
     [{ reason: 'Leave reason' }],
   ];
-  assert.deepEqual(collectExportUgcStrings(...records, { format: 'pdf' }), ['Task title', 'Task detail', 'Goal title', 'Tested changes', '8 of 10 finished']);
+  assert.deepEqual(collectExportUgcStrings(...records, { format: 'pdf', overtimeLogs: [{ reason: 'Overnight support' }] }), [
+    'Evening shift', 'Manual entry', 'Overnight support', 'Task title', 'Task detail',
+    'Goal title', 'Goal detail', 'Goal notes', 'Tested changes', '8 of 10 finished',
+  ]);
   for (const format of ['csv', 'xlsx']) {
     assert.deepEqual(collectExportUgcStrings(...records, { format }), [
       'Evening shift', 'Manual entry', 'Task title', 'Task detail',
       'Goal title', 'Goal detail', 'Goal notes', 'Tested changes', '8 of 10 finished', 'Leave reason',
     ]);
   }
-  assert.deepEqual(collectExportUgcStrings(...records, { format: 'pdf', demo: true }), ['Tested changes', '8 of 10 finished']);
+  assert.deepEqual(collectExportUgcStrings(...records, { format: 'pdf', demo: true }), ['Evening shift', 'Manual entry', 'Tested changes', '8 of 10 finished']);
   assert.deepEqual(collectExportUgcStrings(...records, { demo: true }), ['Evening shift', 'Manual entry', 'Tested changes', '8 of 10 finished', 'Leave reason']);
 });
 

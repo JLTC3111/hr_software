@@ -7,6 +7,7 @@ import { useAuth } from './contexts/AuthContext'
 import { NotificationProvider } from './contexts/NotificationContext'
 import { UploadProvider } from './contexts/UploadContext'
 import { SheetProvider } from './contexts/SheetContext'
+import { ToastProvider } from './contexts/ToastProvider.jsx'
 import { Spinner } from './components/ui/Spinner.jsx'
 import { getIndustry } from './theme/industry.js'
 // Eagerly loaded components (needed immediately)
@@ -258,6 +259,7 @@ const HRManagementApp = () => {
   );
 
   return (
+    <ToastProvider key={user?.id || 'signed-out'}>
     <UploadProvider>
       <NotificationProvider>
         <SheetProvider>
@@ -281,6 +283,7 @@ const HRManagementApp = () => {
         </SheetProvider>
       </NotificationProvider>
     </UploadProvider>
+    </ToastProvider>
   );
 };
 

@@ -16,6 +16,7 @@ import { User, LogOut, Key, BookOpen, Shield, RefreshCcw, UserPen, UserCheck, Us
 import { useTheme } from '../contexts/ThemeContext.jsx';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
+import { useToast } from '../contexts/ToastContext.js';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../config/supabaseClient.js';
 import { isDemoMode, getDemoEmployeeName, resetAllDemoData, resetDemoTimeEntries, resetDemoGoals, resetDemoTasks, resetDemoReviews, resetDemoSkills, resetDemoLeaveRequests } from '../utils/demoHelper.js';
@@ -327,8 +328,7 @@ const ControlPanel = () => {
   // column in demo mode, so there is no separate open/closed state any more.
   const [restoringDemoData, setRestoringDemoData] = useState(null);
 
-  // Toast notification state
-  const [toast, setToast] = useState({ show: false, message: '', type: '' });
+  const { toast } = useToast();
 
   // Visit analytics (admin only)
   const [visitSummary, setVisitSummary] = useState({ total: 0, last24h: 0, distinctIps: 0, recent: [] });
@@ -592,10 +592,10 @@ const ControlPanel = () => {
       
       // Show success toast notification
       console.log('📢 Showing success toast...');
-      setToast({
-        show: true,
-        message: t('controlPanel.passwordChanged', 'Password changed successfully!'),
-        type: 'success'
+      toast({
+        title: t('controlPanel.passwordChanged', 'Password changed successfully!'),
+        variant: 'success',
+        duration: 4000,
       });
       
       // IMPORTANT: Clear the flag immediately after a brief delay to allow the USER_UPDATED event to complete
@@ -606,11 +606,6 @@ const ControlPanel = () => {
         localStorage.removeItem('changingPassword');
       }, 2000); // 2 seconds - enough time for USER_UPDATED to complete
       
-      // Hide toast after 4 seconds
-      setTimeout(() => {
-        console.log('🔕 Hiding toast');
-        setToast({ show: false, message: '', type: '' });
-      }, 4000);
     } catch (error) {
       console.error('❌ Password change error:', error);
       if (handleSessionAuthError(error)) return;
@@ -712,10 +707,10 @@ const ControlPanel = () => {
       setSelectedUserId('');
       
       // Show success toast
-      setToast({
-        show: true,
-        message: t('controlPanel.passwordResetSuccess', `Password successfully reset for ${selectedUser.full_name}!`),
-        type: 'success'
+      toast({
+        title: t('controlPanel.passwordResetSuccess', `Password successfully reset for ${selectedUser.full_name}!`),
+        variant: 'success',
+        duration: 3000,
       });
       
       // Close the window after showing success message
@@ -724,10 +719,6 @@ const ControlPanel = () => {
         setAdminResetSuccess('');
       }, 3000);
       
-      // Hide toast after 3 seconds
-      setTimeout(() => {
-        setToast({ show: false, message: '', type: '' });
-      }, 3000);
     } catch (error) {
       console.error('Admin password reset error:', error);
       if (handleSessionAuthError(error)) return;
@@ -799,16 +790,15 @@ const ControlPanel = () => {
       setSelectedEmployeeId('');
       
       // Show success toast
-      setToast({
-        show: true,
-        message: t('controlPanel.passwordResetSuccessEmployee', `Password reset successfully for employee ${getDemoEmployeeName(selectedEmployee, t)}!`),
-        type: 'success'
+      toast({
+        title: t('controlPanel.passwordResetSuccessEmployee', `Password reset successfully for employee ${getDemoEmployeeName(selectedEmployee, t)}!`),
+        variant: 'success',
+        duration: 3000,
       });
       
       setTimeout(() => {
         setEmployeeResetSuccess('');
         setShowEmployeeReset(false);
-        setToast({ show: false, message: '', type: '' });
       }, 3000);
     } catch (error) {
       console.error('Employee password reset error:', error);
@@ -1623,8 +1613,7 @@ const ControlPanel = () => {
                         setTimeout(() => {
                           fn();
                           setRestoringDemoData(null);
-                          setToast({ show: true, message: t('controlPanel.demoDataRestored', '{type} restored to defaults').replace('{type}', label), type: 'success' });
-                          setTimeout(() => setToast({ show: false, message: '', type: '' }), 3000);
+                          toast({ title: t('controlPanel.demoDataRestored', '{type} restored to defaults').replace('{type}', label), variant: 'success', duration: 3000 });
                         }, 500);
                       }}
                       style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 11.5, padding: '4px 8px' }}
@@ -1645,8 +1634,7 @@ const ControlPanel = () => {
                     setTimeout(() => {
                       resetAllDemoData();
                       setRestoringDemoData(null);
-                      setToast({ show: true, message: t('controlPanel.allDemoDataRestored', 'All demo data restored to defaults'), type: 'success' });
-                      setTimeout(() => setToast({ show: false, message: '', type: '' }), 3000);
+                      toast({ title: t('controlPanel.allDemoDataRestored', 'All demo data restored to defaults'), variant: 'success', duration: 3000 });
                     }, 500);
                   }}
                   style={{ width: '100%', marginTop: 7, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}
@@ -1693,29 +1681,7 @@ const ControlPanel = () => {
         </aside>
       </div>
 
-      {/* Toast — a hairline plate on the chrome ground, never a coloured banner */}
-      {toast.show && (
-        <div style={{ position: 'fixed', top: 16, right: 16, zIndex: 50 }} className="animate-fade-in">
-          <div
-            style={{
-              display: 'flex', alignItems: 'center', gap: 10,
-              background: ind.chrome, border: `1px solid ${ind.ink}`, borderRadius: 0, padding: '10px 14px',
-            }}
-          >
-            {toast.type === 'success'
-              ? <span aria-hidden="true" style={{ width: 6, height: 6, background: ind.accent, flex: 'none' }} />
-              : <AlertCircle size={15} strokeWidth={1.5} style={{ flex: 'none', color: ind.ink }} />}
-            <span style={{ fontFamily: BODY, fontSize: 12.5, color: ind.ink }}>{toast.message}</span>
-          </div>
-        </div>
-      )}
-
       <style>{`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(-10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fade-in { animation: fadeIn 0.3s ease-out; }
         /* Hide the browser's own password reveal icon — we draw our own. */
         input[type="password"]::-ms-reveal,
         input[type="password"]::-ms-clear { display: none; }

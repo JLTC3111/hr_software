@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { AlertCircle, CheckCircle, X } from 'lucide-react';
 import { useAuth } from './AuthContext.jsx';
 import { useLanguage } from './LanguageContext.jsx';
+import { useToast } from './ToastContext.js';
 import { ensureValidSession } from '../hooks/useSessionGuard.js';
 import { supabase } from '../config/supabaseClient.js';
 import { isDemoMode } from '../utils/demoHelper.js';
@@ -102,51 +102,18 @@ export const useNotifications = () => {
   return context;
 };
 
-const NotificationToast = ({ toast, onDismiss, dismissLabel }) => {
-  if (!toast.show) return null;
-
-  const isError = toast.type === 'error';
-
-  return (
-    <div
-      className={`fixed bottom-6 right-6 z-9999 flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg border max-w-sm ${
-        isError
-          ? 'bg-red-50 border-red-200 text-red-800 dark:bg-red-950 dark:border-red-800 dark:text-red-100'
-          : 'bg-green-50 border-green-200 text-green-800 dark:bg-green-950 dark:border-green-800 dark:text-green-100'
-      }`}
-      role="status"
-    >
-      {isError ? (
-        <AlertCircle className="h-5 w-5 shrink-0" />
-      ) : (
-        <CheckCircle className="h-5 w-5 shrink-0" />
-      )}
-      <span className="text-sm flex-1">{toast.message}</span>
-      <button
-        type="button"
-        onClick={onDismiss}
-        className="p-1 rounded hover:opacity-70 cursor-pointer"
-        aria-label={dismissLabel}
-      >
-        <X className="h-4 w-4" />
-      </button>
-    </div>
-  );
-};
-
 export const NotificationProvider = ({ children }) => {
   const { user, isAuthenticated, handleSessionAuthError } = useAuth();
   const { t } = useLanguage();
+  const { toast } = useToast();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(EMPTY_STATS);
   const [notificationPrefs, setNotificationPrefs] = useState(DEFAULT_NOTIFICATION_PREFS);
   const [hasMoreNotifications, setHasMoreNotifications] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [toast, setToast] = useState({ show: false, message: '', type: 'error' });
   const pendingApprovalsDebounceRef = useRef(null);
   const pendingApprovalsCheckRef = useRef(null);
-  const toastTimeoutRef = useRef(null);
   const notificationPrefsRef = useRef(DEFAULT_NOTIFICATION_PREFS);
   const loadedOffsetRef = useRef(0);
 
@@ -157,27 +124,8 @@ export const NotificationProvider = ({ children }) => {
   }, [notificationPrefs]);
 
   const showActionError = useCallback((message) => {
-    if (toastTimeoutRef.current) {
-      clearTimeout(toastTimeoutRef.current);
-    }
-    setToast({ show: true, message, type: 'error' });
-    toastTimeoutRef.current = setTimeout(() => {
-      setToast((prev) => ({ ...prev, show: false }));
-    }, 4500);
-  }, []);
-
-  const dismissToast = useCallback(() => {
-    if (toastTimeoutRef.current) {
-      clearTimeout(toastTimeoutRef.current);
-    }
-    setToast((prev) => ({ ...prev, show: false }));
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
-    };
-  }, []);
+    toast({ title: message, variant: 'error', duration: 4500 });
+  }, [toast]);
 
   const updateNotificationPrefs = useCallback((settings) => {
     const picked = pickNotificationPrefs(settings);
@@ -903,11 +851,6 @@ export const NotificationProvider = ({ children }) => {
   return (
     <NotificationContext.Provider value={value}>
       {children}
-      <NotificationToast
-        toast={toast}
-        onDismiss={dismissToast}
-        dismissLabel={t('notifications.dismiss', 'Dismiss')}
-      />
     </NotificationContext.Provider>
   );
 };

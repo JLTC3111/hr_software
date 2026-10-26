@@ -11,6 +11,7 @@ import * as industry from '../src/theme/industry.js';
 import * as employeeStatus from '../src/utils/employeeStatus.js';
 import * as employeePosition from '../src/utils/employeePositionKey.js';
 import * as locale from '../src/utils/localeFormat.js';
+import * as workSummary from '../src/utils/employeeWorkSummary.js';
 import { fetchAllRows } from '../src/utils/fetchAllRows.js';
 import en from '../src/translations/en.js';
 import { loadSource } from './helpers/loadSource.js';
@@ -24,7 +25,7 @@ function find(tree, predicate) {
   }
 }
 
-function exportFixture({ failEntries = false, failSource = null, employeeId = null, format = 'csv', entryCount = 584, tasks = [], cached = true, period = 'this-month', customPeriod = 'month' } = {}) {
+function exportFixture({ failEntries = false, failSource = null, employeeId = null, format = 'csv', entryCount = 584, tasks = [], overtimeLogs = [], cached = true, period = 'this-month', customPeriod = 'month', taskRead = null } = {}) {
   const employees = ['a', 'b'].map(id => ({ id, name: `Employee ${id}`, department: 'Operations', status: 'Active' }));
   const entries = Array.from({ length: entryCount }, (_, id) => ({
     id, employee_id: employees[id % 2].id, employee: employees[id % 2], date: '2026-07-06',
@@ -48,10 +49,11 @@ function exportFixture({ failEntries = false, failSource = null, employeeId = nu
     started.add(name);
     await gate.promise;
     if (name === failSource) return { success: false, error: 'Read failed' };
-    return { success: true, data: name === 'tasks' ? tasks.map(task => ({ ...task, employee_id: task.employee_id || 'a', employee: employees[0] })) : [] };
+    return { success: true, data: name === 'tasks' ? tasks.map(task => ({ ...task, employee_id: task.employee_id || 'a', employee: employees[0] })) : name === 'overtime' ? overtimeLogs : [] };
   };
   const states = [];
-  let cursor = 0, flushes = 0, downloaded = null, filename = null;
+  const refs = [];
+  let cursor = 0, refCursor = 0, flushes = 0, downloaded = null, filename = null, refresh;
   const alerts = [];
   const errors = [];
   const translations = [];
@@ -72,13 +74,13 @@ function exportFixture({ failEntries = false, failSource = null, employeeId = nu
       const index = cursor++;
       if (!(index in states)) {
         let value = typeof initial === 'function' ? initial() : initial;
-        if (value?.timeEntries && value?.employees) value = { timeEntries: entries, employees, tasks, goals: [], leave: [], overtimeLogs: [] };
+        if (value?.timeEntries && value?.employees) value = { timeEntries: entries, employees, tasks, goals: [], leave: [], overtimeLogs };
         if (value?.startDate && value?.endDate) value = { startDate: '2026-07-01', endDate: '2026-09-30' };
         states[index] = value;
       }
       return [states[index], value => { states[index] = typeof value === 'function' ? value(states[index]) : value; }];
     },
-    useRef: value => ({ current: value }), useEffect() {}, useCallback: fn => fn, useMemo: fn => fn(),
+    useRef: value => refs[refCursor++] ||= { current: value }, useEffect() {}, useCallback: fn => fn, useMemo: fn => fn(),
   };
   const imports = {
     react, 'react-dom': { flushSync: fn => { flushes++; fn(); } },
@@ -86,16 +88,18 @@ function exportFixture({ failEntries = false, failSource = null, employeeId = nu
     '../contexts/LanguageContext': { SUPPORTED_LANGUAGES: { en: { name: 'English' } }, useLanguage: () => ({ currentLanguage: 'en', t: (key, fallback) => key.split('.').reduce((v, p) => v?.[p], en) || fallback || key }) },
     '../contexts/ThemeContext': { useTheme: () => ({ isDarkMode: false }) },
     '../contexts/AuthContext': { useAuth: () => ({ user: { id: 'admin', role: 'admin' } }) },
-    '../hooks/useSessionGuard.js': { useSessionGuard: () => ({ handleSessionAuthError: () => false }), useAuthenticatedPageRefresh() {} },
+    '../hooks/useSessionGuard.js': { useSessionGuard: () => ({ handleSessionAuthError: () => false }), useAuthenticatedPageRefresh: callback => { refresh = callback; } },
     '../utils/demoHelper': { isDemoMode: () => false, getDemoEmployeeName: employee => employee?.name || 'Unknown' },
     '../services/timeTrackingService': { getOvertimeLogs: source('overtime'), getAllLeaveRequests: source('leave') },
-    '../services/workloadService': { getAllTasks: source('tasks') },
+    '../services/workloadService': { getAllTasks: taskRead || source('tasks') },
     '../services/performanceService': { getAllPerformanceGoals: source('goals') },
     '../utils/supabaseTimeout': { withTimeout: promise => promise }, '../config/requestTimeouts': {},
     '../utils/sessionHelper': { validateAndRefreshSession: async () => ({ success: true }) },
-    '../utils/retryHelper': {}, '../config/supabaseClient': { supabase: client },
+    '../utils/retryHelper': { retryWithBackoff: callback => callback() }, '../config/supabaseClient': { supabase: client },
     '../utils/fetchAllRows.js': { fetchAllRows },
     '../utils/reportExportHelpers.js': { ...helpers, loadPdfLogo: async () => null, loadPdfProfileImage: async () => null },
+    '../utils/employeeWorkSummary.js': workSummary,
+    './employeeWorkSummary.jsx': 'work-summary',
     '../utils/attendanceRules.js': attendance, '../utils/timeEntryHelpers.js': timeEntryHelpers, '../utils/localeFormat.js': locale,
     '../services/translateService.js': {
       translateTexts: () => { modelCalls++; return new Promise(() => {}); },
@@ -124,7 +128,7 @@ function exportFixture({ failEntries = false, failSource = null, employeeId = nu
       alerts.push({ message, active: find(screen, node => node.type === 'elapsed-pill').props.active, flushes });
     },
   });
-  const render = () => { cursor = 0; return Reports(); };
+  const render = () => { cursor = 0; refCursor = 0; return Reports(); };
   let screen = render();
   if (employeeId) {
     find(screen, node => node.props?.id === 'report-employee')
@@ -143,7 +147,9 @@ function exportFixture({ failEntries = false, failSource = null, employeeId = nu
   }
   const button = find(screen, node => node.props?.title === en.reports.exportingIncludes);
   assert.ok(button);
-  return { started, gate, client, alerts, errors, translations, tables, texts, run: button.props.onClick, content: () => downloaded?.text(), bytes: () => downloaded?.arrayBuffer(), filename: () => filename, modelCalls: () => modelCalls };
+  return { started, gate, client, alerts, errors, translations, tables, texts, render,
+    async refresh() { refresh(); await setImmediate(); },
+    run: button.props.onClick, button, content: () => downloaded?.text(), bytes: () => downloaded?.arrayBuffer(), filename: () => filename, modelCalls: () => modelCalls };
 }
 
 test('actual CSV export starts all sources together and writes all 584 rows beyond the first page', async () => {
@@ -154,7 +160,10 @@ test('actual CSV export starts all sources together and writes all 584 rows beyo
   fixture.gate.resolve();
   await exporting;
   const csv = await fixture.content();
-  assert.equal((csv.match(/Translated Record \d+/g) || []).length, 584);
+  const timeSection = csv.split(`\n${en.reports.timeEntries.toUpperCase()}\n`)[1].split(`\n${en.reports.excel.sheets.allEmployeesOverview.toUpperCase()}\n`)[0];
+  assert.equal((timeSection.match(/Translated Record \d+/g) || []).length, 584);
+  assert.ok(csv.includes('Employee a recorded 2336.0 hours'));
+  assert.ok(csv.includes('Employee b recorded 2336.0 hours'));
   assert.ok(csv.includes('Translated Record 583'));
   assert.equal(fixture.translations.length, 584);
   assert.match(fixture.filename(), /2026-07-01_to_2026-09-30_EN\.csv$/);
@@ -169,7 +178,8 @@ test('single-person export filters at the database and keeps only that employee'
   await fixture.run();
   const csv = await fixture.content();
   assert.ok(fixture.client.calls.some(call => call.method === 'eq' && call.args[0] === 'employee_id' && call.args[1] === 'a'));
-  assert.equal((csv.match(/Translated Record \d+/g) || []).length, 292);
+  const timeSection = csv.split(`\n${en.reports.timeEntries.toUpperCase()}\n`)[1].split(`\n${en.reports.excel.performance.header.toUpperCase()}\n`)[0];
+  assert.equal((timeSection.match(/Translated Record \d+/g) || []).length, 292);
   assert.ok(csv.includes('Employee a'));
   assert.ok(!csv.includes('Employee b'));
 });
@@ -234,6 +244,84 @@ test('Excel keeps task assessments, progress notes and ratings with the full wor
   assert.equal(sheet.getCell('P2').value, 'Translated All checks complete');
   assert.equal(sheet.getCell('Q3').value, 'Translated Two screens remain');
   assert.equal(sheet.getCell('R2').value, '4/5');
+  const summarySheet = workbook.getWorksheet('Work summary');
+  assert.ok(summarySheet);
+  assert.ok(summarySheet.getColumn(3).values.some(value => String(value).includes('Completed 1 of 2 tasks')));
+  assert.ok(summarySheet.getColumn(3).values.some(value => String(value).includes('Translated All checks complete')));
+  assert.equal(workbook.worksheets[0].name, en.reports.excel.sheets.summary, 'preserve the existing first worksheet');
+});
+
+test('Reports passes an automatically scoped summary to the employee summary component', () => {
+  const fixture = exportFixture({ employeeId: 'a', entryCount: 2, tasks: detailedTasks.map(task => ({ ...task, employee_id: 'a' })) });
+  const panel = find(fixture.render(), node => node.type === 'work-summary');
+  assert.equal(panel.props.summary.employeeId, 'a');
+  assert.equal(panel.props.summary.metrics.totalHours, 8);
+  assert.equal(panel.props.summary.metrics.completedTasks, 1);
+  assert.equal(panel.props.summary.startDate, '2026-07-01');
+  assert.equal(panel.props.summary.endDate, '2026-09-30');
+});
+
+test('failed source reads show an error instead of a successful partial employee summary', async () => {
+  for (const failSource of ['tasks', 'goals']) {
+    const fixture = exportFixture({ employeeId: 'a', entryCount: 2, failSource });
+    fixture.gate.resolve();
+    await fixture.refresh();
+    const panel = find(fixture.render(), node => node.type === 'work-summary');
+    assert.match(panel.props.error, /Failed to load data/);
+    assert.equal(panel.props.summary.hasRecords, false);
+  }
+});
+
+test('a slower previous employee request cannot overwrite the latest employee summary', async () => {
+  const reads = { a: Promise.withResolvers(), b: Promise.withResolvers() };
+  const fixture = exportFixture({ employeeId: 'a', entryCount: 2, taskRead: ({ employeeId }) => reads[employeeId].promise });
+  fixture.gate.resolve();
+  await fixture.refresh();
+  find(fixture.render(), node => node.props?.id === 'report-employee').props.onChange({ target: { value: 'b' } });
+  fixture.render();
+  await fixture.refresh();
+  reads.b.resolve({ success: true, data: [{ ...detailedTasks[0], employee_id: 'b' }] });
+  await setImmediate();
+  let panel = find(fixture.render(), node => node.type === 'work-summary');
+  assert.equal(panel.props.summary.employeeId, 'b');
+  assert.equal(panel.props.summary.metrics.completedTasks, 1);
+  assert.equal(panel.props.loading, false);
+  reads.a.resolve({ success: true, data: [] });
+  await setImmediate();
+  panel = find(fixture.render(), node => node.type === 'work-summary');
+  assert.equal(panel.props.summary.employeeId, 'b');
+  assert.equal(panel.props.summary.metrics.completedTasks, 1);
+  assert.equal(panel.props.summary.metrics.totalHours, 8);
+  assert.equal(panel.props.loading, false);
+});
+
+test('PDF work summaries contain full recorded work notes and separate employees', async () => {
+  const fixture = exportFixture({ format: 'pdf', entryCount: 4, tasks: detailedTasks, cached: false });
+  fixture.gate.resolve();
+  await fixture.run();
+  const text = fixture.texts.flat().join('\n');
+  assert.match(text, /Employee a.*Work summary/);
+  assert.match(text, /Employee b.*Work summary/);
+  assert.match(text, /Employee a recorded 16\.0 hours/);
+  assert.match(text, /Record 0/);
+  assert.match(text, /Record 3/);
+  assert.match(text, /Completed work/);
+});
+
+test('overtime-only work can be summarised and exported in every format', async () => {
+  for (const format of ['csv', 'xlsx', 'pdf']) {
+    const fixture = exportFixture({ employeeId: 'a', entryCount: 0, format, cached: false,
+      overtimeLogs: [{ id: 'overtime-1', employee_id: 'a', date: '2026-07-06', hours: 3, status: 'approved', reason: 'Overnight production support' }],
+    });
+    assert.equal(fixture.button.props.disabled, false, format);
+    const panel = find(fixture.render(), node => node.type === 'work-summary');
+    assert.equal(panel.props.summary.metrics.totalHours, 3);
+    fixture.gate.resolve();
+    await fixture.run();
+    assert.match(fixture.filename() || '', new RegExp(`\\.${format}$`), fixture.errors.join('\n'));
+    if (format === 'csv') assert.match(await fixture.content(), /Overnight production support/);
+    if (format === 'pdf') assert.match(fixture.texts.flat().join('\n'), /Overnight production support/);
+  }
 });
 
 test('monthly task output follows completion dates instead of old due dates', async () => {

@@ -34,6 +34,7 @@ import {
 import { useTheme } from '../contexts/ThemeContext.jsx';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
+import { useToast } from '../contexts/ToastContext.js';
 import * as timeTrackingService from '../services/timeTrackingService.js';
 import { validateAndRefreshSession } from '../utils/sessionHelper.js';
 import { retryWithBackoff, isRetryableError } from '../utils/retryHelper.js';
@@ -224,7 +225,7 @@ const TimeClockEntry = () => {
   
   // State for uploading proof to existing entries
   const [uploadingProofId, setUploadingProofId] = useState(null);
-  const [uploadToast, setUploadToast] = useState({ show: false, message: '', type: '' });
+  const { toast } = useToast();
   const [uploadProgress, setUploadProgress] = useState({});
   
   // State for image preview modal
@@ -1089,19 +1090,15 @@ const TimeClockEntry = () => {
           // Refresh time entries using the centralized fetch function
           await fetchTimeEntries();
           
-          setUploadToast({
-            show: true,
-            message: t('timeClock.proofDeleteSuccess', 'Proof file deleted successfully'),
-            type: 'success'
+          toast({
+            title: t('timeClock.proofDeleteSuccess', 'Proof file deleted successfully'),
+            variant: 'success', duration: 3000,
           });
-          setTimeout(() => setUploadToast({ show: false, message: '', type: '' }), 3000);
         } else {
-          setUploadToast({
-            show: true,
-            message: t('timeClock.proofDeleteError', 'Failed to delete proof file'),
-            type: 'error'
+          toast({
+            title: t('timeClock.proofDeleteError', 'Failed to delete proof file'),
+            variant: 'error', duration: 5000,
           });
-          setTimeout(() => setUploadToast({ show: false, message: '', type: '' }), 5000);
         }
       } else {
         // Delete entire entry
@@ -1150,33 +1147,27 @@ const TimeClockEntry = () => {
         await fetchTimeEntries();
 
         // Show success toast
-        setUploadToast({
-          show: true,
-          message: t('timeClock.proofUploadSuccess', 'Proof file uploaded successfully'),
-          type: 'success'
+        toast({
+          title: t('timeClock.proofUploadSuccess', 'Proof file uploaded successfully'),
+          variant: 'success', duration: 3000,
         });
-        setTimeout(() => setUploadToast({ show: false, message: '', type: '' }), 3000);
       } else {
         // Clear progress on error
         setUploadProgress({});
         
         // Show error toast
-        setUploadToast({
-          show: true,
-          message: t('timeClock.proofUploadError', 'Failed to upload proof file'),
-          type: 'error'
+        toast({
+          title: t('timeClock.proofUploadError', 'Failed to upload proof file'),
+          variant: 'error', duration: 5000,
         });
-        setTimeout(() => setUploadToast({ show: false, message: '', type: '' }), 5000);
       }
     } catch (error) {
       console.error('Error uploading proof:', error);
       if (handleSessionAuthError(error)) return;
-      setUploadToast({
-        show: true,
-        message: t('timeClock.proofUploadError', 'Failed to upload proof file'),
-        type: 'error'
+      toast({
+        title: t('timeClock.proofUploadError', 'Failed to upload proof file'),
+        variant: 'error', duration: 5000,
       });
-      setTimeout(() => setUploadToast({ show: false, message: '', type: '' }), 5000);
     } finally {
       setUploadingProofId(null);
     }
@@ -1217,29 +1208,23 @@ const TimeClockEntry = () => {
           await checkPendingApprovals();
         }
 
-        setUploadToast({
-          show: true,
-          message: t('timeClock.approvalSuccess', 'Time entry approved successfully'),
-          type: 'success'
+        toast({
+          title: t('timeClock.approvalSuccess', 'Time entry approved successfully'),
+          variant: 'success', duration: 3000,
         });
-        setTimeout(() => setUploadToast({ show: false, message: '', type: '' }), 3000);
       } else {
-        setUploadToast({
-          show: true,
-          message: t('timeClock.approvalError', 'Failed to approve entry'),
-          type: 'error'
+        toast({
+          title: t('timeClock.approvalError', 'Failed to approve entry'),
+          variant: 'error', duration: 5000,
         });
-        setTimeout(() => setUploadToast({ show: false, message: '', type: '' }), 5000);
       }
     } catch (error) {
       console.error('Error approving entry:', error);
       if (handleSessionAuthError(error)) return;
-      setUploadToast({
-        show: true,
-        message: t('timeClock.approvalError', 'Failed to approve entry'),
-        type: 'error'
+      toast({
+        title: t('timeClock.approvalError', 'Failed to approve entry'),
+        variant: 'error', duration: 5000,
       });
-      setTimeout(() => setUploadToast({ show: false, message: '', type: '' }), 5000);
     } finally {
       setApprovingEntryId(null);
     }
@@ -2641,25 +2626,6 @@ const TimeClockEntry = () => {
           )}
         </aside>
       </div>
-
-      {/* ── Upload toast ──────────────────────────────────────────── */}
-      {uploadToast.show && (
-        <div style={{ position: 'fixed', top: 16, right: 16, zIndex: 60 }}>
-          <div
-            className="flex items-center"
-            style={{
-              gap: 10, padding: '10px 14px', background: ind.ground,
-              border: `1px solid ${uploadToast.type === 'success' ? ind.hairline : ind.ink}`,
-              borderLeft: `3px solid ${uploadToast.type === 'success' ? ind.accent : ind.ink}`,
-            }}
-          >
-            {uploadToast.type === 'success'
-              ? <Check size={14} strokeWidth={1.5} style={{ color: ind.accentDeep, flex: 'none' }} />
-              : <AlertCircle size={14} strokeWidth={1.5} style={{ color: ind.ink, flex: 'none' }} />}
-            <span style={{ fontFamily: BODY, fontSize: 12.5, color: ind.ink }}>{uploadToast.message}</span>
-          </div>
-        </div>
-      )}
 
       {/* ── Leave request modal ───────────────────────────────────── */}
       {showLeaveModal && (

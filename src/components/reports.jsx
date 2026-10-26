@@ -70,6 +70,14 @@ import {
   filterActiveEmployees,
 } from '../utils/employeeStatus.js';
 import { getEmployeePositionI18nKey } from '../utils/employeePositionKey.js';
+import EmployeeWorkSummary from './employeeWorkSummary.jsx';
+import {
+  buildEmployeeWorkSummary,
+  employeeWorkSummaryRows,
+  employeeWorkSummaryText,
+  reportRecordDate as recordDate,
+  validReportRange,
+} from '../utils/employeeWorkSummary.js';
 
 // exceljs/jspdf are ~1.2 MB and are only needed once the user actually exports —
 // loaded on demand so opening the Reports page stays cheap.
@@ -90,14 +98,6 @@ const SCOPE_KEYS = ['timeEntries', 'leave', 'tasks', 'goals'];
 
 /** Rows shown in the preview before "Load 50" is pressed. */
 const PREVIEW_PAGE = 50;
-
-/**
- * The date a record sits on for period purposes. Time entries and leave carry a
- * real date. Completed work belongs to its completion month; other tasks and
- * goals use their due date, falling back to start/created date when undated.
- */
-const recordDate = (item) =>
-  String(item?.date || (item?.status === 'completed' && item?.completion_date) || item?.due_date || item?.target_date || item?.start_date || item?.created_at || '').slice(0, 10);
 
 const withinRange = (item, startDate, endDate) => {
   const date = recordDate(item);
@@ -376,7 +376,7 @@ const Reports = () => {
 
   // Localizes the "Entered by admin:" prefix; the free-text body is looked up
   // from the pre-translated UGC map when one is supplied (export paths).
-  const translateNotes = (notes, ugcMap = null) => {
+  const translateNotes = useCallback((notes, ugcMap = null) => {
     if (!notes) return '';
     // Check if notes starts with "Entered by admin:" (case insensitive, optional colon)
     const adminPrefixRegex = /^Entered by admin:?\s*/i;
@@ -389,7 +389,7 @@ const Reports = () => {
       return translatedPrefix + ' ' + (ugcMap ? (ugcMap.get(body) ?? body) : body);
     }
     return ugcMap ? (ugcMap.get(notes) ?? notes) : notes;
-  };
+  }, [t]);
 
   // State
   const [loading, setLoading] = useState(false);
@@ -456,6 +456,10 @@ const Reports = () => {
   const [lastExport, setLastExport] = useState(readLastExport);
 
   const columnMenuRef = useRef(null);
+  const reportRequestRef = useRef(0);
+  const reportSelectionKey = `${selectedEmployee}:${filters.startDate}:${filters.endDate}`;
+  const reportSelectionRef = useRef(reportSelectionKey);
+  reportSelectionRef.current = reportSelectionKey;
 
   // Data state
   const [reportData, setReportData] = useState({
@@ -464,7 +468,8 @@ const Reports = () => {
     tasks: [],
     goals: [],
     leave: [],
-    employees: []
+    employees: [],
+    selectionKey: null,
   });
 
   // Warm PDF font cache for CJK/Thai exports so the first PDF download is reliable.
@@ -578,11 +583,16 @@ const Reports = () => {
   // Fetch data when filters change
   const fetchReportData = useCallback(async (options = {}) => {
     const { silent = false } = options;
+    const requestId = ++reportRequestRef.current;
+    const selectionKey = `${selectedEmployee}:${filters.startDate}:${filters.endDate}`;
     if (!silent) {
       setLoading(true);
       setFetchError(null); // Clear any previous errors
     }
     try {
+      if (!validReportRange(filters.startDate, filters.endDate)) {
+        throw new Error(t('reports.workSummary.invalidDates', 'Choose a valid start and end date, with the start date on or before the end date.'));
+      }
       // Skip session validation in demo mode - demo data doesn't require authentication
       if (!isDemoMode()) {
         // Validate session before fetching
@@ -639,6 +649,7 @@ const Reports = () => {
 
       const fetchTasks = async () => {
         const tasksResponse = await getAllTasks(employeeId ? { employeeId } : {});
+        if (!tasksResponse.success) throw new Error(tasksResponse.error || 'Unable to load report tasks');
         let tasks = tasksResponse.success ? tasksResponse.data : [];
         if (employeeId) {
           tasks = tasks.filter(task => String(task.employee_id) === String(employeeId));
@@ -650,6 +661,7 @@ const Reports = () => {
         const goalsResponse = await performanceService.getAllPerformanceGoals(
           employeeId ? { employeeId } : {}
         );
+        if (!goalsResponse.success) throw new Error(goalsResponse.error || 'Unable to load report goals');
         let goals = goalsResponse.success ? goalsResponse.data : [];
         if (employeeId) {
           goals = goals.filter(goal => String(goal.employee_id) === String(employeeId));
@@ -682,6 +694,8 @@ const Reports = () => {
         timeTrackingService.getOvertimeLogs(employeeId, { startDate, endDate }),
       ]);
       if (!overtimeResult.success) throw new Error(overtimeResult.error);
+      if (requestId !== reportRequestRef.current || reportSelectionRef.current !== selectionKey) return;
+      setFetchError(null);
 
       setReportData(prev => ({
         ...prev,
@@ -689,6 +703,7 @@ const Reports = () => {
         overtimeLogs: overtimeResult.data || [],
         tasks,
         goals,
+        selectionKey,
         // Leave arrives without its employee joined; the roster already loaded
         // is the only place to resolve the name and unit from.
         leave: leaveData.map(req => ({
@@ -704,7 +719,8 @@ const Reports = () => {
         }
       });
     } catch (error) {
-      setReportData(prev => ({ ...prev, timeEntries: [], overtimeLogs: [], tasks: [], goals: [], leave: [] }));
+      if (requestId !== reportRequestRef.current || reportSelectionRef.current !== selectionKey) return;
+      setReportData(prev => ({ ...prev, timeEntries: [], overtimeLogs: [], tasks: [], goals: [], leave: [], selectionKey }));
       console.error('Error fetching report data:', error);
 
       if (handleSessionAuthError(error, { silent, setFetchError })) {
@@ -713,15 +729,20 @@ const Reports = () => {
       }
       
       // Set user-visible error message for other errors
-      setFetchError(t('errors.loadFailed', 'Failed to load data'));
+      setFetchError(validReportRange(filters.startDate, filters.endDate)
+        ? t('errors.loadFailed', 'Failed to load data')
+        : t('reports.workSummary.invalidDates', 'Choose a valid start and end date, with the start date on or before the end date.'));
     } finally {
-      if (!silent) setLoading(false);
+      if (requestId === reportRequestRef.current) setLoading(false);
     }
   }, [filters, selectedEmployee, handleSessionAuthError, t]);
 
   const loadAllReportDataForExport = useCallback(async () => {
     const { startDate, endDate } = filters;
     const employeeId = selectedEmployee === 'all' ? null : selectedEmployee;
+    if (!validReportRange(startDate, endDate)) {
+      throw new Error(t('reports.workSummary.invalidDates', 'Choose a valid start and end date, with the start date on or before the end date.'));
+    }
 
     if (!isDemoMode()) {
       const sessionValidation = await validateAndRefreshSession();
@@ -796,7 +817,10 @@ const Reports = () => {
 
     // The screen keeps the unscoped fetch so the figures stay live; the export
     // gets the cohort-narrowed copy so the file matches what 02 · People says.
-    setReportData((prev) => ({ ...prev, timeEntries: allTimeEntries, overtimeLogs: overtimeResult.data || [], tasks, goals, leave }));
+    const selectionKey = `${selectedEmployee}:${startDate}:${endDate}`;
+    if (reportSelectionRef.current === selectionKey) {
+      setReportData((prev) => ({ ...prev, timeEntries: allTimeEntries, overtimeLogs: overtimeResult.data || [], tasks, goals, leave, selectionKey }));
+    }
 
     return {
       timeEntries: allTimeEntries.filter(inCohort),
@@ -806,7 +830,7 @@ const Reports = () => {
       leave: leave.filter(inCohort),
       employees: cohort,
     };
-  }, [filters, selectedEmployee, reportData.employees, inCohort, cohort]);
+  }, [filters, selectedEmployee, reportData.employees, inCohort, cohort, t]);
 
   const getFilteredExportData = useCallback(async () => {
     const snapshot = await loadAllReportDataForExport();
@@ -816,6 +840,7 @@ const Reports = () => {
   // Effect to fetch data when filters/tab/employee changes (no need to wait for employees list)
   useEffect(() => {
     fetchReportData();
+    return () => { reportRequestRef.current += 1; };
   }, [fetchReportData]);
 
   // Memoize fetchReportData for use in visibility hook
@@ -861,6 +886,28 @@ const Reports = () => {
     tasks: scope.tasks ? cohortData.tasks : [],
     goals: scope.goals ? cohortData.goals : [],
   }), [cohortData, scope]);
+
+  const makeWorkSummary = useCallback((employee, data, ugcMap = null) => buildEmployeeWorkSummary(employee, data, {
+    ...filters, t, scope, employeeName: getDemoEmployeeName(employee, t),
+    textForField: (record, field, kind) => {
+      if (isDemoMode() && kind === 'task' && field === 'title') return getDemoTaskTitle(record, t);
+      if (isDemoMode() && kind === 'task' && field === 'description') return getDemoTaskDescription(record, t);
+      if (isDemoMode() && kind === 'goal' && field === 'title') return getDemoGoalTitle(record, t);
+      if (isDemoMode() && kind === 'goal' && field === 'description') return getDemoGoalDescription(record, t);
+      if (kind === 'time' && field === 'notes') return translateNotes(record.notes, ugcMap);
+      const value = record[field] || '';
+      return ugcMap?.get(value) ?? value;
+    },
+  }), [filters, t, scope, translateNotes]);
+
+  const workSummaryData = useMemo(() => ({ ...scopedData, leaveForAttendance: cohortData.leave }), [scopedData, cohortData.leave]);
+  const workSummary = useMemo(() => selectedEmployee !== 'all' && cohort.length === 1
+    ? makeWorkSummary(cohort[0], workSummaryData) : null,
+  [selectedEmployee, cohort, workSummaryData, makeWorkSummary]);
+
+  const exportWorkSummaries = (snapshot, ugcMap) => snapshot.employees
+    .map(employee => makeWorkSummary(employee, snapshot, ugcMap))
+    .filter(summary => summary?.hasRecords);
 
   const employeeById = useMemo(() => {
     const map = new Map();
@@ -1515,7 +1562,7 @@ const Reports = () => {
       }
 
       const ugcMap = buildUgcTranslateMap(
-        collectExportUgcStrings(timeEntries, tasks, goals, leave, { demo: isDemoMode() })
+        collectExportUgcStrings(timeEntries, tasks, goals, leave, { demo: isDemoMode(), overtimeLogs: exportData.overtimeLogs })
       );
 
       const languageName = SUPPORTED_LANGUAGES[currentLanguage]?.name || 'English';
@@ -1545,6 +1592,13 @@ const Reports = () => {
           [t('reports.achievedGoals', 'Achieved Goals'), exportStats.achievedGoals]
         ]
       }];
+
+      sections.push({
+        title: t('reports.workSummary.title', 'Work summary'),
+        headers: [t('reports.employee', 'Employee'), t('reports.type', 'Type'), t('reports.excel.sheets.summary', 'Summary')],
+        rows: exportWorkSummaries(exportData, ugcMap).flatMap(summary =>
+          employeeWorkSummaryRows(summary, t).map(row => [summary.employeeName, ...row])),
+      });
 
       if (timeEntries.length > 0) {
         const timeSection = buildTimeEntryCsvRows(timeEntries, ugcMap);
@@ -1654,7 +1708,7 @@ const Reports = () => {
       }
 
       const ugcMap = buildUgcTranslateMap(
-        collectExportUgcStrings(timeEntries, tasks, goals, leave, { demo: isDemoMode() })
+        collectExportUgcStrings(timeEntries, tasks, goals, leave, { demo: isDemoMode(), overtimeLogs: exportSnapshot.overtimeLogs })
       );
 
       // Helpers for safe values and typing
@@ -2597,6 +2651,26 @@ const Reports = () => {
         goalsSheet.views = [{ state: 'frozen', xSplit: 0, ySplit: 1 }];
       }
 
+      const workSheet = workbook.addWorksheet(tr('reports.workSummary.title', 'Work summary'), {
+        views: [{ state: 'frozen', ySplit: 1 }],
+      });
+      workSheet.columns = [
+        { header: tr('reports.employee', 'Employee'), width: 28 },
+        { header: tr('reports.type', 'Type'), width: 26 },
+        { header: tr('reports.excel.sheets.summary', 'Summary'), width: 100 },
+      ];
+      workSheet.getRow(1).font = { bold: true };
+      for (const summary of exportWorkSummaries(exportSnapshot, ugcMap)) {
+        for (const [label, text] of employeeWorkSummaryRows(summary, t)) {
+          const row = workSheet.getRow(workSheet.rowCount + 1);
+          row.getCell(1).value = sanitize(summary.employeeName);
+          row.getCell(2).value = sanitize(label);
+          row.getCell(3).value = sanitize(text);
+          row.alignment = { wrapText: true, vertical: 'top' };
+          row.height = Math.min(409, Math.max(30, 15 * text.split('\n').reduce((lines, line) => lines + Math.max(1, Math.ceil(line.length / 95)), 0)));
+        }
+      }
+
       // Write the file with ExcelJS. The name comes from the same builder the
       // dock prints, so the two can never drift apart.
       const filename = buildExportFilename('xlsx');
@@ -2611,7 +2685,7 @@ const Reports = () => {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      rememberExport(filename, timeEntries.length + tasks.length + goals.length + leave.length);
+      rememberExport(filename, timeEntries.length + exportSnapshot.overtimeLogs.length + tasks.length + goals.length + leave.length);
       showExportSuccess(t('reports.exportSuccess', 'Excel report exported successfully with styled tables, metrics, and chart data!'));
     } catch (error) {
       console.error('Error exporting Excel:', error);
@@ -2725,8 +2799,9 @@ const Reports = () => {
     collectExportUgcStrings(scopedData.timeEntries, scopedData.tasks, scopedData.goals, scopedData.leave, {
       format: exportFormat,
       demo: isDemoMode(),
+      overtimeLogs: scopedData.overtimeLogs,
     }).filter((text) => typeof text === 'string' && text.trim())
-  )].sort()), [scopedData.timeEntries, scopedData.tasks, scopedData.goals, scopedData.leave, exportFormat]);
+  )].sort()), [scopedData.timeEntries, scopedData.tasks, scopedData.goals, scopedData.leave, scopedData.overtimeLogs, exportFormat]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -2756,7 +2831,7 @@ const Reports = () => {
       }
 
       const ugcMap = buildUgcTranslateMap(
-        collectExportUgcStrings(timeEntries, tasks, goals, leave, { format: 'pdf', demo: isDemoMode() })
+        collectExportUgcStrings(timeEntries, tasks, goals, leave, { format: 'pdf', demo: isDemoMode(), overtimeLogs: exportSnapshot.overtimeLogs })
       );
 
       const doc = new jsPDF('p', 'mm', 'a4');
@@ -2924,12 +2999,18 @@ const Reports = () => {
         ]
       });
 
-      // ── Summary overview: 2-column label/value grid + performance meter ────
-      layout.sectionRule();
-      layout.sectionHeading(t('reports.summaryOverview', 'SUMMARY OVERVIEW').toUpperCase());
+      for (const summary of exportWorkSummaries(exportSnapshot, ugcMap)) {
+        layout.ensure(30);
+        layout.sectionRule();
+        layout.sectionHeading(`${summary.employeeName} — ${t('reports.workSummary.title', 'Work summary')}`);
+        for (const [label, text] of employeeWorkSummaryRows(summary, t)) {
+          layout.paragraph(`${label}: ${text}`);
+        }
+      }
 
+      // ── Summary overview: 2-column label/value grid + performance meter ────
       const summaryCell = (label, value) => ({ label, value: String(value) });
-      layout.summaryGrid([
+      const summaryCells = [
         summaryCell(t('reports.totalRecords', 'Total Records'), exportStats.totalRecords),
         timeEntries.length > 0
           ? summaryCell(t('reports.totalHours', 'Total Hours'), `${exportStats.totalHours}h`)
@@ -2950,7 +3031,12 @@ const Reports = () => {
           summaryCell(t('reports.leave', 'Leave Requests'), exportStats.leaveCount),
           null
         ] : [])
-      ]);
+      ];
+      // A work summary can fill the page. Keep the next heading with its grid.
+      layout.ensure(20 + Math.ceil(summaryCells.length / 2) * 9);
+      layout.sectionRule();
+      layout.sectionHeading(t('reports.summaryOverview', 'SUMMARY OVERVIEW').toUpperCase());
+      layout.summaryGrid(summaryCells);
 
       // One employee → that employee's score; "all" → mean over the employees that
       // actually have records in this period (employees with none would skew it to 0).
@@ -3433,6 +3519,8 @@ const Reports = () => {
     { value: 'xlsx', label: 'XLSX' },
     { value: 'pdf', label: 'PDF' },
   ];
+  const exportRowCount = totals.rows + scopedData.overtimeLogs.length;
+  const exportDisabled = exporting || exportRowCount === 0 || !validReportRange(filters.startDate, filters.endDate);
 
   const runExport = () => {
     if (exportFormat === 'xlsx') return exportToExcel();
@@ -3756,6 +3844,18 @@ const Reports = () => {
             </div>
           </Cell>
         </Band>
+
+        <EmployeeWorkSummary
+          key={reportSelectionKey}
+          ind={ind}
+          summary={workSummary}
+          loading={selectedEmployee !== 'all' && (loading || reportData.selectionKey !== reportSelectionKey)}
+          error={!validReportRange(filters.startDate, filters.endDate)
+            ? t('reports.workSummary.invalidDates', 'Choose a valid start and end date, with the start date on or before the end date.')
+            : fetchError}
+          copyText={() => employeeWorkSummaryText(makeWorkSummary(cohort[0], workSummaryData,
+            buildUgcTranslateMap(collectExportUgcStrings(scopedData.timeEntries, scopedData.tasks, scopedData.goals, [], { demo: isDemoMode(), overtimeLogs: scopedData.overtimeLogs }))), t)}
+        />
 
         {/* ── COMPOSITION ───────────────────────────────────────────── */}
         <Band ind={ind} className="grid-cols-1 md:grid-cols-2 xl:grid-cols-4">
@@ -4260,7 +4360,7 @@ const Reports = () => {
           </div>
           <p style={{ ...noteStyle, marginTop: 3 }}>
             {[
-              `${totals.rows.toLocaleString()} ${t('reports.rows', 'rows')}`,
+              `${exportRowCount.toLocaleString()} ${t('reports.rows', 'rows')}`,
               `${scopeCount} ${t('reports.recordTypes', 'record types')}`,
               exportFormat === 'csv' && totals.rows > 0
                 ? `${t('reports.estimated', 'est.')} ${formatBytes(estimatedCsvBytes)}`
@@ -4283,7 +4383,7 @@ const Reports = () => {
           <SpecularButton
             type="button"
             onClick={runExport}
-            disabled={exporting || totals.rows === 0}
+            disabled={exportDisabled}
             shineOnHover
             title={t('reports.exportingIncludes', 'Exporting will include all filtered data, not just previewed records')}
             className={cn('rounded-none border px-4 py-2')}
@@ -4292,15 +4392,15 @@ const Reports = () => {
               background: ind.accent,
               color: ind.accentInk,
               borderColor: ind.accent,
-              opacity: exporting || totals.rows === 0 ? 0.5 : 1,
-              cursor: exporting || totals.rows === 0 ? 'not-allowed' : 'pointer',
+              opacity: exportDisabled ? 0.5 : 1,
+              cursor: exportDisabled ? 'not-allowed' : 'pointer',
             }}
           >
             {exporting
               ? <Loader2 size={13} strokeWidth={1.5} className="animate-spin" />
               : <Download size={13} strokeWidth={1.5} style={{ opacity: 0.85 }} />}
             <span style={{ ...figureStyle, fontSize: 12.5, letterSpacing: '.06em', textTransform: 'uppercase' }}>
-              {`${t('reports.export', 'Export')} ${totals.rows.toLocaleString()} ${t('reports.records', 'records')}`}
+              {`${t('reports.export', 'Export')} ${exportRowCount.toLocaleString()} ${t('reports.records', 'records')}`}
             </span>
           </SpecularButton>
         </div>
