@@ -12,7 +12,10 @@ export const useTheme = () => {
 
 export const ThemeProvider = ({ children }) => {
   const [isDarkMode, setIsDarkMode] = useState(() => {
-    const savedTheme = localStorage.getItem('theme');
+    const incoming = new URLSearchParams(window.location.search).get('theme');
+    if (incoming === 'dark' || incoming === 'light') return incoming === 'dark';
+    let savedTheme;
+    try { savedTheme = localStorage.getItem('theme'); } catch { /* Use the system preference. */ }
     if (savedTheme) {
       return savedTheme === 'dark';
     }
@@ -21,7 +24,12 @@ export const ThemeProvider = ({ children }) => {
 
   useEffect(() => {
     // Save theme preference to localStorage
-    localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+    try { localStorage.setItem('theme', isDarkMode ? 'dark' : 'light'); } catch { /* Keep the current state. */ }
+    const url = new URL(window.location.href);
+    if (url.searchParams.has('theme')) {
+      url.searchParams.set('theme', isDarkMode ? 'dark' : 'light');
+      window.history.replaceState(window.history.state, '', url);
+    }
     
     // Update document class for Tailwind dark mode
     if (isDarkMode) {
