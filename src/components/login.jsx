@@ -17,6 +17,8 @@ import { Blueprint } from './ui/industry.jsx';
 import { getIndustry, solidButtonFill, DISPLAY, BODY } from '../theme/industry.js';
 import OptionalLazy from './OptionalLazy.jsx';
 import { getLoginLaserTheme } from './loginLaserTheme.js';
+import AppSwitcher from './app-switcher/AppSwitcher.jsx';
+import { withNavigationPreferences } from '../lib/navigationPreferences.js';
 
 /**
  * The background is decoration, and it is the heaviest thing on this page: a
@@ -345,7 +347,8 @@ const Login = () => {
         }}
       />
 
-      <div className="absolute top-4 right-4 z-20">
+      <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
+        <AppSwitcher currentApp="hr" locale={currentLanguage} appearance={isDarkMode ? 'dark' : 'light'} compact />
         {/* Desktop: theme toggle left of language bar */}
         <div className="hidden xl:flex items-center gap-2">
           <ThemeToggle />
@@ -381,7 +384,7 @@ const Login = () => {
           {/* Logo and Title */}
           <div className="relative text-center mb-8">
             <a
-              href="https://icue.vn"
+              href={withNavigationPreferences('https://icue.vn', { locale: currentLanguage, theme: isDarkMode ? 'dark' : 'light' })}
               target="_blank"
               rel="noopener noreferrer"
               aria-label="icue.vn"

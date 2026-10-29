@@ -4,6 +4,7 @@ import { getPasswordResetErrorKey } from '../src/utils/authErrors.js';
 import * as authErrors from '../src/utils/authErrors.js';
 import * as routes from '../src/config/routes.js';
 import * as industry from '../src/theme/industry.js';
+import * as navigationPreferences from '../src/lib/navigationPreferences.js';
 import en from '../src/translations/en.js';
 import { loadSource } from './helpers/loadSource.js';
 
@@ -100,6 +101,8 @@ test('the actual reset form displays the email quota error instead of the generi
     '../theme/industry.js': industry,
     './OptionalLazy.jsx': {},
     './loginLaserTheme.js': { getLoginLaserTheme: () => ({}) },
+    './app-switcher/AppSwitcher.jsx': { default: 'app-switcher' },
+    '../lib/navigationPreferences.js': navigationPreferences,
   }, { window: { matchMedia: () => ({ matches: true }) } });
   const render = () => { react.reset(); return Login(); };
   let screen = render();

@@ -17,7 +17,7 @@ import React, { useState, useRef, useEffect, useSyncExternalStore } from 'react'
 import { NavLink } from 'react-router-dom'
 import {
   TrendingUp, Users, FileText, AlarmClock, ChevronDown, ChevronRight,
-  Bell, Cog, CheckSquare, X, UserPlus, Languages, Globe, ArrowUpRight,
+  Bell, Cog, CheckSquare, X, UserPlus, Languages, ArrowUpRight,
 } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext.jsx'
 import { useLanguage } from '../contexts/LanguageContext.jsx'
@@ -26,7 +26,7 @@ import { useAuth } from '../contexts/AuthContext.jsx'
 import { isTranslationEditor } from '../utils/translationAccess.js'
 import { subscribeTranslationQueue, getTranslationQueueCount } from '../utils/translationQueueStatus.js'
 import { getIndustry, DISPLAY, BODY } from '../theme/industry.js'
-import { getAppNavigation } from './app-switcher/appLinks.js'
+import AppSwitcher from './app-switcher/AppSwitcher.jsx'
 
 const RAIL_COLLAPSED = 64;
 const RAIL_EXPANDED = 236;
@@ -162,12 +162,6 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
           : []),
         { path: '/settings', name: t('nav.settings', 'Settings'), icon: Cog },
       ]
-    },
-    {
-      section: 'ICUE',
-      items: getAppNavigation(currentLanguage).apps.filter(app => app.id !== 'hr').map(app => ({
-        href: app.href, name: app.label, icon: app.id === 'website' ? Globe : FileText,
-      })),
     },
   ];
 
@@ -370,7 +364,7 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
         */}
 
         {/* Navigation */}
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1, minHeight: 0, marginTop: 2 }}>
+        <nav style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: '1 0 auto', marginTop: 2 }}>
           {menuStructure.map((section, sectionIndex) => (
             <React.Fragment key={section.section}>
               {/* One hairline divider after MAIN; the spacer pushes SETTINGS down. */}
@@ -582,6 +576,9 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
               })}
             </React.Fragment>
           ))}
+          <div style={{ flex: 'none', padding: isCollapsed ? '8px 10px' : '8px', borderTop: `1px solid ${ind.hairline}` }}>
+            <AppSwitcher currentApp="hr" locale={currentLanguage} appearance={isDarkMode ? 'dark' : 'light'} compact={isCollapsed} />
+          </div>
         </nav>
 
         {/*
