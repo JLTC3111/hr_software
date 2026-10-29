@@ -26,7 +26,6 @@ import { useAuth } from '../contexts/AuthContext.jsx'
 import { isTranslationEditor } from '../utils/translationAccess.js'
 import { subscribeTranslationQueue, getTranslationQueueCount } from '../utils/translationQueueStatus.js'
 import { getIndustry, DISPLAY, BODY } from '../theme/industry.js'
-import AppSwitcher from './app-switcher/AppSwitcher.jsx'
 
 const RAIL_COLLAPSED = 64;
 const RAIL_EXPANDED = 236;
@@ -51,7 +50,7 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef(null);
   const { isDarkMode } = useTheme();
-  const { t, currentLanguage } = useLanguage();
+  const { t } = useLanguage();
   const { unreadCount } = useNotifications();
   const { user } = useAuth();
   const canEditTranslations = isTranslationEditor(user);
@@ -576,9 +575,6 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
               })}
             </React.Fragment>
           ))}
-          <div style={{ flex: 'none', padding: isCollapsed ? '8px 10px' : '8px', borderTop: `1px solid ${ind.hairline}` }}>
-            <AppSwitcher currentApp="hr" locale={currentLanguage} appearance={isDarkMode ? 'dark' : 'light'} compact={isCollapsed} />
-          </div>
         </nav>
 
         {/*

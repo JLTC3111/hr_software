@@ -14,8 +14,20 @@
 }
 .icue-apps__toggle { display: block; flex: none; width: 18px; height: 22px; }
 .icue-apps--pill .icue-apps__trigger { min-height: var(--pill-nav-height, 48px); background: #0a0e14e6; color: #f4f6f8; }
-.icue-apps--band { align-self: stretch; }
-.icue-apps--band .icue-apps__trigger { align-self: center; margin-inline: 6px; }
+.icue-apps--band { align-self: stretch; align-items: stretch; }
+.icue-apps--band .icue-apps__trigger {
+  align-self: stretch; width: 52px; min-width: 52px; min-height: 0; height: 100%;
+  margin: 0; padding: 0; border: 0; border-radius: 0;
+  background: transparent; box-shadow: none; color: rgba(242, 242, 243, .8);
+}
+.icue-apps--band .icue-apps__trigger:hover,
+.icue-apps--band .icue-apps__trigger[aria-expanded='true'] {
+  background: rgba(242, 242, 243, .09); box-shadow: none; transform: none;
+}
+.icue-apps--band .icue-apps__trigger:active { transform: none; box-shadow: none; }
+.icue-apps--band .icue-apps__trigger:hover .icue-apps__toggle,
+.icue-apps--band .icue-apps__trigger:active .icue-apps__toggle { transform: none; }
+.icue-apps--band .icue-apps__trigger:focus-visible { outline-offset: -2px; }
 .icue-apps--compact .icue-apps__trigger-label, .main-site-nav__dock-zone .icue-apps__trigger-label { display: none; }
 @media (min-width: 1025px) { .main-site-nav--dock-expanded .icue-apps__trigger-label { display: inline; } }
 

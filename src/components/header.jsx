@@ -34,6 +34,7 @@ import { useAuth } from '../contexts/AuthContext.jsx'
 import { useNavigate } from 'react-router-dom'
 import NotificationDropdown from './NotificationDropdown.jsx'
 import MobileHeaderMenu from './MobileHeaderMenu.jsx'
+import AppSwitcher from './app-switcher/AppSwitcher.jsx'
 import { useMinWidth } from '../hooks/useMinWidth.js'
 import { getIndustry, DISPLAY, BODY } from '../theme/industry.js'
 
@@ -100,7 +101,7 @@ function BandCell({
 }
 
 /** LIVE hh:mm:ss. The only thing in the band that moves. */
-function LiveCell({ ind, compact }) {
+function LiveCell({ ind, compact, tight }) {
   const { t } = useLanguage();
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
@@ -109,7 +110,7 @@ function LiveCell({ ind, compact }) {
   }, []);
   const clock = `${pad2(now.getHours())}:${pad2(now.getMinutes())}:${pad2(now.getSeconds())}`;
   return (
-    <BandCell ind={ind} gap={8} padding={compact ? '0 10px' : undefined} title={compact ? t('common.live', 'Live') : undefined}>
+    <BandCell ind={ind} gap={tight ? 6 : 8} padding={tight ? '0 4px' : compact ? '0 10px' : undefined} title={compact ? t('common.live', 'Live') : undefined}>
       {/* A square, deliberately. There is no radius in this band. */}
       <span aria-hidden="true" style={{ width: 6, height: 6, flex: 'none', display: 'block', background: ind.tickerUp }} />
       <span
@@ -224,13 +225,16 @@ function LanguageCell({ ind, showName }) {
 
 const Header = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
   const { isDarkMode, toggleTheme } = useTheme();
-  const { t } = useLanguage();
+  const { t, currentLanguage } = useLanguage();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   const ind = getIndustry(isDarkMode);
 
   const isDesktop = useMinWidth(1024);
+  // The switcher cell is 52px. Below 360 the brand and clock give that width
+  // back, so the band still ends at the viewport edge.
+  const bandRoom = useMinWidth(360);
   const showWho = useMinWidth(760);
   const showLangName = useMinWidth(1180);
   const showLogoutLabel = useMinWidth(640);
@@ -304,9 +308,21 @@ const Header = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
         </BandCell>
       )}
 
+      {/* App switcher. It used to sit at the foot of the rail; it now leads
+          the band, clear of the mobile overflow kebab on the right. */}
+      <div style={{ alignSelf: 'stretch', display: 'flex', flex: 'none', borderRight: `1px solid ${ind.tickerRule}` }}>
+        <AppSwitcher
+          currentApp="hr"
+          locale={currentLanguage}
+          appearance={isDarkMode ? 'dark' : 'light'}
+          variant="band"
+          compact
+        />
+      </div>
+
       {/* Brand — a 32px outlined square in accent-300, then the lockup. This is
           the only mark in the app; the rail carries none. */}
-      <BandCell ind={ind} padding={isDesktop ? '0 22px' : '0 12px'} gap={11}>
+      <BandCell ind={ind} padding={isDesktop ? '0 22px' : bandRoom ? '0 12px' : '0 6px'} gap={11}>
         <span
           aria-hidden="true"
           style={{
@@ -335,7 +351,7 @@ const Header = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
         </span>
       </BandCell>
 
-      <LiveCell ind={ind} compact={!isDesktop} />
+      <LiveCell ind={ind} compact={!isDesktop} tight={!bandRoom} />
 
       {/* Session — the label states the greeting, the value states who. It sits
           in the left group, where the org readout used to: the band names the
@@ -364,7 +380,7 @@ const Header = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
       )}
 
       {/* The gap. Everything after it reads right-aligned. */}
-      <div style={{ flex: 1, minWidth: 12 }} />
+      <div style={{ flex: 1, minWidth: bandRoom ? 12 : 0 }} />
 
       {/* Below lg the four action cells become a kebab. Inline `display` on
           BandCell beats Tailwind `lg:hidden`, so they have to drop out of
