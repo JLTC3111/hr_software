@@ -3,8 +3,8 @@
  *
  * Rendered into the left band of the time clock screen when the scope seg is set
  * to "Bulk", so it deliberately has no shell of its own: the page head, ticker
- * and padding already belong to the parent. What it contributes is two
- * blueprints — the multi-employee entry form, and the standard-hours fill.
+ * and padding already belong to the parent. The entry mode shows either the
+ * standard-hours fill or the custom multi-employee form with its selector.
  *
  * Design system: "Industry" (src/theme/industry.js). Radius 0, cards are
  * outlines with four registration corners, the primary button is the only solid
@@ -50,6 +50,7 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [entryMode, setEntryMode] = useState('bulk');
 
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -612,6 +613,34 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
 
   return (
     <div className="flex flex-col" style={{ gap: 16 }}>
+      <div
+        role="group"
+        aria-label={t('adminTimeEntry.entryMode', 'Entry mode')}
+        className="flex flex-wrap"
+        style={{ gap: 6 }}
+      >
+        {[
+          { value: 'bulk', label: t('adminTimeEntry.bulkStandardHours.title', 'Bulk Standard Hours') },
+          { value: 'custom', label: t('adminTimeEntry.customEntries', 'Custom Time Entries') },
+        ].map((mode) => (
+          <Btn
+            key={mode.value}
+            ind={ind}
+            type="button"
+            variant={entryMode === mode.value ? 'primary' : 'secondary'}
+            aria-pressed={entryMode === mode.value}
+            disabled={loading || bulkFillLoading || showBulkConfirmModal}
+            onClick={() => {
+              setEntryMode(mode.value);
+              setErrorMessage('');
+              setSuccessMessage('');
+            }}
+          >
+            {mode.label}
+          </Btn>
+        ))}
+      </div>
+
       {/* ── Banners — weight and icon carry the verdict, not colour ─── */}
       {successMessage && (
         <div
@@ -642,7 +671,7 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
       )}
 
       {/* ── ENTRY FORM ───────────────────────────────────────────── */}
-      <form onSubmit={handleSubmit}>
+      {entryMode === 'custom' && <form onSubmit={handleSubmit}>
         <Blueprint ind={ind} style={{ padding: '18px 20px 16px' }}>
           <div className="flex flex-col lg:flex-row" style={{ gap: 28 }}>
 
@@ -998,10 +1027,10 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
             </div>
           </div>
         </Blueprint>
-      </form>
+      </form>}
 
       {/* ── BULK STANDARD HOURS — the tinted card on this screen ──── */}
-      <form onSubmit={handleBulkStandardHoursFill}>
+      {entryMode === 'bulk' && <form onSubmit={handleBulkStandardHoursFill}>
         <Blueprint ind={ind} tint style={{ padding: '18px 20px 16px' }}>
           <div className="flex flex-wrap items-baseline justify-between" style={{ gap: 10 }}>
             <ColumnHeading ind={ind}>
@@ -1094,7 +1123,7 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
               .replace('{n}', String(employees.length))}
           </p>
         </Blueprint>
-      </form>
+      </form>}
 
       {/* ── Confirm ──────────────────────────────────────────────── */}
       {showBulkConfirmModal && (

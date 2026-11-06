@@ -1,4 +1,6 @@
 export default {
+  'adminTimeEntry.entryMode': 'Режим ввода',
+  'adminTimeEntry.customEntries': 'Индивидуальные записи времени',
   'toast.actionFailed': 'Не удалось выполнить действие. Попробуйте ещё раз.',
   'reports.workSummary.title': 'Сводка работы',
   'reports.workSummary.subtitle': 'Автоматическая сводка по сотруднику, периоду и типам записей, выбранным выше.',

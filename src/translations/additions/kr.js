@@ -1,4 +1,6 @@
 export default {
+  'adminTimeEntry.entryMode': '입력 모드',
+  'adminTimeEntry.customEntries': '사용자 지정 근무 시간 입력',
   'toast.actionFailed': '작업을 완료하지 못했습니다. 다시 시도해 주세요.',
   'reports.workSummary.title': '업무 요약',
   'reports.workSummary.subtitle': '위에서 선택한 직원, 기간 및 기록 유형을 기준으로 자동 요약합니다.',

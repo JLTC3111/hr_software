@@ -1,4 +1,6 @@
 export default {
+  'adminTimeEntry.entryMode': 'Eingabemodus',
+  'adminTimeEntry.customEntries': 'Individuelle Zeiteinträge',
   'toast.actionFailed': 'Die Aktion konnte nicht abgeschlossen werden. Bitte versuchen Sie es erneut.',
   'reports.workSummary.title': 'Arbeitszusammenfassung',
   'reports.workSummary.subtitle': 'Automatisch aus der oben gewählten Person, dem Zeitraum und den Datensatztypen zusammengefasst.',

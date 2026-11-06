@@ -1,4 +1,6 @@
 export default {
+  'adminTimeEntry.entryMode': '入力モード',
+  'adminTimeEntry.customEntries': '個別の勤怠入力',
   'toast.actionFailed': '操作を完了できませんでした。もう一度お試しください。',
   'reports.workSummary.title': '業務サマリー',
   'reports.workSummary.subtitle': '上で選択した従業員、期間、記録の種類に基づいて自動集計します。',

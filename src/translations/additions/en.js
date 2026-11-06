@@ -1,4 +1,6 @@
 export default {
+  'adminTimeEntry.entryMode': 'Entry mode',
+  'adminTimeEntry.customEntries': 'Custom Time Entries',
   'toast.actionFailed': 'Could not complete the action. Please try again.',
   'reports.workSummary.title': 'Work summary',
   'reports.workSummary.subtitle': 'Automatically summarised from the employee, period and record types selected above.',

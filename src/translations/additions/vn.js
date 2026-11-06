@@ -1,4 +1,6 @@
 export default {
+  'adminTimeEntry.entryMode': 'Chế độ nhập',
+  'adminTimeEntry.customEntries': 'Nhập giờ tùy chỉnh',
   'toast.actionFailed': 'Không thể hoàn tất thao tác. Vui lòng thử lại.',
   'reports.workSummary.title': 'Tổng kết công việc',
   'reports.workSummary.subtitle': 'Tự động tổng hợp theo nhân viên, thời gian và loại dữ liệu đã chọn ở trên.',

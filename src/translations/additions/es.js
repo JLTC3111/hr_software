@@ -1,4 +1,6 @@
 export default {
+  'adminTimeEntry.entryMode': 'Modo de registro',
+  'adminTimeEntry.customEntries': 'Registros de tiempo personalizados',
   'toast.actionFailed': 'No se pudo completar la acción. Inténtelo de nuevo.',
   'reports.workSummary.title': 'Resumen del trabajo',
   'reports.workSummary.subtitle': 'Resumen automático según la persona, el período y los tipos de registros seleccionados arriba.',

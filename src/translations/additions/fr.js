@@ -1,4 +1,6 @@
 export default {
+  'adminTimeEntry.entryMode': 'Mode de saisie',
+  'adminTimeEntry.customEntries': 'Saisies de temps personnalisées',
   'toast.actionFailed': 'Impossible de terminer cette action. Veuillez réessayer.',
   'reports.workSummary.title': 'Bilan du travail',
   'reports.workSummary.subtitle': 'Synthèse automatique selon la personne, la période et les types de données sélectionnés ci-dessus.',

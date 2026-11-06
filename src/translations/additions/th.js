@@ -1,4 +1,6 @@
 export default {
+  'adminTimeEntry.entryMode': 'โหมดการบันทึก',
+  'adminTimeEntry.customEntries': 'บันทึกเวลาแบบกำหนดเอง',
   'toast.actionFailed': 'ไม่สามารถดำเนินการให้เสร็จสิ้นได้ กรุณาลองอีกครั้ง',
   'reports.workSummary.title': 'สรุปผลงาน',
   'reports.workSummary.subtitle': 'สรุปอัตโนมัติตามพนักงาน ช่วงเวลา และประเภทข้อมูลที่เลือกด้านบน',
