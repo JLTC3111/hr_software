@@ -18,7 +18,7 @@ import {
 import { withTimeout } from '../utils/supabaseTimeout.js';
 import { isRepeatedSessionSignIn } from '../utils/authEvents.js';
 import { getPasswordResetErrorKey } from '../utils/authErrors.js';
-import { resolvePasswordResetUrl } from '../config/routes.js';
+import { requestPasswordRecovery } from '../utils/passwordRecoveryRequest.js';
 import { useSessionKeepAlive } from '../hooks/useSessionKeepAlive.js';
 import { useIdleLogout } from '../hooks/useIdleLogout.js';
 import IdleWarningModal from '../components/idleWarningModal.jsx';
@@ -1174,17 +1174,7 @@ export const AuthProvider = ({ children }) => {
   // Forgot password - send reset email
   const forgotPassword = async (email) => {
     try {
-      console.log('📧 Sending password reset email to:', email);
-
-      const redirectTo = resolvePasswordResetUrl(
-        import.meta.env.VITE_APP_URL || import.meta.env.VITE_SITE_URL,
-      );
-
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo,
-      });
-
-      if (error) throw error;
+      await requestPasswordRecovery(supabase, email);
 
       console.log('✅ Password reset email sent successfully');
       return {

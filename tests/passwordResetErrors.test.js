@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { getPasswordResetErrorKey } from '../src/utils/authErrors.js';
 import * as authErrors from '../src/utils/authErrors.js';
+import * as passwordRecoveryRequest from '../src/utils/passwordRecoveryRequest.js';
+import * as recoveryEmail from '../supabase/functions/_shared/recoveryEmail.mjs';
 import * as routes from '../src/config/routes.js';
 import * as industry from '../src/theme/industry.js';
 import * as navigationPreferences from '../src/lib/navigationPreferences.js';
@@ -50,9 +52,9 @@ function forgotPasswordAction(error) {
   const { AuthProvider } = loadSource('src/contexts/AuthProvider.jsx', {
     './AuthContext.jsx': { AuthContext: react.createContext() },
     react,
-    '../config/supabaseClient.js': { supabase: { auth: { async resetPasswordForEmail(email, options) {
-      requests.push({ email, options });
-      return { error };
+    '../config/supabaseClient.js': { supabase: { functions: { async invoke(name, options) {
+      requests.push({ name, options });
+      return { error: { context: new Response(JSON.stringify({ success: false, code: error.code }), { status: error.status }) } };
     } } } },
     '../utils/sessionHelper.js': {},
     '../utils/demoHelper.js': { isDemoMode: () => false },
@@ -60,6 +62,7 @@ function forgotPasswordAction(error) {
     '../utils/supabaseTimeout.js': {},
     '../utils/authEvents.js': {},
     '../utils/authErrors.js': authErrors,
+    '../utils/passwordRecoveryRequest.js': passwordRecoveryRequest,
     '../config/routes.js': { ...routes, resolvePasswordResetUrl: url => routes.resolvePasswordResetUrl(url, 'https://hr.icue.vn') },
     '../hooks/useSessionKeepAlive.js': { useSessionKeepAlive() {} },
     '../hooks/useIdleLogout.js': { useIdleLogout() {} },
@@ -103,6 +106,7 @@ test('the actual reset form displays the email quota error instead of the generi
     './loginLaserTheme.js': { getLoginLaserTheme: () => ({}) },
     './app-switcher/AppSwitcher.jsx': { default: 'app-switcher' },
     '../lib/navigationPreferences.js': navigationPreferences,
+    '../../supabase/functions/_shared/recoveryEmail.mjs': recoveryEmail,
   }, { window: { matchMedia: () => ({ matches: true }) } });
   const render = () => { react.reset(); return Login(); };
   let screen = render();
@@ -117,5 +121,6 @@ test('the actual reset form displays the email quota error instead of the generi
   assert.ok(JSON.stringify(screen).includes(en.login.forgotPasswordModal.emailRateLimitError));
   assert.ok(!JSON.stringify(screen).includes(en.login.forgotPasswordModal.error));
   assert.equal(action.requests.length, 1);
-  assert.equal(action.requests[0].options.redirectTo, 'https://hr.icue.vn/reset-password');
+  assert.equal(action.requests[0].name, 'hr-password-recovery');
+  assert.equal(action.requests[0].options.body.email, 'recovery@example.test');
 });

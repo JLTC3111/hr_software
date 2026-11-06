@@ -8,7 +8,14 @@ DO $$ BEGIN
 END $$;
 GRANT anon, authenticated, service_role TO authenticator;
 CREATE SCHEMA auth;
-CREATE TABLE auth.users (id uuid PRIMARY KEY, email text);
+CREATE TABLE auth.users (
+  id uuid PRIMARY KEY,
+  email text,
+  deleted_at timestamptz,
+  banned_until timestamptz,
+  is_sso_user boolean DEFAULT false,
+  is_anonymous boolean DEFAULT false
+);
 CREATE FUNCTION auth.jwt() RETURNS jsonb LANGUAGE sql STABLE AS $$
   SELECT COALESCE(NULLIF(current_setting('request.jwt.claims', true), ''), '{}')::jsonb;
 $$;

@@ -5,6 +5,7 @@ import { Buffer } from 'node:buffer';
 import { loadSource } from './helpers/loadSource.js';
 import * as authEvents from '../src/utils/authEvents.js';
 import * as authErrors from '../src/utils/authErrors.js';
+import * as passwordRecoveryRequest from '../src/utils/passwordRecoveryRequest.js';
 import * as routes from '../src/config/routes.js';
 import * as industry from '../src/theme/industry.js';
 import * as timeouts from '../src/config/requestTimeouts.js';
@@ -57,6 +58,7 @@ function mountProvider({ client, hash = recoveryHash, timers = false }) {
     '../utils/supabaseTimeout.js': { withTimeout: promise => promise },
     '../utils/authEvents.js': authEvents,
     '../utils/authErrors.js': authErrors,
+    '../utils/passwordRecoveryRequest.js': passwordRecoveryRequest,
     '../config/routes.js': routes,
     '../hooks/useSessionKeepAlive.js': { useSessionKeepAlive() {} },
     '../hooks/useIdleLogout.js': { useIdleLogout() {} },

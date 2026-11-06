@@ -73,8 +73,9 @@ export const getPasswordResetErrorKey = (error) => {
     return 'login.forgotPasswordModal.rateLimitError';
   }
   if (code === 'email_address_invalid') return 'login.forgotPasswordModal.emailInvalid';
+  if (code === 'user_not_found') return 'login.forgotPasswordModal.noAccount';
   if (status < 500 && (
-    error?.name === 'AuthRetryableFetchError' || error?.name === 'AbortError' ||
+    code === 'network_error' || error?.name === 'AuthRetryableFetchError' || error?.name === 'AbortError' ||
     message.includes('failed to fetch') || message.includes('network') ||
     message.includes('timed out') || message.includes('timeout')
   )) return 'login.forgotPasswordModal.networkError';

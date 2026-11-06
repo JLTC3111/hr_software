@@ -4,3 +4,7 @@ verify_jwt = false
 
 [functions.visit-summary]
 verify_jwt = true
+
+# The anon-key JWT permits recovery before login; eligibility is checked server-side.
+[functions.hr-password-recovery]
+verify_jwt = true

@@ -19,6 +19,7 @@ import OptionalLazy from './OptionalLazy.jsx';
 import { getLoginLaserTheme } from './loginLaserTheme.js';
 import AppSwitcher from './app-switcher/AppSwitcher.jsx';
 import { withNavigationPreferences } from '../lib/navigationPreferences.js';
+import { normalizeRecoveryEmail } from '../../supabase/functions/_shared/recoveryEmail.mjs';
 
 /**
  * The background is decoration, and it is the heaviest thing on this page: a
@@ -168,6 +169,7 @@ const Login = () => {
   const [forgotPasswordError, setForgotPasswordError] = useState('');
   const [forgotPasswordSuccess, setForgotPasswordSuccess] = useState('');
   const [isSendingReset, setIsSendingReset] = useState(false);
+  const resetRequestInFlight = useRef(false);
 
   useEffect(() => {
     if (import.meta.env.DEV) {
@@ -268,24 +270,32 @@ const Login = () => {
 
   const handleForgotPasswordSubmit = async (e) => {
     e.preventDefault();
+    if (resetRequestInFlight.current) return;
     
     if (!forgotPasswordEmail.trim()) {
       setForgotPasswordError(t('login.forgotPasswordModal.emailRequired', 'Email is required'));
       return;
     }
     
-    if (!/\S+@\S+\.\S+/.test(forgotPasswordEmail)) {
+    if (!normalizeRecoveryEmail(forgotPasswordEmail)) {
       setForgotPasswordError(t('login.forgotPasswordModal.emailInvalid', 'Please enter a valid email'));
       return;
     }
     
+    resetRequestInFlight.current = true;
     setIsSendingReset(true);
     setForgotPasswordError('');
     setForgotPasswordSuccess('');
     
-    const result = await forgotPassword(forgotPasswordEmail);
-    
-    setIsSendingReset(false);
+    let result;
+    try {
+      result = await forgotPassword(forgotPasswordEmail);
+    } catch {
+      result = { success: false };
+    } finally {
+      resetRequestInFlight.current = false;
+      setIsSendingReset(false);
+    }
     
     if (result.success) {
       setForgotPasswordSuccess(
