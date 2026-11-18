@@ -6,37 +6,74 @@ import { fetchAllRows } from '../src/utils/fetchAllRows.js';
 import * as timeHelpers from '../src/utils/timeEntryHelpers.js';
 import * as reportHelpers from '../src/utils/reportExportHelpers.js';
 import * as attendanceRules from '../src/utils/attendanceRules.js';
+import { isEmployeeActive } from '../src/utils/employeeStatus.js';
 import * as documentPaths from '../src/utils/documentPaths.js';
 import { loadSource } from './helpers/loadSource.js';
 import { queryFixture } from './helpers/queryFixture.js';
 
-const timeService = (client, demo = false) => loadSource('src/services/timeTrackingService.js', {
-  '../utils/fetchAllRows.js': { fetchAllRows },
-  '../config/supabaseClient': { supabase: client },
-  '../utils/demoHelper': {
-    isDemoMode: () => demo,
-    MOCK_EMPLOYEES: client.tables.employees || [],
-    getDemoEmployeeById: id => (client.tables.employees || []).find(row => row.id === id),
-    getDemoTimeEntries: () => (client.tables.time_entries || []).map(row => ({ ...row })),
-    getDemoLeaveRequests: () => (client.tables.leave_requests || []).map(row => ({ ...row })),
-    updateDemoLeaveRequest: (id, updates) => {
-      const i = client.tables.leave_requests.findIndex(row => row.id === id);
-      client.tables.leave_requests[i] = { ...client.tables.leave_requests[i], ...updates };
-      return client.tables.leave_requests[i];
+const fixtureBulkRpc = (client) => {
+  const exclusion = (employee, date) => {
+    if (!employee) return 'not_permitted';
+    if (employee.start_date && date < employee.start_date) return 'before_start';
+    return isEmployeeActive(employee) ? null : 'inactive';
+  };
+  return async (name, args) => {
+    client.calls.push({ table: name, method: 'rpc', args });
+    if (name === 'bulk_attendance_roster') {
+      const result = await client.from('employees').select('*');
+      if (result.error) return result;
+      return {
+        data: result.data.filter(emp => args.p_employee_ids === null || args.p_employee_ids.includes(String(emp.id)))
+          .map(emp => ({ ...emp, exclusions: Object.fromEntries(args.p_dates.map(date => [date, exclusion(emp, date)])) })),
+      };
+    }
+    assert.equal(name, 'create_bulk_time_entries');
+    const keep = [];
+    const excluded = [];
+    for (const row of args.p_entries) {
+      const employee = client.tables.employees.find(emp => String(emp.id) === row.employee_id);
+      const reason = exclusion(employee, row.date);
+      if (reason) excluded.push({ employee_id: row.employee_id, date: row.date, reason });
+      else keep.push(row);
+    }
+    if (keep.length === 0) return { data: { data: [], excluded } };
+    const result = await client.from('time_entries').insert(keep).select();
+    if (result.error) return result;
+    return { data: { data: result.data, excluded } };
+  };
+};
+
+const timeService = (client, demo = false) => {
+  client.rpc ??= fixtureBulkRpc(client);
+  return loadSource('src/services/timeTrackingService.js', {
+    '../utils/fetchAllRows.js': { fetchAllRows },
+    '../config/supabaseClient': { supabase: client },
+    '../utils/demoHelper': {
+      isDemoMode: () => demo,
+      getDemoEmployees: () => client.tables.employees || [],
+      getDemoEmployeeById: id => (client.tables.employees || []).find(row => row.id === id),
+      getDemoTimeEntries: () => (client.tables.time_entries || []).map(row => ({ ...row })),
+      getDemoLeaveRequests: () => (client.tables.leave_requests || []).map(row => ({ ...row })),
+      updateDemoLeaveRequest: (id, updates) => {
+        const i = client.tables.leave_requests.findIndex(row => row.id === id);
+        client.tables.leave_requests[i] = { ...client.tables.leave_requests[i], ...updates };
+        return client.tables.leave_requests[i];
+      },
+      calculateDaysBetween: reportHelpers.countWorkingDays,
+      deleteDemoTimeEntry: id => {
+        const i = client.tables.time_entries.findIndex(row => row.id === id);
+        if (i >= 0) client.tables.time_entries.splice(i, 1);
+      },
+      addDemoTimeEntry: row => client.tables.time_entries.push(row),
     },
-    calculateDaysBetween: reportHelpers.countWorkingDays,
-    deleteDemoTimeEntry: id => {
-      const i = client.tables.time_entries.findIndex(row => row.id === id);
-      if (i >= 0) client.tables.time_entries.splice(i, 1);
-    },
-    addDemoTimeEntry: row => client.tables.time_entries.push(row),
-  },
-  '../utils/demoStorage': {},
-  '../utils/timeEntryHelpers.js': timeHelpers,
-  '../utils/reportExportHelpers.js': reportHelpers,
-  '../utils/attendanceRules.js': attendanceRules,
-  './documentService.js': {},
-});
+    '../utils/demoStorage': {},
+    '../utils/timeEntryHelpers.js': timeHelpers,
+    '../utils/employeeStatus.js': { isEmployeeActive },
+    '../utils/reportExportHelpers.js': reportHelpers,
+    '../utils/attendanceRules.js': attendanceRules,
+    './documentService.js': {},
+  });
+};
 
 const BULK_NOTE = 'Standard hours filled by admin: Ada';
 const generatedRow = (id, employee_id, date, extra = {}) => ({
@@ -87,6 +124,59 @@ test('fill reports actual stored rows when the database insert guard skips part 
   assert.equal(result.success, true);
   assert.equal(result.created, 1);
   assert.equal(result.skipped, 1);
+});
+
+test('bulk fill reports inactive and pre-start dates separately from existing hours', async () => {
+  const tables = {
+    employees: [
+      { id: 'active', name: 'Active', status: 'On Leave' },
+      { id: 'former', name: 'Former', status: ' TERMINATED ' },
+      { id: 'new', name: 'New', status: 'Active', start_date: '2026-10-02' },
+    ],
+    time_entries: [generatedRow(1, 'active', '2026-10-01')],
+  };
+  const client = queryFixture(tables, {}, { persist: true });
+  const result = await timeService(client).fillStandardHoursForAllEmployees({ startDate: '2026-10-01', endDate: '2026-10-02' });
+  assert.equal(result.success, true);
+  assert.equal(result.created, 2);
+  assert.equal(result.skipped, 1);
+  assert.equal(result.employeesProcessed, 2);
+  assert.deepEqual(Array.from(result.excluded, row => [row.employee_id, row.date, row.reason]), [
+    ['former', '2026-10-01', 'inactive'], ['former', '2026-10-02', 'inactive'], ['new', '2026-10-01', 'before_start'],
+  ]);
+  assert.equal(rowKeys(tables.time_entries), 'active:2026-10-01:09:00:regular,active:2026-10-02:09:00:regular,new:2026-10-02:09:00:regular');
+  assert.equal(client.calls.find(call => call.table === 'create_bulk_time_entries').args.p_entries.length, 2);
+});
+
+test('bulk fill reports the database exclusion when a status changes after preflight', async () => {
+  const tables = { employees: [
+    { id: 'a', name: 'Remains Active', status: 'Active' },
+    { id: 'b', name: 'Became Inactive', status: 'Active' },
+  ], time_entries: [] };
+  const client = queryFixture(tables, {}, { persist: true });
+  const rpc = fixtureBulkRpc(client);
+  client.rpc = (name, args) => {
+    if (name === 'create_bulk_time_entries') tables.employees[1].status = 'Inactive';
+    return rpc(name, args);
+  };
+  const result = await timeService(client).fillStandardHoursForAllEmployees({ startDate: '2026-10-01' });
+  assert.equal(result.created, 1);
+  assert.equal(result.skipped, 0);
+  assert.equal(result.employeesProcessed, 1);
+  assert.deepEqual(Array.from(result.excluded, row => [row.name, row.reason]), [['Became Inactive', 'inactive']]);
+  assert.equal(tables.time_entries[0].employee_id, 'a');
+});
+
+test('an empty employee selection or an entirely inactive roster creates no bulk rows', async () => {
+  const tables = { employees: [{ id: 'a', name: 'Former employee', status: 'Former' }], time_entries: [] };
+  const client = queryFixture(tables, {}, { persist: true });
+  const service = timeService(client, true);
+  const excluded = await service.fillStandardHoursForAllEmployees({ startDate: '2026-10-01' });
+  assert.equal(excluded.created, 0);
+  assert.equal(excluded.excluded[0].reason, 'inactive');
+  const empty = await service.fillStandardHoursForAllEmployees({ startDate: '2026-10-01', employeeIds: [] });
+  assert.equal(empty.success, false);
+  assert.equal(tables.time_entries.length, 0);
 });
 
 test('restore skips overlapping WFH or non-regular 09:00 rows and keeps evening overtime', async () => {
@@ -141,7 +231,7 @@ test('demo and production services calculate the same October attendance', async
     '../utils/fetchAllRows.js': { fetchAllRows },
   '../config/supabaseClient': { supabase: {} },
     '../utils/demoHelper': { isDemoMode: () => true, getDemoTimeEntries: () => entries, getDemoLeaveRequests: () => leave },
-    '../utils/demoStorage': {}, '../utils/timeEntryHelpers.js': timeHelpers,
+    '../utils/demoStorage': {}, '../utils/timeEntryHelpers.js': timeHelpers, '../utils/employeeStatus.js': { isEmployeeActive },
     '../utils/reportExportHelpers.js': reportHelpers, '../utils/attendanceRules.js': attendanceRules, './documentService.js': {},
   });
   const liveResult = await production.getTimeTrackingSummary('employee', 10, 2026);

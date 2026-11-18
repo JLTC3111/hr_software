@@ -1,4 +1,11 @@
 export default {
+  'adminTimeEntry.selectAllEligible': 'เลือกทั้งหมด',
+  'adminTimeEntry.excludedEmployees': 'พนักงานที่ถูกข้าม',
+  'adminTimeEntry.exclusionBeforeStart': 'ก่อนวันที่เริ่มงาน',
+  'adminTimeEntry.exclusionInactive': 'พนักงานไม่อยู่ในสถานะปฏิบัติงานหรือยังไม่ได้ยืนยันช่วงการจ้างงาน',
+  'adminTimeEntry.exclusionNotPermitted': 'พนักงานอยู่นอกขอบเขตที่คุณดูแล',
+  'adminTimeEntry.noEntriesSaved': 'ไม่มีการสร้างรายการบันทึกเวลา',
+  'adminTimeEntry.bulkEligibilityNote': 'ระบบจะบันทึกเวลาเฉพาะพนักงานที่มีสิทธิ์ในแต่ละวันที่ลงเวลา',
   'adminTimeEntry.entryMode': 'โหมดการบันทึก',
   'adminTimeEntry.customEntries': 'บันทึกเวลาแบบกำหนดเอง',
   'toast.actionFailed': 'ไม่สามารถดำเนินการให้เสร็จสิ้นได้ กรุณาลองอีกครั้ง',

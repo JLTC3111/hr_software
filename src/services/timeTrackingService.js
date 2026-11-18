@@ -1,8 +1,9 @@
 import { fetchAllRows } from '../utils/fetchAllRows.js';
 import { supabase } from '../config/supabaseClient';
-import { isDemoMode, MOCK_EMPLOYEES, MOCK_TIME_ENTRIES, getDemoLeaveRequests, addDemoLeaveRequest, updateDemoLeaveRequest, calculateDaysBetween, getDemoTimeEntries, addDemoTimeEntry, deleteDemoTimeEntry, getDemoEmployeeById } from '../utils/demoHelper';
+import { isDemoMode, MOCK_TIME_ENTRIES, getDemoEmployees, getDemoLeaveRequests, addDemoLeaveRequest, updateDemoLeaveRequest, calculateDaysBetween, getDemoTimeEntries, addDemoTimeEntry, deleteDemoTimeEntry, getDemoEmployeeById } from '../utils/demoHelper';
 import { saveDemoBlob } from '../utils/demoStorage';
 import { toExtendedInterval, extendedIntervalsOverlap, getMonthDateRange } from '../utils/timeEntryHelpers.js';
+import { isEmployeeActive } from '../utils/employeeStatus.js';
 import { workingDateKeys, workingDaySegments } from '../utils/reportExportHelpers.js';
 import {
   approvedLeaveDateKeys,
@@ -133,19 +134,45 @@ export const createTimeEntry = async (timeEntryData) => {
   }
 };
 
-/**
- * Create multiple time entries at once (bulk insert)
- * @param {Array} timeEntriesData - Array of time entry objects
- * @returns {Promise<{success: boolean, data?: Array, error?: string}>}
- */
-export const createBulkTimeEntries = async (timeEntriesData) => {
+const demoAttendanceExclusion = (employee, date) => {
+  if (!employee) return 'not_permitted';
+  const startDate = dateKey(employee.start_date || employee.hire_date);
+  if (startDate && date < startDate) return 'before_start';
+  return isEmployeeActive(employee) ? null : 'inactive';
+};
+
+export const getBulkAttendanceEmployees = async (dates, employeeIds = null) => {
+  const ids = employeeIds?.map(String) ?? null;
   if (isDemoMode()) {
-    // Persist demo time entries so they show up across reloads
-    const persisted = timeEntriesData.map((entry, i) => {
-      // Look up employee info to attach to the entry for display
-      const emp = getDemoEmployeeById(entry.employeeId);
+    return getDemoEmployees().filter(employee => ids === null || ids.includes(String(employee.id))).map(employee => ({
+      ...employee,
+      exclusions: Object.fromEntries(dates.map(date => [date, demoAttendanceExclusion(employee, date)])),
+    }));
+  }
+
+  const { data, error } = await supabase.rpc('bulk_attendance_roster', { p_dates: dates, p_employee_ids: ids });
+  if (error) throw error;
+  return data;
+};
+
+/** Create the eligible rows and return an exclusion for each rejected employee/date. */
+export const createBulkTimeEntries = async (timeEntriesData) => {
+  if (!Array.isArray(timeEntriesData) || timeEntriesData.length === 0) {
+    return { success: false, error: 'No time entries provided' };
+  }
+  if (isDemoMode()) {
+    const employees = new Map(getDemoEmployees().map(employee => [String(employee.id), employee]));
+    const data = [];
+    const excluded = [];
+    for (const entry of timeEntriesData) {
+      const emp = employees.get(String(entry.employeeId));
+      const reason = demoAttendanceExclusion(emp, entry.date);
+      if (reason) {
+        excluded.push({ employee_id: entry.employeeId, date: entry.date, reason });
+        continue;
+      }
       const demoEntry = {
-        id: `demo-bulk-${Date.now()}-${i}`,
+        id: `demo-bulk-${Date.now()}-${data.length}`,
         ...entry,
         employee_id: entry.employeeId,
         employee_name: emp?.name || 'Unknown',
@@ -170,37 +197,12 @@ export const createBulkTimeEntries = async (timeEntriesData) => {
         created_at: new Date().toISOString()
       };
       try { addDemoTimeEntry(demoEntry); } catch (e) { console.warn('Failed to persist demo time entry', e); }
-      return demoEntry;
-    });
-    return { success: true, data: persisted };
+      data.push(demoEntry);
+    }
+    return { success: true, data, excluded, count: data.length };
   }
 
   try {
-    if (!Array.isArray(timeEntriesData) || timeEntriesData.length === 0) {
-      throw new Error('No time entries provided');
-    }
-
-    // Validate all employees exist first
-    const employeeIds = [...new Set(timeEntriesData.map(entry => toEmployeeId(entry.employeeId)))];
-    const { data: employees, error: employeeError } = await fetchAllRows(supabase
-      .from('employees')
-      .select('id', { count: 'exact' })
-      .in('id', employeeIds));
-
-    if (employeeError) {
-      console.error('Error checking employees:', employeeError);
-      throw new Error('Failed to validate employees');
-    }
-
-    // Check if all employees exist
-    const foundIds = new Set(employees.map(e => String(e.id)));
-    const missingIds = employeeIds.filter(id => !foundIds.has(String(id)));
-    
-    if (missingIds.length > 0) {
-      throw new Error(`Employees not found: ${missingIds.join(', ')}`);
-    }
-
-    // Format entries for bulk insert
     const formattedEntries = timeEntriesData.map(entry => ({
       employee_id: toEmployeeId(entry.employeeId),
       date: entry.date,
@@ -216,25 +218,9 @@ export const createBulkTimeEntries = async (timeEntriesData) => {
       status: entry.status || 'pending'
     }));
 
-    // Bulk insert all entries
-    const { data, error } = await supabase
-      .from('time_entries')
-      .insert(formattedEntries)
-      .select();
-
-    if (error) {
-      console.error('Error creating bulk time entries:', error);
-      if (error.code === '23503') {
-        throw new Error('One or more employees not found. Please ensure all employees exist.');
-      }
-      throw error;
-    }
-    
-    return { 
-      success: true, 
-      data,
-      count: data.length 
-    };
+    const { data: result, error } = await supabase.rpc('create_bulk_time_entries', { p_entries: formattedEntries });
+    if (error) throw error;
+    return { success: true, data: result.data, excluded: result.excluded, count: result.data.length };
   } catch (error) {
     console.error('Error creating bulk time entries:', error);
     return { 
@@ -357,9 +343,8 @@ const removeDemoBulkStandardEntriesForLeave = (leave) => {
 };
 
 /**
- * Create standard 9 AM – 5 PM regular hour entries for all employees across a date range.
- * Skips employees/dates that already have overlapping entries,
- * and weekdays already covered by an approved leave request.
+ * Fill standard hours for eligible employees on the selected weekdays.
+ * Existing overlaps and approved leave keep their separate skip count.
  */
 export const fillStandardHoursForAllEmployees = async ({
   startDate,
@@ -387,26 +372,29 @@ export const fillStandardHoursForAllEmployees = async ({
       };
     }
 
-    let employees = [];
-    if (isDemoMode()) {
-      employees = MOCK_EMPLOYEES.map((emp) => ({ id: emp.id, name: emp.name }));
-    } else {
-      const { data, error } = await fetchAllRows(supabase
-        .from('employees')
-        .select('id, name', { count: 'exact' })
-        .order('name'));
-
-      if (error) throw error;
-      employees = data || [];
+    const roster = await getBulkAttendanceEmployees(dates, employeeIds);
+    const rosterById = new Map(roster.map(employee => [String(employee.id), employee]));
+    const excluded = [];
+    for (const id of new Set(employeeIds?.map(String))) {
+      if (rosterById.has(id)) continue;
+      for (const date of dates) excluded.push({ employee_id: id, date, reason: 'not_permitted' });
     }
-
-    if (employeeIds?.length) {
-      const allowedIds = new Set(employeeIds.map((id) => String(id)));
-      employees = employees.filter((emp) => allowedIds.has(String(emp.id)));
-    }
-
-    if (employees.length === 0) {
+    if (!roster.length && !excluded.length) {
       return { success: false, error: 'No employees found' };
+    }
+
+    const employees = roster.filter(employee => {
+      let eligible = false;
+      for (const date of dates) {
+        const reason = employee.exclusions[date];
+        if (reason) excluded.push({ employee_id: employee.id, name: employee.name, date, reason });
+        else eligible = true;
+      }
+      return eligible;
+    });
+    const resultCounts = { datesProcessed: dates.length, weekendsExcluded };
+    if (!employees.length) {
+      return { success: true, created: 0, skipped: 0, employeesProcessed: 0, excluded, ...resultCounts };
     }
 
     const employeeIdList = employees.map((emp) => emp.id);
@@ -474,6 +462,7 @@ export const fillStandardHoursForAllEmployees = async ({
 
     for (const date of dates) {
       for (const employee of employees) {
+        if (employee.exclusions[date]) continue;
         const key = `${employee.id}-${date}`;
         if (coveredByLeave.get(String(employee.id))?.has(date)) {
           skipped += 1;
@@ -507,10 +496,9 @@ export const fillStandardHoursForAllEmployees = async ({
         success: true,
         created: 0,
         skipped,
-        datesProcessed: dates.length,
-        weekendsExcluded,
         employeesProcessed: employees.length,
-        message: 'No entries were created. All employees already have overlapping entries for the selected dates.'
+        excluded,
+        ...resultCounts,
       };
     }
 
@@ -524,18 +512,17 @@ export const fillStandardHoursForAllEmployees = async ({
       return result;
     }
 
-    // Count what the database stored: its insert guard may have dropped rows
-    // for leave approved after the read above.
-    const created = Array.isArray(result.data) ? result.data.length : entriesToCreate.length;
+    const created = result.data.length;
+    const writeExclusions = result.excluded.map(row => ({ ...row, name: rosterById.get(String(row.employee_id))?.name }));
 
     return {
       success: true,
       created,
-      skipped: skipped + (entriesToCreate.length - created),
-      datesProcessed: dates.length,
-      weekendsExcluded,
-      employeesProcessed: employees.length,
-      data: result.data
+      skipped: skipped + entriesToCreate.length - created - writeExclusions.length,
+      employeesProcessed: new Set(result.data.map(row => String(row.employee_id))).size,
+      excluded: [...excluded, ...writeExclusions],
+      ...resultCounts,
+      data: result.data,
     };
   } catch (error) {
     console.error('Error filling standard hours:', error);
@@ -1343,7 +1330,7 @@ export const getAllLeaveRequests = async (filters = {}) => {
  * employees are left alone and running it twice adds nothing.
  */
 const restoreStandardHoursForDates = async (employeeId, dates, adminName = 'Admin') => {
-  const totals = { success: true, created: 0, skipped: 0 };
+  const totals = { success: true, created: 0, skipped: 0, excluded: [] };
   for (const segment of workingDaySegments(dates)) {
     const result = await fillStandardHoursForAllEmployees({
       startDate: segment.start,
@@ -1351,9 +1338,10 @@ const restoreStandardHoursForDates = async (employeeId, dates, adminName = 'Admi
       adminName,
       employeeIds: [employeeId],
     });
-    if (!result.success) return { ...result, created: totals.created, skipped: totals.skipped };
+    if (!result.success) return { ...result, created: totals.created, skipped: totals.skipped, excluded: totals.excluded };
     totals.created += result.created ?? 0;
     totals.skipped += result.skipped ?? 0;
+    totals.excluded.push(...(result.excluded ?? []));
   }
   return totals;
 };

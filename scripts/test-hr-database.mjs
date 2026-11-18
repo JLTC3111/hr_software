@@ -22,6 +22,7 @@ let productionCreated = false;
 const productionDatabase = `${database}_production`;
 const attendanceMigration = '20260925093907_exclude_approved_leave_from_worked_days.sql';
 const timeClockReadMigration = '20260926130934_optimize_time_clock_read_policy.sql';
+const bulkAttendanceMigration = '20261118153302_enforce_bulk_attendance_eligibility.sql';
 const sqlFile = file => readFileSync(path.join(root, file), 'utf8');
 const replayAttendance = db => psql(db, `BEGIN;\n${sqlFile(`supabase/migrations/${attendanceMigration}`)}\nCOMMIT;`);
 const summaryFingerprint = db => psql(db, `SELECT jsonb_agg(to_jsonb(s)-'updated_at' ORDER BY employee_id,year,month) FROM public.time_tracking_summary s;`);
@@ -88,6 +89,39 @@ const runConcurrencyCases = async db => {
   }
   console.log('2 two-session READ COMMITTED race cases passed');
 };
+const runBulkAttendanceCases = async db => {
+  console.log(psql(db, sqlFile('tests/database/bulk-attendance.sql')));
+  const auth = `SET SESSION AUTHORIZATION authenticator; SET ROLE authenticated;
+    SET request.jwt.claims='{"role":"authenticated","sub":"90000000-0000-0000-0000-000000000006"}';`;
+  const day = psql(db, "SELECT (clock_timestamp() AT TIME ZONE 'Asia/Ho_Chi_Minh')::date;");
+  const statusChange = concurrentSession(db), bulkWrite = concurrentSession(db);
+  try {
+    statusChange.child.stdin.write(`${auth} BEGIN; SET LOCAL statement_timeout='15s';
+      UPDATE public.employees SET status='Inactive' WHERE id='bulk-race'; SELECT 'READY';\n`);
+    await waitFor(() => statusChange.output().includes('READY'));
+    bulkWrite.child.stdin.end(`${auth} SET statement_timeout='15s'; SET application_name='bulk_status_waiter';
+      SELECT public.create_bulk_time_entries(jsonb_build_array(
+        attendance_audit.bulk_entry('bulk-race', date '${day}'),
+        attendance_audit.bulk_entry('bulk-race', date '${day}' - 1)
+      ));\n`);
+    await waitFor(() => psql(db, `SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE datname=current_database()
+      AND application_name='bulk_status_waiter' AND cardinality(pg_blocking_pids(pid))>0);`) === 't');
+    statusChange.child.stdin.end('COMMIT;\n');
+    const [, output] = await Promise.all([statusChange.done, bulkWrite.done]);
+    const result = JSON.parse(output);
+    if (result.data.length !== 1 || result.data[0].date === day || result.excluded.length !== 1
+        || result.excluded[0].date !== day || result.excluded[0].reason !== 'inactive') {
+      throw new Error('Bulk insert did not recheck the committed status change by attendance date');
+    }
+    psql(db, `SELECT attendance_audit.assert(
+      NOT EXISTS(SELECT 1 FROM public.time_entries WHERE employee_id='bulk-race' AND date='${day}'),
+      'No attendance is inserted for the newly inactive date');`);
+    console.log('Concurrent status change excludes the inactive date and preserves the prior active date');
+  } finally {
+    statusChange.child.stdin.end(); bulkWrite.child.stdin.end();
+    await Promise.allSettled([statusChange.done, bulkWrite.done]);
+  }
+};
 try {
   psql('postgres', `CREATE DATABASE ${database};`);
   created = true;
@@ -142,6 +176,18 @@ try {
   const sorted = rows => JSON.stringify(rows.map(row => JSON.stringify(Object.fromEntries(Object.entries(row).sort()))).sort());
   if (sorted(policies) !== sorted(snapshot.catalog.policies)) throw new Error('Baseline RLS differs from captured production catalog');
   psql(productionDatabase, sqlFile(`supabase/migrations/${timeClockReadMigration}`));
+  psql(productionDatabase, `
+    INSERT INTO public.employees(id,name,email,status)
+      VALUES('bulk-audit-legacy','Legacy Inactive','bulk-legacy@example.test','Inactive');
+    INSERT INTO public.time_entries(employee_id,date,clock_in,clock_out,hours,hour_type,status,notes)
+      VALUES('bulk-audit-legacy','2024-01-04','09:00','17:00',8,'regular','approved','Standard hours filled by admin: legacy');
+  `);
+  const legacyEntry = "SELECT to_jsonb(t) FROM public.time_entries t WHERE employee_id='bulk-audit-legacy';";
+  const legacyBefore = psql(productionDatabase, legacyEntry);
+  psql(productionDatabase, sqlFile(`supabase/migrations/${bulkAttendanceMigration}`));
+  if (!legacyBefore || psql(productionDatabase, legacyEntry) !== legacyBefore) {
+    throw new Error('Bulk eligibility migration modified stored legacy attendance');
+  }
   console.log(psql(productionDatabase, sqlFile('tests/database/time-clock-read-policy.sql')));
   psql(productionDatabase, sqlFile('tests/database/attendance-fixture.sql'));
   replayAttendance(productionDatabase);
@@ -151,6 +197,7 @@ try {
   console.log('Production catalog replay: SECURITY INVOKER');
   runAttendanceCases(productionDatabase);
   await runConcurrencyCases(productionDatabase);
+  await runBulkAttendanceCases(productionDatabase);
 
   // Reuse the first disposable DB after resetting it, to test the undeployed
   // hardened wrapper before consolidation as a distinct upgrade path.
@@ -164,6 +211,7 @@ try {
   console.log('Repository access-hardening replay: existing effective DEFINER retained');
   runAttendanceCases(database);
   await runConcurrencyCases(database);
+  await runBulkAttendanceCases(database);
 } finally {
   if (productionCreated) psql('postgres', `DROP DATABASE ${productionDatabase};`);
   if (created) psql('postgres', `DROP DATABASE ${database};`);

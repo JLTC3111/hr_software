@@ -1,4 +1,11 @@
 export default {
+  'adminTimeEntry.selectAllEligible': 'Выбрать всех',
+  'adminTimeEntry.excludedEmployees': 'Исключённые сотрудники',
+  'adminTimeEntry.exclusionBeforeStart': 'До даты начала работы',
+  'adminTimeEntry.exclusionInactive': 'Сотрудник неактивен или даты работы не подтверждены',
+  'adminTimeEntry.exclusionNotPermitted': 'Сотрудник вне вашей зоны ответственности',
+  'adminTimeEntry.noEntriesSaved': 'Записи рабочего времени не созданы.',
+  'adminTimeEntry.bulkEligibilityNote': 'Учитываются только сотрудники, для которых можно внести часы на соответствующую дату.',
   'adminTimeEntry.entryMode': 'Режим ввода',
   'adminTimeEntry.customEntries': 'Индивидуальные записи времени',
   'toast.actionFailed': 'Не удалось выполнить действие. Попробуйте ещё раз.',

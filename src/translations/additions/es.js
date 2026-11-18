@@ -1,4 +1,11 @@
 export default {
+  'adminTimeEntry.selectAllEligible': 'Seleccionar a todos',
+  'adminTimeEntry.excludedEmployees': 'Empleados excluidos',
+  'adminTimeEntry.exclusionBeforeStart': 'Fecha anterior al inicio del empleo',
+  'adminTimeEntry.exclusionInactive': 'Inactivo o con fechas de empleo sin verificar',
+  'adminTimeEntry.exclusionNotPermitted': 'El empleado está fuera del personal a su cargo',
+  'adminTimeEntry.noEntriesSaved': 'No se creó ningún registro de horas.',
+  'adminTimeEntry.bulkEligibilityNote': 'Solo se incluyen los empleados que cumplen los requisitos en cada fecha.',
   'adminTimeEntry.entryMode': 'Modo de registro',
   'adminTimeEntry.customEntries': 'Registros de tiempo personalizados',
   'toast.actionFailed': 'No se pudo completar la acción. Inténtelo de nuevo.',

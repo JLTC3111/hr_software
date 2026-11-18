@@ -1,4 +1,11 @@
 export default {
+  'adminTimeEntry.selectAllEligible': 'すべて選択',
+  'adminTimeEntry.excludedEmployees': '対象外の従業員',
+  'adminTimeEntry.exclusionBeforeStart': '雇用開始日前',
+  'adminTimeEntry.exclusionInactive': '非在籍、または在籍期間を確認できません',
+  'adminTimeEntry.exclusionNotPermitted': '管理対象外の従業員です',
+  'adminTimeEntry.noEntriesSaved': '勤怠記録は作成されませんでした。',
+  'adminTimeEntry.bulkEligibilityNote': '各勤怠日に対象となる従業員だけを登録します。',
   'adminTimeEntry.entryMode': '入力モード',
   'adminTimeEntry.customEntries': '個別の勤怠入力',
   'toast.actionFailed': '操作を完了できませんでした。もう一度お試しください。',

@@ -1,25 +1,22 @@
 /**
- * Bulk scope of 3a (timeClockEntry.jsx) — filing hours *for other people*.
+ * Admin and Bulk modes of the time clock screen.
  *
- * Rendered into the left band of the time clock screen when the scope seg is set
- * to "Bulk", so it deliberately has no shell of its own: the page head, ticker
- * and padding already belong to the parent. The entry mode shows either the
- * standard-hours fill or the custom multi-employee form with its selector.
+ * The parent owns the mode switch. Keep both drafts here so switching modes
+ * preserves employee selections, attachments and the bulk date range.
  *
  * Design system: "Industry" (src/theme/industry.js). Radius 0, cards are
  * outlines with four registration corners, the primary button is the only solid
- * object on the card, and status reads through weight and rule rather than
- * red/green — which is why the success and failure banners here differ by their
- * border weight and icon, not by colour.
+ * object on the card, and status reads through weight and rule.
  */
 import _React, { useState, useEffect, useMemo } from 'react';
 import { Clock, Save, X, Search, AlertCircle, Calendar, LogIn, LogOut, Check, Upload, Users, CalendarRange } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext.jsx';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
+import { useToast } from '../contexts/ToastContext.js';
 import * as timeTrackingService from '../services/timeTrackingService.js';
 import { supabase } from '../config/supabaseClient.js';
-import { isDemoMode, MOCK_EMPLOYEES, getDemoEmployeeName } from '../utils/demoHelper.js';
+import { isDemoMode, getDemoEmployeeName } from '../utils/demoHelper.js';
 import { useSessionGuard } from '../hooks/useSessionGuard.js';
 import { SpecularButton } from './ui/specular-button';
 import { DatePicker } from './ui/date-picker.jsx';
@@ -37,23 +34,22 @@ const ClockInIcon = ({ className, ...props }) => (
   <LogIn {...props} className={cn(className, 'rotate-180')} />
 );
 
-const AdminTimeEntry = ({ onEntriesChanged }) => {
+const AdminTimeEntry = ({ mode, date, onDateChange, onEntriesChanged }) => {
   const { isDarkMode } = useTheme();
   const ind = useMemo(() => getIndustry(isDarkMode), [isDarkMode]);
   const { t } = useLanguage();
   const { user, checkPermission } = useAuth();
   const { handleSessionAuthError } = useSessionGuard();
+  const { toast } = useToast();
 
-  const [employees, setEmployees] = useState([]);
+  const [roster, setRoster] = useState({ date: null, employees: [] });
   const [selectedEmployees, setSelectedEmployees] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
-  const [entryMode, setEntryMode] = useState('bulk');
+  const [exclusionReport, setExclusionReport] = useState(null);
 
   const [formData, setFormData] = useState({
-    date: new Date().toISOString().split('T')[0],
     clockIn: '',
     clockOut: '',
     hourType: 'regular',
@@ -67,6 +63,10 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
   });
   const [bulkFillLoading, setBulkFillLoading] = useState(false);
   const [showBulkConfirmModal, setShowBulkConfirmModal] = useState(false);
+  const isBulk = mode === 'bulk';
+  const submitting = loading || bulkFillLoading;
+  const rosterReady = roster.date === date;
+  const employees = rosterReady ? roster.employees : [];
 
   const getBulkFillErrorMessage = (error) => {
     if (!error) {
@@ -115,12 +115,6 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
     { value: 'on_leave', label: t('adminTimeEntry.hourTypes.onLeave', 'On Leave') }
   ];
 
-  useEffect(() => {
-    if (canManageTimeTracking) {
-      fetchEmployees();
-    }
-  }, [canManageTimeTracking]);
-
   // When switching to on-leave, clear any existing times so the UI shows empty fields
   useEffect(() => {
     if (isOnLeave) {
@@ -128,35 +122,49 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
     }
   }, [isOnLeave]);
 
-  // Auto-hide success message after a short timeout
   useEffect(() => {
-    if (!successMessage) return;
-    const id = setTimeout(() => setSuccessMessage(''), 1500); // 1.5s
-    return () => clearTimeout(id);
-  }, [successMessage]);
+    setErrorMessage('');
+    setShowBulkConfirmModal(false);
+  }, [mode]);
 
-  const fetchEmployees = async () => {
-    if (isDemoMode()) {
-      setEmployees(MOCK_EMPLOYEES);
-      return;
-    }
+  useEffect(() => {
+    if (!canManageTimeTracking || mode !== 'admin' || !date) return;
 
-    try {
-      const { data, error } = await supabase
-        .from('employees')
-        .select('id, name, email, position, department, status')
-        // Don't filter by status - allow admins to manage time entries for all employees (including inactive/terminated)
-        .order('name');
-
-      if (error) throw error;
-      setEmployees(data || []);
-    } catch (error) {
-      console.error('Error fetching employees:', error);
-      if (handleSessionAuthError(error)) {
-        return;
+    let cancelled = false;
+    const fetchEmployees = async () => {
+      try {
+        const data = await timeTrackingService.getBulkAttendanceEmployees([date]);
+        if (cancelled) return;
+        const eligible = data.filter(employee => !employee.exclusions[date]);
+        const eligibleIds = new Set(eligible.map(employee => employee.id));
+        setRoster({ date, employees: eligible });
+        setSelectedEmployees(current => current.filter(employee => eligibleIds.has(employee.id)));
+      } catch (error) {
+        if (cancelled) return;
+        console.error('Error fetching employees:', error);
+        if (handleSessionAuthError(error)) return;
+        setErrorMessage(t('adminTimeEntry.errorLoadEmployees', 'Failed to load employees'));
       }
-      setErrorMessage(t('adminTimeEntry.errorLoadEmployees', 'Failed to load employees'));
+    };
+    void fetchEmployees();
+    return () => { cancelled = true; };
+  }, [canManageTimeTracking, mode, date, handleSessionAuthError, t]);
+
+  const reportExclusions = (rows) => {
+    const groups = new Map();
+    for (const row of rows) {
+      const key = JSON.stringify([row.employee_id, row.reason]);
+      if (!groups.has(key)) groups.set(key, { key, name: row.name || row.employee_id, reason: row.reason, dates: [] });
+      groups.get(key).dates.push(row.date);
     }
+    for (const group of groups.values()) group.dates.sort();
+    setExclusionReport(groups.size ? { mode, groups: [...groups.values()] } : null);
+  };
+
+  const exclusionReason = (reason) => {
+    if (reason === 'before_start') return t('adminTimeEntry.exclusionBeforeStart', 'Before employment start date');
+    if (reason === 'inactive') return t('adminTimeEntry.exclusionInactive', 'Inactive or employment dates unverified');
+    return t('adminTimeEntry.exclusionNotPermitted', 'Employee is outside your managed roster');
   };
 
   // Handle file upload
@@ -179,7 +187,7 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
       // Convert to base64 for storage
       const reader = new FileReader();
       reader.onloadend = () => {
-        setFormData({ ...formData, proofFile: { name: file.name, type: file.type, data: reader.result } });
+        setFormData(prev => ({ ...prev, proofFile: { name: file.name, type: file.type, data: reader.result } }));
         setErrorMessage('');
       };
       reader.readAsDataURL(file);
@@ -193,6 +201,7 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!canManageTimeTracking || mode !== 'admin' || submitting || !rosterReady) return;
 
     console.log('Submit - Selected employees:', selectedEmployees);
 
@@ -208,7 +217,7 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
 
     setLoading(true);
     setErrorMessage('');
-    setSuccessMessage('');
+    setExclusionReport(null);
 
     try {
       const LEAVE_CLOCK_IN = '09:00:00';
@@ -218,17 +227,15 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
       const clockInTime = isOnLeave ? LEAVE_CLOCK_IN : `${formData.clockIn}:00`;
       const clockOutTime = isOnLeave ? LEAVE_CLOCK_OUT : `${formData.clockOut}:00`;
 
-      const hours = isOnLeave ? 0 : getHoursWorked(formData.date, formData.clockIn, formData.clockOut);
+      const hours = isOnLeave ? 0 : getHoursWorked(date, formData.clockIn, formData.clockOut);
 
       if (!isOnLeave && hours <= 0) {
         setErrorMessage(t('timeClock.errors.clockOutAfterClockIn', 'Clock out must be after clock in'));
-        setLoading(false);
         return;
       }
 
       if (!isOnLeave && hours > 24) {
         setErrorMessage(t('timeClock.errors.tooManyHours', 'Shift cannot exceed 24 hours'));
-        setLoading(false);
         return;
       }
 
@@ -269,8 +276,7 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
           proofFileType = uploadResult.fileType;
           proofFilePath = uploadResult.storagePath;
         } else {
-          setErrorMessage(`Failed to upload proof file: ${uploadResult.error}`);
-          setLoading(false);
+          toast({ title: t('timeClock.proofUploadError', 'Failed to upload proof file'), description: uploadResult.error, variant: 'error' });
           return;
         }
       }
@@ -300,7 +306,7 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
           .from('time_entries')
           .select('employee_id, date, hour_type, clock_in, clock_out')
           .in('employee_id', employeeIds)
-          .eq('date', formData.date)
+          .eq('date', date)
           .eq('hour_type', formData.hourType);
         existingEntries = data;
         checkError = error;
@@ -308,8 +314,7 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
 
       if (checkError) {
         console.error('Error checking existing entries:', checkError);
-        setErrorMessage(t('adminTimeEntry.errors.checkFailed', 'Failed to check for existing entries'));
-        setLoading(false);
+        toast({ title: t('adminTimeEntry.errors.checkFailed', 'Failed to check for existing entries'), variant: 'error' });
         return;
       }
 
@@ -327,7 +332,6 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
         if (!isOnLeave) {
           if (newClockInSeconds == null || newClockOutSeconds == null) {
             setErrorMessage(t('adminTimeEntry.errors.invalidTime', 'Invalid clock-in or clock-out time'));
-            setLoading(false);
             return;
           }
 
@@ -364,8 +368,11 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
           `adminTimeEntry.hourTypes.${hourTypeKey}`,
           t(`timeClock.hourTypes.${hourTypeKey}`, formData.hourType)
         );
-        setErrorMessage(t('adminTimeEntry.errors.allOverlapping', 'All selected employees have overlapping {hourType} time entries for {date}: {names}').replace('{hourType}', hourTypeLabel).replace('{date}', formData.date).replace('{names}', names));
-        setLoading(false);
+        toast({
+          title: t('adminTimeEntry.errors.allOverlapping', 'All selected employees have overlapping {hourType} time entries for {date}: {names}')
+            .replace('{hourType}', hourTypeLabel).replace('{date}', date).replace('{names}', names),
+          variant: 'error',
+        });
         return;
       }
 
@@ -381,7 +388,7 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
       // Create entries only for employees without existing entries
       const entries = employeesWithoutEntries.map(emp => ({
         employeeId: emp.id,
-        date: formData.date,
+        date,
         clockIn: clockInTime,
         clockOut: clockOutTime,
         hours: parseFloat(hours.toFixed(2)),
@@ -399,17 +406,29 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
       console.log('Result from service:', result);
 
       if (result.success) {
-        const processedNames = employeesWithoutEntries.map(e => e.name).join(', ');
-        const _processedIds = employeesWithoutEntries.map(e => e.id);
+        const namesById = new Map(employeesWithoutEntries.map(employee => [String(employee.id), employee.name]));
+        reportExclusions(result.excluded.map(row => ({ ...row, name: namesById.get(String(row.employee_id)) })));
+        const excludedIds = new Set(result.excluded.map(row => String(row.employee_id)));
+        if (excludedIds.size > 0) {
+          const keepEligible = employees => employees.filter(employee => !excludedIds.has(String(employee.id)));
+          setRoster(current => current.date === date ? { ...current, employees: keepEligible(current.employees) } : current);
+          setSelectedEmployees(keepEligible);
+        }
+        const processedIds = [...new Set(result.data.map(row => String(row.employee_id)))];
+        if (!processedIds.length) {
+          toast({ title: t('adminTimeEntry.noEntriesSaved', 'No time entries were created.'), variant: 'warning' });
+          return;
+        }
+        const processedNames = processedIds.map(id => namesById.get(id)).join(', ');
         const hourTypeKey = formData.hourType.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
         const hourTypeLabel = t(
           `adminTimeEntry.hourTypes.${hourTypeKey}`,
           t(`timeClock.hourTypes.${hourTypeKey}`, formData.hourType)
         );
 
-        let message = employeesWithoutEntries.length === 1
+        let message = processedIds.length === 1
           ? `${hourTypeLabel} ${t('adminTimeEntry.entryAddedSuccess', 'time entry added successfully for')} ${processedNames}`
-          : `${hourTypeLabel} ${t('adminTimeEntry.entriesAddedSuccess', 'time entries added successfully for')} ${employeesWithoutEntries.length} ${t('adminTimeEntry.employees', 'employees')}: ${processedNames}`;
+          : `${hourTypeLabel} ${t('adminTimeEntry.entriesAddedSuccess', 'time entries added successfully for')} ${processedIds.length} ${t('adminTimeEntry.employees', 'employees')}: ${processedNames}`;
 
         // Add warning about skipped employees if any
         if (employeesWithEntries.length > 0) {
@@ -417,10 +436,10 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
           message += ` (${t('adminTimeEntry.skippedEmployees', 'Skipped {count} employee(s) with existing {hourType} entries: {names}').replace('{count}', employeesWithEntries.length).replace('{hourType}', hourTypeLabel).replace('{names}', skippedNames)})`;
         }
 
-        setSuccessMessage(message);
+        toast({ title: message, variant: excludedIds.size ? 'warning' : 'success' });
         // Reset form and allow all employees to be selectable again
+        onDateChange(new Date().toISOString().split('T')[0]);
         setFormData({
-          date: new Date().toISOString().split('T')[0],
           clockIn: '',
           clockOut: '',
           hourType: 'regular',
@@ -430,18 +449,16 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
         setSelectedEmployees([]);
         setSearchTerm('');
         // Notify parent component to refresh time entries
-        if (onEntriesChanged) {
-          onEntriesChanged();
-        }
+        void onEntriesChanged?.();
       } else {
         console.error('Service returned error:', result.error);
-        setErrorMessage(t('adminTimeEntry.error', 'Failed to create time entries'));
+        toast({ title: t('adminTimeEntry.error', 'Failed to create time entries'), variant: 'error' });
       }
     } catch (error) {
       console.error('Error submitting time entries:', error);
       if (handleSessionAuthError(error)) return;
       console.error('Error details:', error.message, error.stack);
-      setErrorMessage(t('adminTimeEntry.error', 'Failed to create time entries'));
+      toast({ title: t('adminTimeEntry.error', 'Failed to create time entries'), variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -449,6 +466,7 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
 
   const handleBulkStandardHoursFill = (e) => {
     e.preventDefault();
+    if (!canManageTimeTracking || !isBulk || submitting || showBulkConfirmModal) return;
 
     if (bulkFillData.endDate < bulkFillData.startDate) {
       setErrorMessage(t('adminTimeEntry.bulkStandardHours.invalidRange', 'End date must be on or after start date'));
@@ -459,10 +477,11 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
   };
 
   const executeBulkStandardHoursFill = async () => {
+    if (!canManageTimeTracking || !isBulk || !showBulkConfirmModal || submitting) return;
     setShowBulkConfirmModal(false);
     setBulkFillLoading(true);
     setErrorMessage('');
-    setSuccessMessage('');
+    setExclusionReport(null);
 
     try {
       const result = await timeTrackingService.fillStandardHoursForAllEmployees({
@@ -472,42 +491,42 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
       });
 
       if (result.success) {
+        const excluded = result.excluded || [];
+        reportExclusions(excluded);
+        let message;
         if (result.created === 0) {
-          setSuccessMessage(
-            result.noWeekdaysInRange
-              ? t(
-                  'adminTimeEntry.bulkStandardHours.noWeekdaysInRange',
-                  'No entries were created. The selected range contains only weekends, which are excluded automatically.'
-                )
-              : t(
-                  'adminTimeEntry.bulkStandardHours.noEntriesCreated',
-                  'No entries were created. Every weekday already has an overlapping entry or approved leave.'
-                )
-          );
+          message = excluded.length
+            ? t('adminTimeEntry.noEntriesSaved', 'No time entries were created.')
+            : result.noWeekdaysInRange
+            ? t(
+                'adminTimeEntry.bulkStandardHours.noWeekdaysInRange',
+                'No entries were created. The selected range contains only weekends, which are excluded automatically.'
+              )
+            : t(
+                'adminTimeEntry.bulkStandardHours.noEntriesCreated',
+                'No entries were created. Every weekday already has an overlapping entry or approved leave.'
+              );
         } else {
-          setSuccessMessage(
-            t(
-              'adminTimeEntry.bulkStandardHours.success',
-              'Created {created} standard hour entries across {dates} weekday(s) for {employees} employee(s). Skipped {skipped} slot(s) with existing entries or approved leave. Excluded {weekends} weekend day(s).'
-            )
-              .replace('{created}', String(result.created))
-              .replace('{dates}', String(result.datesProcessed))
-              .replace('{employees}', String(result.employeesProcessed))
-              .replace('{skipped}', String(result.skipped))
-              .replace('{weekends}', String(result.weekendsExcluded || 0))
-          );
+          message = t(
+            'adminTimeEntry.bulkStandardHours.success',
+            'Created {created} standard hour entries across {dates} weekday(s) for {employees} employee(s). Skipped {skipped} slot(s) with existing entries or approved leave. Excluded {weekends} weekend day(s).'
+          )
+            .replace('{created}', String(result.created))
+            .replace('{dates}', String(result.datesProcessed))
+            .replace('{employees}', String(result.employeesProcessed))
+            .replace('{skipped}', String(result.skipped))
+            .replace('{weekends}', String(result.weekendsExcluded || 0));
         }
 
-        if (onEntriesChanged) {
-          onEntriesChanged();
-        }
+        toast({ title: message, variant: excluded.length ? 'warning' : 'success' });
+        if (result.created > 0) void onEntriesChanged?.();
       } else {
-        setErrorMessage(getBulkFillErrorMessage(result.error));
+        toast({ title: getBulkFillErrorMessage(result.error), variant: 'error' });
       }
     } catch (error) {
       console.error('Error filling standard hours:', error);
       if (handleSessionAuthError(error)) return;
-      setErrorMessage(getBulkFillErrorMessage(error.message || error.toString()));
+      toast({ title: getBulkFillErrorMessage(error.message || error.toString()), variant: 'error' });
     } finally {
       setBulkFillLoading(false);
     }
@@ -590,12 +609,14 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
   /** The hours a single row of this submission will carry. */
   const formHours = useMemo(() => {
     if (isOnLeave) return 0;
-    const value = getHoursWorked(formData.date, formData.clockIn, formData.clockOut);
+    const value = getHoursWorked(date, formData.clockIn, formData.clockOut);
     return Number.isFinite(value) && value > 0 ? value : 0;
-  }, [isOnLeave, formData.date, formData.clockIn, formData.clockOut]);
+  }, [isOnLeave, date, formData.clockIn, formData.clockOut]);
 
-  const selectedCount = selectedEmployees.length;
+  const selectedCount = rosterReady ? selectedEmployees.length : 0;
   const hourTypeLabel = hourTypes.find((type) => type.value === formData.hourType)?.label || '';
+
+  if (mode === 'mine') return null;
 
   if (!canManageTimeTracking) {
     return (
@@ -613,45 +634,6 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
 
   return (
     <div className="flex flex-col" style={{ gap: 16 }}>
-      <div
-        role="group"
-        aria-label={t('adminTimeEntry.entryMode', 'Entry mode')}
-        className="flex flex-wrap"
-        style={{ gap: 6 }}
-      >
-        {[
-          { value: 'bulk', label: t('adminTimeEntry.bulkStandardHours.title', 'Bulk Standard Hours') },
-          { value: 'custom', label: t('adminTimeEntry.customEntries', 'Custom Time Entries') },
-        ].map((mode) => (
-          <Btn
-            key={mode.value}
-            ind={ind}
-            type="button"
-            variant={entryMode === mode.value ? 'primary' : 'secondary'}
-            aria-pressed={entryMode === mode.value}
-            disabled={loading || bulkFillLoading || showBulkConfirmModal}
-            onClick={() => {
-              setEntryMode(mode.value);
-              setErrorMessage('');
-              setSuccessMessage('');
-            }}
-          >
-            {mode.label}
-          </Btn>
-        ))}
-      </div>
-
-      {/* ── Banners — weight and icon carry the verdict, not colour ─── */}
-      {successMessage && (
-        <div
-          className="flex items-start justify-between"
-          style={{ border: `1px solid ${ind.hairline}`, background: ind.accentWash, padding: '9px 12px', gap: 10 }}
-        >
-          <span style={{ fontFamily: BODY, fontSize: 12.5, color: ind.ink }}>{successMessage}</span>
-          <Check size={14} strokeWidth={1.5} style={{ flex: 'none', marginTop: 2, color: ind.accentDeep }} />
-        </div>
-      )}
-
       {errorMessage && (
         <div style={{ border: `1px solid ${ind.ink}`, padding: '12px 14px', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
           <AlertCircle size={16} strokeWidth={1.5} style={{ flex: 'none', marginTop: 2, color: ind.ink }} />
@@ -670,10 +652,34 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
         </div>
       )}
 
-      {/* ── ENTRY FORM ───────────────────────────────────────────── */}
-      {entryMode === 'custom' && <form onSubmit={handleSubmit}>
+      {exclusionReport?.mode === mode && (
+        <div style={{ border: `1px solid ${ind.hairline}`, padding: '12px 14px', display: 'flex', gap: 12 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <Kicker ind={ind}>{t('adminTimeEntry.excludedEmployees', 'Excluded employees')}</Kicker>
+            <ul style={{ ...captionStyle, listStyle: 'disc', paddingLeft: 18, color: ind.inkMuted }}>
+              {exclusionReport.groups.map(group => (
+                <li key={group.key}>
+                  {group.name} · {exclusionReason(group.reason)} · {group.dates[0]}
+                  {group.dates.length > 1 && ` – ${group.dates.at(-1)} (${group.dates.length} ${t('timeClock.days')})`}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <button type="button" onClick={() => setExclusionReport(null)} aria-label={t('common.close', 'Close')} style={iconBtnStyle}>
+            <X size={12} strokeWidth={1.5} />
+          </button>
+        </div>
+      )}
+
+      {/* Reset picker popovers on mode changes while keeping the form draft above. */}
+      <form
+        key={mode}
+        onSubmit={handleSubmit}
+        inert={isBulk}
+        style={isBulk ? { order: 1, filter: 'grayscale(1)', opacity: 0.55 } : undefined}
+      >
         <Blueprint ind={ind} style={{ padding: '18px 20px 16px' }}>
-          <div className="flex flex-col lg:flex-row" style={{ gap: 28 }}>
+          <fieldset disabled={isBulk} className="m-0 min-w-0 border-0 p-0 flex flex-col lg:flex-row" style={{ gap: 28 }}>
 
             {/* Collect */}
             <div className="flex-1 min-w-0 flex flex-col" style={{ gap: 14 }}>
@@ -689,9 +695,14 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
 
               {/* Employees */}
               <div>
-                <label htmlFor="admin-employee-search" style={fieldLabelStyle}>
-                  {t('adminTimeEntry.selectEmployees', 'Select Employees')}
-                </label>
+                <div className="flex flex-wrap items-center justify-between" style={{ gap: 6, marginBottom: 4 }}>
+                  <label htmlFor="admin-employee-search" style={{ ...fieldLabelStyle, marginBottom: 0 }}>
+                    {t('adminTimeEntry.selectEmployees', 'Select Employees')}
+                  </label>
+                  <Btn ind={ind} disabled={!employees.length || selectedCount === employees.length} onClick={() => setSelectedEmployees(employees)}>
+                    {t('adminTimeEntry.selectAllEligible', 'Select All')}
+                  </Btn>
+                </div>
 
                 <div
                   className="flex items-center"
@@ -721,7 +732,7 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
                 </div>
 
                 {/* Results — only while searching, same as before */}
-                {searchTerm && (
+                {searchTerm && rosterReady && (
                   <div
                     style={{
                       maxHeight: 192, overflowY: 'auto',
@@ -831,8 +842,8 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
                   <DatePicker
                     flat
                     id="admin-date-input"
-                    value={formData.date}
-                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                    value={date}
+                    onChange={(e) => onDateChange(e.target.value)}
                     max={new Date().toISOString().split('T')[0]}
                     required
                     icon={Calendar}
@@ -1012,7 +1023,7 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
                 ind={ind}
                 variant="primary"
                 type="submit"
-                disabled={loading || selectedCount === 0}
+                disabled={isBulk || submitting || selectedCount === 0}
                 style={{ width: '100%', padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
               >
                 {loading
@@ -1025,12 +1036,12 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
                     : t('adminTimeEntry.submitButton', 'Submit Time Entry')}
               </Btn>
             </div>
-          </div>
+          </fieldset>
         </Blueprint>
-      </form>}
+      </form>
 
       {/* ── BULK STANDARD HOURS — the tinted card on this screen ──── */}
-      {entryMode === 'bulk' && <form onSubmit={handleBulkStandardHoursFill}>
+      {isBulk && <form onSubmit={handleBulkStandardHoursFill}>
         <Blueprint ind={ind} tint style={{ padding: '18px 20px 16px' }}>
           <div className="flex flex-wrap items-baseline justify-between" style={{ gap: 10 }}>
             <ColumnHeading ind={ind}>
@@ -1087,7 +1098,7 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
                 marks this as the action that touches every employee at once. */}
             <SpecularButton
               type="submit"
-              disabled={bulkFillLoading || loading}
+              disabled={submitting || showBulkConfirmModal}
               shineOnHover
               className="w-full rounded-none border"
               style={{
@@ -1119,14 +1130,13 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
           </div>
 
           <p style={{ ...captionStyle, marginTop: 10 }}>
-            {t('adminTimeEntry.bulkScopeNote', '* {n} employees on file')
-              .replace('{n}', String(employees.length))}
+            {t('adminTimeEntry.bulkEligibilityNote', 'The fill includes only employees eligible on each attendance date.')}
           </p>
         </Blueprint>
       </form>}
 
       {/* ── Confirm ──────────────────────────────────────────────── */}
-      {showBulkConfirmModal && (
+      {isBulk && showBulkConfirmModal && (
         <div
           style={{
             position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(29,45,61,.72)',
@@ -1167,6 +1177,7 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
                   )
                     .replace('{start}', bulkFillData.startDate)
                     .replace('{end}', bulkFillData.endDate)}
+                  {' '}{t('adminTimeEntry.bulkEligibilityNote', 'The fill includes only employees eligible on each attendance date.')}
                 </p>
               </div>
 

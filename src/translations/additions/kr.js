@@ -1,4 +1,11 @@
 export default {
+  'adminTimeEntry.selectAllEligible': '모두 선택',
+  'adminTimeEntry.excludedEmployees': '제외된 직원',
+  'adminTimeEntry.exclusionBeforeStart': '근무 시작일 이전',
+  'adminTimeEntry.exclusionInactive': '비활성 상태이거나 재직 기간이 확인되지 않음',
+  'adminTimeEntry.exclusionNotPermitted': '관리 범위에 포함되지 않는 직원',
+  'adminTimeEntry.noEntriesSaved': '생성된 근태 기록이 없습니다.',
+  'adminTimeEntry.bulkEligibilityNote': '각 근태 날짜에 등록할 수 있는 직원만 포함됩니다.',
   'adminTimeEntry.entryMode': '입력 모드',
   'adminTimeEntry.customEntries': '사용자 지정 근무 시간 입력',
   'toast.actionFailed': '작업을 완료하지 못했습니다. 다시 시도해 주세요.',

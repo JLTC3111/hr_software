@@ -209,6 +209,7 @@ const TimeClockEntry = () => {
     notes: '',
     proofFile: null
   });
+  const [adminEntryDate, setAdminEntryDate] = useState(() => new Date().toISOString().split('T')[0]);
 
   // Time entries state
   const [timeEntries, setTimeEntries] = useState([]);
@@ -220,19 +221,24 @@ const TimeClockEntry = () => {
   const [fetchError, setFetchError] = useState(null);
 
   const [errors, setErrors] = useState({});
-  const [successMessage, setSuccessMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmittingLeave, setIsSubmittingLeave] = useState(false);
+  const [deletingEntryId, setDeletingEntryId] = useState(null);
   
   // State for uploading proof to existing entries
   const [uploadingProofId, setUploadingProofId] = useState(null);
   const { toast } = useToast();
-  const [uploadProgress, setUploadProgress] = useState({});
+  const [uploadProgress, setUploadProgress] = useState(0);
   
   // State for image preview modal
   const [imagePreview, setImagePreview] = useState({ show: false, url: '' });
   
   // State for employee filtering and approval
   const [selectedEmployeeFilter, setSelectedEmployeeFilter] = useState(canManageTimeTracking ? 'all' : 'self');
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const entryMode = !canManageTimeTracking ? 'mine'
+    : bulkOpen ? 'bulk' : selectedEmployeeFilter === 'self' ? 'mine' : 'admin';
+  const entryDate = entryMode === 'bulk' ? null : entryMode === 'admin' ? adminEntryDate : formData.date;
   const [statusFilter, setStatusFilter] = useState('all');
   const [reviewMode, setReviewMode] = useState(false);
   const [allEmployees, setAllEmployees] = useState([]);
@@ -311,7 +317,8 @@ const TimeClockEntry = () => {
 
    const handleLeaveSubmit = async (e) => {
       e.preventDefault();
-      setLoading(true);
+      if (isSubmittingLeave) return;
+      setIsSubmittingLeave(true);
       
       try {
         // Demo mode: save leave request locally
@@ -336,7 +343,7 @@ const TimeClockEntry = () => {
           // Update local state immediately
           setLeaveRequests(prev => [...prev, newLeaveRequest]);
           
-          setSuccessMessage(t('timeTracking.leaveSuccess', 'Leave request submitted successfully!'));
+          toast({ title: t('timeTracking.leaveSuccess', 'Leave request submitted successfully!'), variant: 'success' });
           setShowLeaveModal(false);
           
           // Reset form
@@ -347,8 +354,6 @@ const TimeClockEntry = () => {
             reason: ''
           });
           
-          setLoading(false);
-          setTimeout(() => setSuccessMessage(''), 3000);
           return;
         }
         
@@ -361,7 +366,7 @@ const TimeClockEntry = () => {
         });
 
         if (result.success) {
-          setSuccessMessage(t('timeTracking.leaveSuccess', 'Leave request submitted successfully!'));
+          toast({ title: t('timeTracking.leaveSuccess', 'Leave request submitted successfully!'), variant: 'success' });
           setShowLeaveModal(false);
 
           // Keep local-only representation so UI can show the request without pulling from Supabase
@@ -387,15 +392,14 @@ const TimeClockEntry = () => {
             reason: ''
           });
         } else {
-          setSuccessMessage(t('timeTracking.leaveError', 'Error submitting leave request'));
+          toast({ title: t('timeTracking.leaveError', 'Error submitting leave request'), variant: 'error' });
         }
       } catch (error) {
         console.error('Error submitting leave:', error);
         if (handleSessionAuthError(error, { silent: true })) return;
-        setSuccessMessage(t('timeTracking.leaveError', 'Error submitting leave request'));
+        toast({ title: t('timeTracking.leaveError', 'Error submitting leave request'), variant: 'error' });
       } finally {
-        setLoading(false);
-        setTimeout(() => setSuccessMessage(''), 3000);
+        setIsSubmittingLeave(false);
       }
     };
   
@@ -404,6 +408,7 @@ const TimeClockEntry = () => {
   const loadSafetyTimer = useRef(null);
   const isMounted = useRef(true);
   const loadSeq = useRef(0);
+  const entryFetchSeq = useRef(0);
 
   // Normalize entries so on-leave rows don't show placeholder times
   const normalizeEntries = useCallback((entries) =>
@@ -417,6 +422,7 @@ const TimeClockEntry = () => {
 
   // Fetch time entries from Supabase
   const fetchTimeEntries = useCallback(async () => {
+    const seq = ++entryFetchSeq.current;
     console.log('🔄 fetchTimeEntries called');
     try {
       let result;
@@ -428,6 +434,7 @@ const TimeClockEntry = () => {
             DEFAULT_REQUEST_TIMEOUT,
           'fetch time entries (all)'
         );
+        if (seq !== entryFetchSeq.current) return;
         
         if (result?.success && Array.isArray(result.data)) {
           console.log('✅ Fetched', result.data.length, 'entries');
@@ -444,6 +451,7 @@ const TimeClockEntry = () => {
             DEFAULT_REQUEST_TIMEOUT,
             'fetch time entries (self)'
           );
+          if (seq !== entryFetchSeq.current) return;
           if (result?.success && Array.isArray(result.data)) {
             console.log('✅ Fetched', result.data.length, 'entries');
             setTimeEntries(normalizeEntries(result.data));
@@ -463,10 +471,12 @@ const TimeClockEntry = () => {
           startDate: week.startDate < quarter.startDate ? week.startDate : quarter.startDate,
           endDate: week.endDate > quarter.endDate ? week.endDate : quarter.endDate,
         });
+        if (seq !== entryFetchSeq.current) return;
         if (!logs.success) throw new Error(logs.error);
         setOvertimeLogs(logs.data || []);
       }
     } catch (error) {
+      if (seq !== entryFetchSeq.current) return;
       console.error('💥 Exception in fetchTimeEntries:', error);
       console.error('Stack:', error.stack);
       handleSessionAuthError(error, { silent: true });
@@ -702,6 +712,7 @@ const TimeClockEntry = () => {
     setStatusFilter('pending');
     if (canManageTimeTracking) {
       setSelectedEmployeeFilter('all');
+      setBulkOpen(false);
     }
     setSortKey('date');
     setSortDirection('desc');
@@ -788,6 +799,7 @@ const TimeClockEntry = () => {
       // Check for overlapping shifts on the same day (only when times provided)
       const overlapping = timeEntries.some(entry => {
         if (entry.date !== formData.date) return false;
+        if (String(entry.employee_id || entry.employeeId) !== String(userEmployeeId || userId)) return false;
         if (!entry.clockIn || !entry.clockOut) return false;
         if (!formData.clockIn || !formData.clockOut) return false;
 
@@ -851,8 +863,8 @@ const TimeClockEntry = () => {
       // Convert to base64 for storage
       const reader = new FileReader();
       reader.onloadend = () => {
-        setFormData({ ...formData, proofFile: { name: file.name, type: file.type, data: reader.result } });
-        setErrors({ ...errors, proofFile: null });
+        setFormData(prev => ({ ...prev, proofFile: { name: file.name, type: file.type, data: reader.result } }));
+        setErrors(prev => ({ ...prev, proofFile: null }));
       };
       reader.readAsDataURL(file);
     }
@@ -861,8 +873,8 @@ const TimeClockEntry = () => {
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!validateForm()) return;
+
+    if (entryMode !== 'mine' || isSubmitting || !validateForm()) return;
 
     setIsSubmitting(true);
 
@@ -895,17 +907,20 @@ const TimeClockEntry = () => {
           lastModified: Date.now()
         });
         
-        const uploadResult = await timeTrackingService.uploadProofFile(file, user?.employeeId || user?.id);
+        const uploadResult = await timeTrackingService.uploadProofFile(file, userEmployeeId || userId);
         if (uploadResult.success) {
           proofFileUrl = uploadResult.url;
           proofFileName = uploadResult.fileName;
           proofFileType = uploadResult.fileType;
           proofFilePath = uploadResult.storagePath;
+        } else {
+          toast({ title: t('timeClock.proofUploadError', 'Failed to upload proof file'), variant: 'error' });
         }
       }
       
       // Ensure employee exists in database before creating time entry
-      const employeeCheck = await timeTrackingService.ensureEmployeeExists(user?.employeeId || user?.id, {
+      const employeeId = userEmployeeId || userId;
+      const employeeCheck = await timeTrackingService.ensureEmployeeExists(employeeId, {
         name: user?.user_metadata?.name || user?.email?.split('@')[0] || 'User',
         email: user?.email,
         position: user?.user_metadata?.position,
@@ -913,18 +928,13 @@ const TimeClockEntry = () => {
       });
 
       if (!employeeCheck.success) {
-        setErrors({ general: employeeCheck.error || 'Employee record not found. Please contact HR.' });
-        setIsSubmitting(false);
+        toast({ title: employeeCheck.error || 'Employee record not found. Please contact HR.', variant: 'error' });
         return;
       }
 
       if (employeeCheck.created) {
         console.log('Employee record created automatically for user:', user?.id);
       }
-      
-      // Create time entry in Supabase
-      // Use employeeId from user profile to link with employees table
-      const employeeId = user?.employeeId || user?.id;
       
       // Check for overlapping time entries on this date with the same hour type
       let existingEntries = [];
@@ -945,8 +955,7 @@ const TimeClockEntry = () => {
       
       if (checkError) {
         console.error('Error checking existing entries:', checkError);
-        setErrors({ general: t('timeClock.errors.submitFailed') });
-        setIsSubmitting(false);
+        toast({ title: t('timeClock.errors.submitFailed'), variant: 'error' });
         return;
       }
       
@@ -960,7 +969,6 @@ const TimeClockEntry = () => {
             .replace('{existingIn}', existingEntries[0].clock_in || 'N/A')
             .replace('{existingOut}', existingEntries[0].clock_out || 'N/A');
           setErrors({ general: errorMsg });
-          setIsSubmitting(false);
           return;
         }
 
@@ -983,7 +991,6 @@ const TimeClockEntry = () => {
             const errorMsg = t('timeClock.errors.overlappingEntry', 'This {hourType} time entry overlaps with an existing entry ({existingIn} - {existingOut})').replace('{hourType}', hourTypeLabel).replace('{existingIn}', existingClockIn).replace('{existingOut}', existingClockOut);
             console.log('Overlapping entry error:', errorMsg);
             setErrors({ general: errorMsg });
-            setIsSubmitting(false);
             return;
           }
         }
@@ -1004,9 +1011,8 @@ const TimeClockEntry = () => {
       });
       
       if (result.success) {
-        // Refresh time entries using the centralized fetch function
-        await fetchTimeEntries();
-        
+        toast({ title: t('timeClock.success'), variant: 'success' });
+
         // Reset form
         setFormData({
           date: localDateKey(new Date()),
@@ -1017,16 +1023,15 @@ const TimeClockEntry = () => {
           proofFile: null
         });
 
-        setSuccessMessage(t('timeClock.success'));
-        setTimeout(() => setSuccessMessage(''), 3000);
+        void fetchTimeEntries();
       } else {
         console.error('Failed to submit time entry:', result.error);
-        setErrors({ general: t('timeClock.errors.submitFailed') });
+        toast({ title: t('timeClock.errors.submitFailed'), variant: 'error' });
       }
     } catch (error) {
       console.error('Error submitting time entry:', error);
       if (handleSessionAuthError(error)) return;
-      setErrors({ general: t('timeClock.errors.submitFailed') });
+      toast({ title: t('timeClock.errors.submitFailed'), variant: 'error' });
     } finally {
       setIsSubmitting(false);
     }
@@ -1056,6 +1061,8 @@ const TimeClockEntry = () => {
 
   // Delete entry or proof file
   const handleDelete = async (id, entry) => {
+    if (deletingEntryId != null) return;
+
     // Check if entry has a proof file
     const hasProof = entry?.proof_file_url;
     
@@ -1081,84 +1088,66 @@ const TimeClockEntry = () => {
       deleteChoice = '1';
     }
     
+    const deletingProof = deleteChoice === '2';
+    const errorMessage = deletingProof
+      ? t('timeClock.proofDeleteError', 'Failed to delete proof file')
+      : t('timeClock.errors.deleteFailed');
+    setDeletingEntryId(id);
     try {
-      if (deleteChoice === '2') {
-        // Delete only the proof file
-        const result = await timeTrackingService.deleteProofFile(id, entry.proof_file_path);
-        
-        if (result.success) {
-          // Refresh time entries using the centralized fetch function
-          await fetchTimeEntries();
-          
-          toast({
-            title: t('timeClock.proofDeleteSuccess', 'Proof file deleted successfully'),
-            variant: 'success', duration: 3000,
-          });
-        } else {
-          toast({
-            title: t('timeClock.proofDeleteError', 'Failed to delete proof file'),
-            variant: 'error', duration: 5000,
-          });
-        }
-      } else {
-        // Delete entire entry
-        const result = await timeTrackingService.deleteTimeEntry(id);
-        if (result.success) {
-          // Refresh time entries using the centralized fetch function
-          await fetchTimeEntries();
-          setSuccessMessage(t('timeClock.deleteSuccess', 'Time entry deleted successfully'));
-          setTimeout(() => setSuccessMessage(''), 3000);
-        } else {
-          setErrors({ general: t('timeClock.errors.deleteFailed') });
-        }
+      const result = deletingProof
+        ? await timeTrackingService.deleteProofFile(id, entry.proof_file_path)
+        : await timeTrackingService.deleteTimeEntry(id);
+
+      if (!result.success) {
+        toast({ title: errorMessage, variant: 'error' });
+        return;
       }
+
+      if (deletingProof) {
+        applyEntryUpdateLocally(id, {
+          proof_file_url: null, proof_file_name: null, proof_file_type: null, proof_file_path: null,
+        });
+        toast({ title: t('timeClock.proofDeleteSuccess', 'Proof file deleted successfully'), variant: 'success' });
+      } else {
+        setTimeEntries(entries => entries.filter(entry => entry.id !== id));
+        toast({ title: t('timeClock.deleteSuccess', 'Time entry deleted successfully'), variant: 'success' });
+      }
+      void fetchTimeEntries();
     } catch (error) {
       console.error('Error deleting:', error);
       if (handleSessionAuthError(error)) return;
-      setErrors({ general: t('timeClock.errors.deleteFailed') });
+      toast({ title: errorMessage, variant: 'error' });
+    } finally {
+      setDeletingEntryId(null);
     }
   };
 
   // Handle uploading proof to existing time entry
   const handleUploadProof = async (entryId, file, employeeId) => {
-    if (!file) return;
+    if (!file || uploadingProofId != null) return;
 
     setUploadingProofId(entryId);
-    setUploadProgress({ [file.name]: 0 });
     
     try {
       const result = await timeTrackingService.updateTimeEntryProof(
         entryId, 
         file, 
-        employeeId || user?.employeeId || user?.id,
-        (percent) => {
-          // Update progress
-          setUploadProgress({ [file.name]: percent });
-        }
+        employeeId || userEmployeeId || userId,
+        setUploadProgress
       );
       
       if (result.success) {
-        // Clear progress after completion
-        setTimeout(() => {
-          setUploadProgress({});
-        }, 2000);
-        
-        // Refresh time entries using the centralized fetch function
-        await fetchTimeEntries();
-
-        // Show success toast
+        const { proof_file_url, proof_file_name, proof_file_type, proof_file_path } = result.data;
+        applyEntryUpdateLocally(entryId, { proof_file_url, proof_file_name, proof_file_type, proof_file_path });
         toast({
           title: t('timeClock.proofUploadSuccess', 'Proof file uploaded successfully'),
-          variant: 'success', duration: 3000,
+          variant: 'success',
         });
+        void fetchTimeEntries();
       } else {
-        // Clear progress on error
-        setUploadProgress({});
-        
-        // Show error toast
         toast({
           title: t('timeClock.proofUploadError', 'Failed to upload proof file'),
-          variant: 'error', duration: 5000,
+          variant: 'error',
         });
       }
     } catch (error) {
@@ -1166,10 +1155,11 @@ const TimeClockEntry = () => {
       if (handleSessionAuthError(error)) return;
       toast({
         title: t('timeClock.proofUploadError', 'Failed to upload proof file'),
-        variant: 'error', duration: 5000,
+        variant: 'error',
       });
     } finally {
       setUploadingProofId(null);
+      setUploadProgress(0);
     }
   };
   
@@ -1202,20 +1192,17 @@ const TimeClockEntry = () => {
       const result = await timeTrackingService.updateTimeEntryStatus(entryId, 'approved', approverId);
       
       if (result.success) {
-        // Refresh time entries using the centralized fetch function
-        await fetchTimeEntries();
-        if (typeof checkPendingApprovals === 'function') {
-          await checkPendingApprovals();
-        }
-
+        applyEntryUpdateLocally(entryId, { status: 'approved' });
         toast({
           title: t('timeClock.approvalSuccess', 'Time entry approved successfully'),
-          variant: 'success', duration: 3000,
+          variant: 'success',
         });
+        void fetchTimeEntries();
+        void checkPendingApprovals?.();
       } else {
         toast({
           title: t('timeClock.approvalError', 'Failed to approve entry'),
-          variant: 'error', duration: 5000,
+          variant: 'error',
         });
       }
     } catch (error) {
@@ -1223,7 +1210,7 @@ const TimeClockEntry = () => {
       if (handleSessionAuthError(error)) return;
       toast({
         title: t('timeClock.approvalError', 'Failed to approve entry'),
-        variant: 'error', duration: 5000,
+        variant: 'error',
       });
     } finally {
       setApprovingEntryId(null);
@@ -1261,8 +1248,8 @@ const TimeClockEntry = () => {
   ];
 
   const onLeaveForSelectedDate = useMemo(() => {
-    if (!Array.isArray(leaveRequests) || !formData.date) return [];
-    const target = new Date(formData.date);
+    if (!Array.isArray(leaveRequests) || !entryDate) return [];
+    const target = new Date(entryDate);
 
     return leaveRequests
       .filter((req) => {
@@ -1283,7 +1270,7 @@ const TimeClockEntry = () => {
           const displayName = req.employee?.name || req.employee_name || fallbackName || t('timeClock.unknownEmployee', 'Unknown');
         return { ...req, displayName };
       });
-  }, [leaveRequests, formData.date, allEmployees, t]);
+  }, [leaveRequests, entryDate, allEmployees, t]);
 
   // Sorting function for history table (includes leave rows for selected date)
   const getSortedEntries = useMemo(() => {
@@ -1301,8 +1288,8 @@ const TimeClockEntry = () => {
         return (leave.status || '').toLowerCase() === statusFilter;
       })
       .map((leave) => ({
-        id: `leave-${leave.id}-${formData.date}`,
-        date: formData.date,
+        id: `leave-${leave.id}-${entryDate}`,
+        date: entryDate,
         hours: 0,
         hour_type: 'on_leave',
         status: leave.status || 'approved',
@@ -1314,7 +1301,7 @@ const TimeClockEntry = () => {
         notes: leave.reason || '',
         proof_file_url: null,
         proof_file_type: null,
-        created_at: leave.created_at || leave.submitted_at || leave.start_date || formData.date
+        created_at: leave.created_at || leave.submitted_at || leave.start_date || entryDate
       }));
 
     const combined = [...filteredEntries, ...leaveRows];
@@ -1350,7 +1337,7 @@ const TimeClockEntry = () => {
       return 0;
     });
     return sorted;
-  }, [filteredEntries, onLeaveForSelectedDate, selectedEmployeeFilter, statusFilter, userEmployeeId, userId, sortKey, sortDirection, formData.date]);
+  }, [filteredEntries, onLeaveForSelectedDate, selectedEmployeeFilter, statusFilter, userEmployeeId, userId, sortKey, sortDirection, entryDate]);
 
   const colTimeClass = COL.lg;
   const colTypeClass = COL.md;
@@ -1439,7 +1426,7 @@ const TimeClockEntry = () => {
         return next;
       }
       if (next.clockIn && next.clockOut) {
-        const hoursValue = Number(calculateHours(next.clockIn, next.clockOut, next.date || formData.date));
+        const hoursValue = Number(calculateHours(next.clockIn, next.clockOut, next.date || entryDate));
         next.hours = Number.isFinite(hoursValue) ? hoursValue.toFixed(2) : prev.hours;
       }
       return next;
@@ -1469,7 +1456,7 @@ const TimeClockEntry = () => {
       }
       const next = { ...prev, hourType: value };
       if (next.clockIn && next.clockOut) {
-        const hoursValue = Number(calculateHours(next.clockIn, next.clockOut, next.date || formData.date));
+      const hoursValue = Number(calculateHours(next.clockIn, next.clockOut, next.date || entryDate));
         next.hours = Number.isFinite(hoursValue) ? hoursValue.toFixed(2) : prev.hours;
       }
       return next;
@@ -1523,7 +1510,7 @@ const TimeClockEntry = () => {
       });
       if (!result.success) {
         console.error('Failed to update time entry:', result.error);
-        setErrors({ general: t('timeClock.errors.updateFailed', 'Failed to update entry') });
+        toast({ title: t('timeClock.errors.updateFailed', 'Failed to update entry'), variant: 'error' });
         return;
       }
 
@@ -1534,12 +1521,11 @@ const TimeClockEntry = () => {
         hours: editForm.hourType === 'on_leave' ? 0 : hoursNum,
         hour_type: editForm.hourType,
       });
-      setSuccessMessage(t('timeClock.updateSuccess', 'Time entry updated successfully'));
-      setTimeout(() => setSuccessMessage(''), 3000);
+      toast({ title: t('timeClock.updateSuccess', 'Time entry updated successfully'), variant: 'success' });
       cancelEditEntry();
     } catch (error) {
       if (handleSessionAuthError(error)) return;
-      setErrors({ general: t('timeClock.errors.updateFailed', 'Failed to update entry') });
+      toast({ title: t('timeClock.errors.updateFailed', 'Failed to update entry'), variant: 'error' });
     } finally {
       setSavingEntryId(null);
     }
@@ -1626,27 +1612,21 @@ const TimeClockEntry = () => {
     || user?.email?.split('@')[0]
     || t('timeClock.myEntries', 'My Entries');
 
-  /**
-   * The scope switch. Bulk is a different screen (AdminTimeEntry), the other two
-   * are the same screen pointed at a different set of rows — so the seg reads its
-   * value back off the employee filter instead of keeping a second copy of it.
-   */
-  const [bulkOpen, setBulkOpen] = useState(false);
-  const segValue = bulkOpen ? 'bulk' : (selectedEmployeeFilter === 'self' ? 'self' : 'admin');
   const handleSegChange = (value) => {
+    if (!canManageTimeTracking) return;
     if (value === 'bulk') {
       setBulkOpen(true);
       return;
     }
     setBulkOpen(false);
-    setSelectedEmployeeFilter(value === 'self' ? 'self' : 'all');
+    setSelectedEmployeeFilter(value === 'mine' ? 'self' : 'all');
   };
 
-  const entryDateLabel = formData.date
-    ? formatDate(formData.date, currentLanguage, {
+  const entryDateLabel = entryDate
+    ? formatDate(entryDate, currentLanguage, {
       day: '2-digit', month: 'short', year: 'numeric', weekday: 'long',
     })
-    : '—';
+    : null;
 
   const headSub = [
     t('timeClock.subtitle'),
@@ -1853,16 +1833,6 @@ const TimeClockEntry = () => {
           className="flex-1 min-w-0 flex flex-col"
           style={{ padding: '22px 24px 20px', gap: 16, borderRight: `1px solid ${ind.hairline}` }}
         >
-          {successMessage && (
-            <div
-              className="flex items-center justify-between"
-              style={{ border: `1px solid ${ind.hairline}`, background: ind.accentWash, padding: '9px 12px', gap: 10 }}
-            >
-              <span style={{ fontFamily: BODY, fontSize: 12.5, color: ind.ink }}>{successMessage}</span>
-              <Check size={14} strokeWidth={1.5} style={{ flex: 'none', color: ind.accentDeep }} />
-            </div>
-          )}
-
           {(errors.general || fetchError) && (
             <div style={{ border: `1px solid ${ind.ink}`, padding: '12px 14px', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
               <AlertCircle size={16} strokeWidth={1.5} style={{ flex: 'none', marginTop: 2, color: ind.ink }} />
@@ -1911,11 +1881,11 @@ const TimeClockEntry = () => {
               {canManageTimeTracking && (
                 <Seg
                   ind={ind}
-                  ariaLabel={t('timeClock.viewEntries', 'View Entries')}
-                  value={segValue}
+                  ariaLabel={t('adminTimeEntry.entryMode', 'Entry mode')}
+                  value={entryMode}
                   onChange={handleSegChange}
                   options={[
-                    { value: 'self', label: t('timeClock.scopeMine', 'Mine') },
+                    { value: 'mine', label: t('timeClock.scopeMine', 'Mine') },
                     { value: 'admin', label: t('timeClock.scopeAdmin', 'Admin') },
                     { value: 'bulk', label: t('timeClock.scopeBulk', 'Bulk') },
                   ]}
@@ -1932,15 +1902,13 @@ const TimeClockEntry = () => {
             </div>
           </div>
 
-          {bulkOpen ? (
-            /* Bulk entry and the standard-hours fill live in one place, so this
-               screen hands the whole band over rather than keeping a second copy
-               of the same form. */
-            <AdminTimeEntry onEntriesChanged={fetchTimeEntries} />
-          ) : (
+          {canManageTimeTracking && (
+            <AdminTimeEntry mode={entryMode} date={adminEntryDate} onDateChange={setAdminEntryDate} onEntriesChanged={fetchTimeEntries} />
+          )}
+          {entryMode !== 'bulk' && (
             <>
               {/* ── ENTRY FORM ─────────────────────────────────────── */}
-              <form onSubmit={handleSubmit} style={{ flex: 'none' }}>
+              {entryMode === 'mine' && <form onSubmit={handleSubmit} style={{ flex: 'none' }}>
                 <Blueprint ind={ind} style={{ padding: '18px 20px 16px' }}>
                   <div className="flex flex-col lg:flex-row" style={{ gap: 28 }}>
 
@@ -2104,7 +2072,7 @@ const TimeClockEntry = () => {
                               {t('timeClock.filingFor', 'Filing for: {name}').replace('{name}', meName)}
                             </span>
                           </div>
-                          <Btn ind={ind} onClick={() => handleSegChange('bulk')}>
+                          <Btn ind={ind} onClick={() => handleSegChange('admin')}>
                             {t('timeClock.changeEmployee', 'Change employee')}
                           </Btn>
                         </div>
@@ -2172,7 +2140,7 @@ const TimeClockEntry = () => {
                     </div>
                   </div>
                 </Blueprint>
-              </form>
+              </form>}
 
               {/* ── HISTORY ────────────────────────────────────────── */}
               <div ref={historySectionRef} className="scroll-mt-24 flex-1 min-w-0">
@@ -2388,7 +2356,7 @@ const TimeClockEntry = () => {
                                       {uploadingProofId === entry.id ? (
                                         <>
                                           <Loader2 size={12} className="animate-spin" />
-                                          {Object.values(uploadProgress)[0] > 0 && `${Object.values(uploadProgress)[0]}%`}
+                                          {uploadProgress > 0 && `${uploadProgress}%`}
                                         </>
                                       ) : (
                                         t('timeClock.proofMissing', 'Missing')
@@ -2398,7 +2366,7 @@ const TimeClockEntry = () => {
                                         type="file"
                                         accept="image/*,application/pdf,.doc,.docx,.txt"
                                         className="sr-only"
-                                        disabled={uploadingProofId === entry.id}
+                                        disabled={uploadingProofId != null}
                                         onChange={(e) => {
                                           const file = e.target.files?.[0];
                                           if (file) {
@@ -2435,10 +2403,13 @@ const TimeClockEntry = () => {
                                           <button
                                             type="button"
                                             onClick={() => handleDelete(entry.id, entry)}
+                                            disabled={deletingEntryId != null}
                                             title={entry.proof_file_url ? t('timeClock.deleteOptions', 'Delete options') : t('timeClock.delete', 'Delete')}
                                             style={iconBtnStyle}
                                           >
-                                            <X size={12} strokeWidth={1.5} />
+                                            {deletingEntryId === entry.id
+                                              ? <Loader2 size={12} className="animate-spin" />
+                                              : <X size={12} strokeWidth={1.5} />}
                                           </button>
                                         )}
                                   </div>
@@ -2699,8 +2670,8 @@ const TimeClockEntry = () => {
 
               <div className="flex items-center justify-end" style={{ gap: 8, paddingTop: 4 }}>
                 <Btn ind={ind} onClick={() => setShowLeaveModal(false)}>{t('common.cancel', 'Cancel')}</Btn>
-                <Btn ind={ind} variant="primary" type="submit" disabled={loading}>
-                  {t('common.leaveRequest', 'Submit Request')}
+                <Btn ind={ind} variant="primary" type="submit" disabled={loading || isSubmittingLeave}>
+                  {isSubmittingLeave ? t('timeClock.submitting') : t('common.leaveRequest', 'Submit Request')}
                 </Btn>
               </div>
             </form>

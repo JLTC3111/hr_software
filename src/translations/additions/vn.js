@@ -1,4 +1,11 @@
 export default {
+  'adminTimeEntry.selectAllEligible': 'Chọn tất cả',
+  'adminTimeEntry.excludedEmployees': 'Nhân viên bị bỏ qua',
+  'adminTimeEntry.exclusionBeforeStart': 'Trước ngày bắt đầu làm việc',
+  'adminTimeEntry.exclusionInactive': 'Không còn làm việc hoặc chưa xác minh được thời gian làm việc',
+  'adminTimeEntry.exclusionNotPermitted': 'Nhân viên nằm ngoài phạm vi quản lý của bạn',
+  'adminTimeEntry.noEntriesSaved': 'Không có bản ghi chấm công nào được tạo.',
+  'adminTimeEntry.bulkEligibilityNote': 'Chỉ chấm công cho nhân viên đủ điều kiện vào từng ngày.',
   'adminTimeEntry.entryMode': 'Chế độ nhập',
   'adminTimeEntry.customEntries': 'Nhập giờ tùy chỉnh',
   'toast.actionFailed': 'Không thể hoàn tất thao tác. Vui lòng thử lại.',

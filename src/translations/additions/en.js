@@ -1,4 +1,11 @@
 export default {
+  'adminTimeEntry.selectAllEligible': 'Select All',
+  'adminTimeEntry.excludedEmployees': 'Excluded employees',
+  'adminTimeEntry.exclusionBeforeStart': 'Before employment start date',
+  'adminTimeEntry.exclusionInactive': 'Inactive or employment dates unverified',
+  'adminTimeEntry.exclusionNotPermitted': 'Employee is outside your managed roster',
+  'adminTimeEntry.noEntriesSaved': 'No time entries were created.',
+  'adminTimeEntry.bulkEligibilityNote': 'The fill includes only employees eligible on each attendance date.',
   'adminTimeEntry.entryMode': 'Entry mode',
   'adminTimeEntry.customEntries': 'Custom Time Entries',
   'toast.actionFailed': 'Could not complete the action. Please try again.',

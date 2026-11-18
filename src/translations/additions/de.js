@@ -1,4 +1,11 @@
 export default {
+  'adminTimeEntry.selectAllEligible': 'Alle auswählen',
+  'adminTimeEntry.excludedEmployees': 'Ausgeschlossene Mitarbeitende',
+  'adminTimeEntry.exclusionBeforeStart': 'Vor Beschäftigungsbeginn',
+  'adminTimeEntry.exclusionInactive': 'Inaktiv oder Beschäftigungszeitraum nicht bestätigt',
+  'adminTimeEntry.exclusionNotPermitted': 'Mitarbeitende außerhalb Ihres Zuständigkeitsbereichs',
+  'adminTimeEntry.noEntriesSaved': 'Es wurden keine Zeiteinträge erstellt.',
+  'adminTimeEntry.bulkEligibilityNote': 'Die Erfassung umfasst nur Mitarbeitende, die am jeweiligen Datum berechtigt sind.',
   'adminTimeEntry.entryMode': 'Eingabemodus',
   'adminTimeEntry.customEntries': 'Individuelle Zeiteinträge',
   'toast.actionFailed': 'Die Aktion konnte nicht abgeschlossen werden. Bitte versuchen Sie es erneut.',

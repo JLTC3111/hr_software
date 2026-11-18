@@ -1,4 +1,11 @@
 export default {
+  'adminTimeEntry.selectAllEligible': 'Tout sélectionner',
+  'adminTimeEntry.excludedEmployees': 'Employés exclus',
+  'adminTimeEntry.exclusionBeforeStart': 'Avant la date de début d’emploi',
+  'adminTimeEntry.exclusionInactive': 'Inactif ou dates d’emploi non vérifiées',
+  'adminTimeEntry.exclusionNotPermitted': 'Cet employé ne relève pas de votre périmètre',
+  'adminTimeEntry.noEntriesSaved': 'Aucune saisie horaire n’a été créée.',
+  'adminTimeEntry.bulkEligibilityNote': 'Seuls les employés admissibles à chaque date sont inclus.',
   'adminTimeEntry.entryMode': 'Mode de saisie',
   'adminTimeEntry.customEntries': 'Saisies de temps personnalisées',
   'toast.actionFailed': 'Impossible de terminer cette action. Veuillez réessayer.',
