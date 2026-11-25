@@ -17,7 +17,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { isDemoMode } from '../utils/demoHelper';
 import { ShinyButton } from './ui/shiny-button';
 import { getIndustry, DISPLAY, BODY } from '../theme/industry.js';
-import { Blueprint, Bar, Tag, Btn, Kicker, ColumnHeading, TickerCell, LiveClock } from './ui/industry.jsx';
+import { Blueprint, Tag, Btn, Kicker, ColumnHeading, TickerCell, LiveClock } from './ui/industry.jsx';
 import { FetchElapsedPill } from './ui/fetch-elapsed-pill';
 import {
   ENTITY_TYPES,
@@ -28,8 +28,8 @@ import {
   fetchRecordTranslations,
   fetchTranslationCoverage,
   fetchTranslatableRecords,
-  normalizeSource,
   saveTranslationBatch,
+  isTranslationStoreAvailable,
 } from '../services/ugcTranslationService';
 import {
   isLocalTranslationSupported,
@@ -38,9 +38,17 @@ import {
   translateText,
   translationAvailability,
 } from '../services/translateService';
-import { isTranslationStoreAvailable } from '../services/ugcTranslationService';
 import { isTranslationEditor } from '../utils/translationAccess';
 import { publishTranslationQueueCount } from '../utils/translationQueueStatus.js';
+import {
+  buildStudioQueue,
+  fieldFilterKey,
+  filterStudioQueue,
+  indexStudioTranslations,
+  isOutdatedTranslation,
+  nextMissingStudioTranslation,
+  searchStudioQueue,
+} from '../utils/translationStudioQueue.js';
 
 /**
  * Translation Studio — the full-page editor for hand-authored translations of
@@ -57,22 +65,15 @@ import { publishTranslationQueueCount } from '../utils/translationQueueStatus.js
  * outrank the on-device machine translation everywhere UGC is rendered.
  */
 
-/** Rows whose translation predates the current source text. */
-const isStale = (entry, storedSource) =>
-  Boolean(storedSource) && normalizeSource(storedSource) !== entry.sourceText;
-
 const LEFT_PANEL_WIDTH_KEY = 'translation-studio-left-panel-width';
 const DEFAULT_LEFT_PANEL_WIDTH = 320;
 const MIN_LEFT_PANEL_WIDTH = 260;
 const MAX_LEFT_PANEL_WIDTH = 560;
 
-const fieldFilterKey = (entityType, field) => `${entityType}:${field}`;
-
-const allFieldFilters = () => new Set(
-  ENTITY_TYPES.flatMap((entityType) =>
-    TRANSLATABLE_ENTITIES[entityType].fields.map((field) => fieldFilterKey(entityType, field))
-  )
+const FIELD_FILTER_KEYS = ENTITY_TYPES.flatMap((entityType) =>
+  TRANSLATABLE_ENTITIES[entityType].fields.map((field) => fieldFilterKey(entityType, field))
 );
+const allFieldFilters = () => new Set(FIELD_FILTER_KEYS);
 
 const initialLeftPanelWidth = () => {
   if (typeof localStorage === 'undefined') return DEFAULT_LEFT_PANEL_WIDTH;
@@ -111,20 +112,28 @@ const TranslationStudio = () => {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [storeReady, setStoreReady] = useState(true);
+  // field key → locale → persisted translation and its source snapshot
+  const [coverage, setCoverage] = useState(new Map());
 
   // ---- filters --------------------------------------------------------------
   const [sources, setSources] = useState(() => new Set(ENTITY_TYPES));
   const [selectedFields, setSelectedFields] = useState(allFieldFilters);
   const [query, setQuery] = useState('');
+  const [status, setStatus] = useState('missing');
+  const [language, setLanguage] = useState('');
 
   // ---- layout ---------------------------------------------------------------
   const [leftPanelWidth, setLeftPanelWidth] = useState(initialLeftPanelWidth);
   const [isResizingLeftPanel, setIsResizingLeftPanel] = useState(false);
   const leftPanelRef = useRef(null);
   const leftPanelWidthRef = useRef(leftPanelWidth);
+  const queueListRef = useRef(null);
 
   // ---- selection & editor ---------------------------------------------------
-  const [selectedKey, setSelectedKey] = useState(null);
+  const [selection, setSelection] = useState(null);
+  const [focusRequest, setFocusRequest] = useState(null);
+  const [missingOnly, setMissingOnly] = useState(false);
+  const editorFields = useRef(new Map());
   // { [locale]: { body, sourceText, provider } } for the selected entry.
   const [stored, setStored] = useState({});
   const [drafts, setDrafts] = useState({});
@@ -139,16 +148,13 @@ const TranslationStudio = () => {
   // 0..1 while a language pack downloads, else null.
   const [downloadProgress, setDownloadProgress] = useState(null);
 
-  // Coverage across the whole queue, keyed `entityType:entityId:field` →
-  // Set(locale). Drives the per-row badges without a request per row.
-  const [coverage, setCoverage] = useState(new Map());
-
   const feedbackTimer = useRef(null);
 
   const locales = useMemo(
     () => Object.values(SUPPORTED_LANGUAGES).map((l) => l.code),
     []
   );
+  const editorWorking = busy || Boolean(drafting) || suggestingAll;
 
   const flash = useCallback((kind, message) => {
     setFeedback({ kind, message });
@@ -229,24 +235,15 @@ const TranslationStudio = () => {
       return;
     }
 
-    const map = new Map();
-
-    (translations.data || []).forEach((row) => {
-      if (!(row.body || '').trim()) return;
-      const key = `${row.entity_type}:${row.entity_id}:${row.field}`;
-      if (!map.has(key)) map.set(key, new Set());
-      map.get(key).add(row.locale);
-    });
-
     setEntries(records.data);
-    setCoverage(map);
+    setCoverage(indexStudioTranslations(translations.data || [], locales));
     // The queue reads the source tables, which exist regardless; only the
     // translations table depends on migration 018. So the Studio can be fully
     // populated and still have nowhere to save to — say so explicitly rather
     // than letting the first Save fail.
     setStoreReady(isTranslationStoreAvailable());
     setLoading(false);
-  }, []);
+  }, [locales]);
 
   useEffect(() => {
     // Non-admins get the access-denied panel, so the source queue
@@ -261,126 +258,75 @@ const TranslationStudio = () => {
   // ---------------------------------------------------------------------------
   // Filtering
   // ---------------------------------------------------------------------------
-  /** Everything except the source checkboxes. */
-  const matchesFilters = useCallback((entry) => {
-    if (!selectedFields.has(fieldFilterKey(entry.entityType, entry.field))) return false;
-
-    const needle = query.trim().toLowerCase();
-
-    if (needle) {
-      const haystack = `${entry.sourceText} ${entry.recordLabel} ${entry.employeeName}`.toLowerCase();
-      if (!haystack.includes(needle)) return false;
-    }
-
-    return true;
-  }, [query, selectedFields]);
-
+  const queue = useMemo(() => buildStudioQueue(entries, coverage, locales), [entries, coverage, locales]);
+  const searchMatches = useMemo(() => searchStudioQueue(queue.fields, coverage, query), [queue, coverage, query]);
+  const filters = useMemo(() => ({ status, sources, fields: selectedFields, language }), [status, sources, selectedFields, language]);
   const visible = useMemo(
-    () => entries.filter((entry) => sources.has(entry.entityType) && matchesFilters(entry)),
-    [entries, sources, matchesFilters]
+    () => filterStudioQueue(searchMatches, filters),
+    [searchMatches, filters]
   );
+  const selected = queue.fields.get(selection?.key);
 
-  // Each non-empty field is a separate item of translation work, even when
-  // several fields belong to one task/review in the Sources record counter.
-  const fieldCounts = useMemo(() => {
-    const counts = new Map();
-    entries.forEach((entry) => {
-      const key = fieldFilterKey(entry.entityType, entry.field);
-      counts.set(key, (counts.get(key) || 0) + 1);
-    });
-    return counts;
-  }, [entries]);
+  const clearAdvancedFilters = () => {
+    setSources(new Set(ENTITY_TYPES));
+    setSelectedFields(allFieldFilters());
+    setLanguage('');
+  };
 
-  /**
-   * Per-source record counts, and how many records are fully covered.
-   *
-   * The queue itself is one row per non-empty field, but the Sources section is
-   * about HR records. Sets keep a task with four populated fields from being
-   * reported as four tasks. A record is complete only when every populated
-   * translatable field has all target locales. Source freshness is separate
-   * metadata and must not make an otherwise complete record look untranslated.
-   */
-  const sourceCounts = useMemo(() => {
-    const out = {};
-    const entriesByRecord = new Map();
-    const totalRecords = new Map();
+  const resetFilters = () => {
+    clearAdvancedFilters();
+    setQuery('');
+    setStatus('missing');
+  };
 
-    ENTITY_TYPES.forEach((entityType) => {
-      out[entityType] = { done: 0, total: 0 };
-      totalRecords.set(entityType, new Set());
-    });
-
-    entries.forEach((entry) => {
-      if (!out[entry.entityType]) return;
-      totalRecords.get(entry.entityType).add(entry.entityId);
-
-      const key = `${entry.entityType}:${entry.entityId}`;
-      if (!entriesByRecord.has(key)) entriesByRecord.set(key, []);
-      entriesByRecord.get(key).push(entry);
-    });
-
-    ENTITY_TYPES.forEach((entityType) => {
-      out[entityType].total = totalRecords.get(entityType).size;
-
-      totalRecords.get(entityType).forEach((entityId) => {
-        const recordEntries = entriesByRecord.get(`${entityType}:${entityId}`) || [];
-        const complete = recordEntries.length > 0 && recordEntries.every((entry) => {
-          const covered = coverage.get(entry.key);
-          return covered && covered.size >= locales.length - 1;
-        });
-        if (complete) out[entityType].done += 1;
-      });
-    });
-
-    return out;
-  }, [entries, coverage, locales.length]);
-
-  const selected = useMemo(
-    () => visible.find((e) => e.key === selectedKey) || entries.find((e) => e.key === selectedKey) || null,
-    [visible, entries, selectedKey]
-  );
-
-  // Keep a selection alive as filters change, so narrowing the queue does not
-  // discard work in progress.
-  useEffect(() => {
-    if (!selectedKey && visible.length) setSelectedKey(visible[0].key);
-  }, [visible, selectedKey]);
+  const openSourceQueue = (entityType, nextStatus) => {
+    clearAdvancedFilters();
+    setSources(new Set([entityType]));
+    setQuery('');
+    setStatus(nextStatus);
+    const list = queueListRef.current;
+    if (list) {
+      list.scrollTop = 0;
+      list.focus();
+    }
+  };
 
   // ---------------------------------------------------------------------------
   // Editor
   // ---------------------------------------------------------------------------
-  useEffect(() => {
-    if (!selected) {
-      setEditorState('idle');
-      return undefined;
+  const selectEntry = (entry, locale) => {
+    if (selection?.key !== entry.key || editorState === 'error') {
+      const { key, entityType, entityId } = entry;
+      setSelection({ key, entityType, entityId });
+      setEditorState('loading');
+      setFeedback(null);
     }
+    if (locale && !entry.missingLocales.includes(locale)) setMissingOnly(false);
+    setFocusRequest(locale ? { key: entry.key, locale } : null);
+  };
+
+  const updateFieldCoverage = useCallback((key, translations) => {
+    setCoverage((prev) => new Map(prev).set(key, translations));
+  }, []);
+
+  useEffect(() => {
+    if (!selection) return undefined;
 
     let cancelled = false;
-    setEditorState('loading');
-    setFeedback(null);
 
-    fetchRecordTranslations(selected.entityType, selected.entityId)
-      .then(({ success, data, error }) => {
+    fetchRecordTranslations(selection.entityType, selection.entityId)
+      .then(({ success, data }) => {
         if (cancelled) return;
         if (!success) {
-          setLoadError(error || '');
           setEditorState('error');
           return;
         }
 
-        const next = {};
-        (data || [])
-          .filter((row) => row.field === selected.field)
-          .forEach((row) => {
-            next[row.locale] = {
-              body: row.body || '',
-              sourceText: row.source_text || '',
-              provider: row.provider || 'manual',
-            };
-          });
-
+        const translations = indexStudioTranslations(data || [], locales).get(selection.key) || new Map();
+        const next = Object.fromEntries(translations);
         setStored(next);
         setDrafts(next);
+        updateFieldCoverage(selection.key, translations);
         setEditorState('ready');
       })
       .catch(() => {
@@ -388,11 +334,15 @@ const TranslationStudio = () => {
       });
 
     return () => { cancelled = true; };
-    // Keyed on selectedKey, not `selected`: the latter is re-derived from the
-    // filtered list, so depending on it would reload the editor — discarding
-    // unsaved drafts — on every keystroke in the search box.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedKey]);
+  }, [selection, locales, updateFieldCoverage]);
+
+  useEffect(() => {
+    if (editorState === 'ready' && focusRequest && focusRequest.key === selection?.key) {
+      const field = editorFields.current.get(focusRequest.locale);
+      field?.focus({ preventScroll: true });
+      field?.scrollIntoView({ block: 'center' });
+    }
+  }, [focusRequest, selection, editorState]);
 
   const updateDraft = useCallback((locale, body) => {
     setFeedback(null);
@@ -469,6 +419,7 @@ const TranslationStudio = () => {
       if (!window.confirm(`${message} (${wouldReplace})`)) return;
     }
 
+    if (overwrite) setMissingOnly(false);
     setSuggestingAll(true);
     let filled = 0;
 
@@ -536,12 +487,14 @@ const TranslationStudio = () => {
    */
   const reinstallActiveIndex = useCallback(async () => {
     const { success, data } = await fetchLocaleTranslations(currentLanguage);
-    setManualTranslations(currentLanguage, buildTranslationIndex(success ? data : []));
+    if (success) setManualTranslations(currentLanguage, buildTranslationIndex(data));
     refreshManualTranslations?.();
   }, [currentLanguage, refreshManualTranslations]);
 
-  const handleSave = useCallback(async () => {
-    if (!selected || !dirtyLocales.length) return;
+  const canWrite = storeReady && !loading && !loadError && editorState === 'ready' && !editorWorking;
+  const canSave = canWrite && dirtyLocales.length > 0;
+  const handleSave = async (advance = false) => {
+    if (!selected || !canSave) return;
     setBusy(true);
 
     const result = await saveTranslationBatch(
@@ -567,32 +520,31 @@ const TranslationStudio = () => {
         }
       });
       setStored(next);
+      const saved = new Map(Object.entries(next));
+      updateFieldCoverage(selected.key, saved);
 
-      setCoverage((prev) => {
-        const map = new Map(prev);
-        const set = new Set(map.get(selected.key) || []);
-        dirtyLocales.forEach((locale) => {
-          if ((drafts[locale]?.body || '').trim()) set.add(locale);
-          else set.delete(locale);
-        });
-        map.set(selected.key, set);
-        return map;
-      });
+      let savedMessage = t('translationStudio.saved', 'Saved');
+      if (advance) {
+        const nextCoverage = new Map(coverage).set(selected.key, saved);
+        const updatedQueue = buildStudioQueue(entries, nextCoverage, locales);
+        const remaining = filterStudioQueue(searchStudioQueue(updatedQueue.fields, nextCoverage, query), filters);
+        const target = nextMissingStudioTranslation(visible, remaining, selected.key, language);
+        if (target) selectEntry(updatedQueue.fields.get(target.key), target.locale);
+        else savedMessage = t('translationStudio.savedNoMoreMissing', 'Saved. No more missing translations match these filters.');
+      }
 
-      // A saved translation must be live everywhere immediately, not on next
-      // login: reinstall the index for whatever language the app is showing.
       await reinstallActiveIndex();
-      flash('ok', t('translationStudio.saved', 'Saved'));
+      flash('ok', savedMessage);
     } else {
       console.error('Translation save failed:', result.error);
       flash('error', t('translationStudio.saveError', 'Could not save'));
     }
 
     setBusy(false);
-  }, [selected, dirtyLocales, drafts, stored, user, flash, t, reinstallActiveIndex]);
+  };
 
-  const handleDelete = useCallback(async (locale) => {
-    if (!selected) return;
+  const handleDelete = async (locale) => {
+    if (!selected || !canWrite) return;
     setBusy(true);
 
     const result = await deleteTranslation({
@@ -603,19 +555,11 @@ const TranslationStudio = () => {
     });
 
     if (result.success) {
-      setStored((prev) => {
-        const next = { ...prev };
-        delete next[locale];
-        return next;
-      });
+      const next = { ...stored };
+      delete next[locale];
+      setStored(next);
       setDrafts((prev) => ({ ...prev, [locale]: { body: '' } }));
-      setCoverage((prev) => {
-        const map = new Map(prev);
-        const set = new Set(map.get(selected.key) || []);
-        set.delete(locale);
-        map.set(selected.key, set);
-        return map;
-      });
+      updateFieldCoverage(selected.key, new Map(Object.entries(next)));
       await reinstallActiveIndex();
       flash('ok', t('translationStudio.removed', 'Removed'));
     } else {
@@ -624,7 +568,7 @@ const TranslationStudio = () => {
     }
 
     setBusy(false);
-  }, [selected, flash, t, reinstallActiveIndex]);
+  };
 
   const toggleSource = (entityType) => {
     setSources((prev) => {
@@ -673,6 +617,7 @@ const TranslationStudio = () => {
     border: `1px solid ${ind.hairline}`,
     background: ind.ground,
     color: ind.ink,
+    colorScheme: isDarkMode ? 'dark' : 'light',
     fontFamily: BODY,
     fontSize: 14,
     borderRadius: 0,
@@ -683,7 +628,7 @@ const TranslationStudio = () => {
     textTransform: 'uppercase', color: ind.inkMuted, display: 'block', marginBottom: 6,
   };
   const textareaStyle = {
-    width: '100%', padding: '7px 10px', resize: 'vertical',
+    width: '100%', padding: '7px 10px', resize: 'vertical', scrollMarginBottom: '7rem',
     border: `1px solid ${ind.hairline}`, borderRadius: 0,
     background: 'transparent', color: ind.ink, fontFamily: BODY, fontSize: 13,
   };
@@ -697,30 +642,32 @@ const TranslationStudio = () => {
     textTransform: 'uppercase', padding: '3px 8px', borderRadius: 0, cursor: 'pointer',
     whiteSpace: 'nowrap',
     background: active ? ind.accent : 'transparent',
-    color: active ? ind.accentInk : ind.inkGhost,
+    color: active ? ind.accentInk : ind.inkMuted,
     border: `1px solid ${active ? ind.accent : ind.hairline}`,
     transition: 'background .15s ease, color .15s ease',
   });
 
-  /** A locale is "target" when it is one of the ones an entry must carry. */
-  const targetLocaleCount = Math.max(1, locales.length - 1);
-  const pendingCount = useMemo(() => entries.filter(
-    (entry) => (coverage.get(entry.key)?.size || 0) < targetLocaleCount
-  ).length, [entries, coverage, targetLocaleCount]);
+  const hasQueue = !loading && !loadError && canEdit && !demo;
+  const hasCoverage = hasQueue && storeReady;
+  const pendingCount = hasCoverage ? queue.missingCount : '—';
   useEffect(() => {
-    if (!loading && !loadError && canEdit && !demo) publishTranslationQueueCount(user?.id, pendingCount);
-  }, [loading, loadError, canEdit, demo, user?.id, pendingCount]);
+    if (hasCoverage) publishTranslationQueueCount(user?.id, pendingCount);
+  }, [hasCoverage, user?.id, pendingCount]);
 
-  /** How much of the whole queue is finished — the ticker's one live figure. */
-  const coveragePercent = useMemo(() => {
-    if (entries.length === 0) return 0;
-    const complete = entries.filter(
-      (entry) => (coverage.get(entry.key)?.size || 0) >= targetLocaleCount
-    ).length;
-    return Math.round((complete / entries.length) * 100);
-  }, [entries, coverage, targetLocaleCount]);
-
-  const selectedCovered = selected ? (coverage.get(selected.key)?.size || 0) : 0;
+  const totalFields = queue.fields.size;
+  const coveragePercent = totalFields ? Math.round(100 * (totalFields - queue.missingCount) / totalFields) : null;
+  const advancedCount = Number(sources.size !== ENTITY_TYPES.length)
+    + Number(selectedFields.size !== FIELD_FILTER_KEYS.length) + Number(Boolean(language));
+  const activeFilters = advancedCount > 0 || status !== 'missing' || Boolean(query);
+  const filteredSearch = Boolean(query.trim()) && searchMatches.length > visible.length;
+  const editorLocales = missingOnly ? locales.filter((locale) => !stored[locale]) : locales;
+  const statusFilters = [
+    ['missing', t('translationStudio.filter_missing', 'Missing')],
+    ['partial', t('translationStudio.filter_partial', 'Partial')],
+    ['complete', t('translationStudio.filter_translated', 'Complete')],
+    ['all', t('translationStudio.filter_all', 'All')],
+    ...(queue.outdatedCount || status === 'outdated' ? [['outdated', t('translationStudio.filter_stale', 'Out of date')]] : []),
+  ];
 
   const ticker = (
     <div
@@ -731,28 +678,27 @@ const TranslationStudio = () => {
       }}
     >
       <TickerCell ind={ind}>
-        <LiveClock ind={ind} live={entries.length > 0} />
+        <LiveClock ind={ind} live={hasQueue && totalFields > 0} />
       </TickerCell>
-      <TickerCell ind={ind} label={t('translationStudio.strings', 'Strings')} value={entries.length} />
-      <TickerCell ind={ind} label={t('translationStudio.inQueue', 'In queue')} value={visible.length} />
+      <TickerCell ind={ind} label={t('translationStudio.strings', 'Strings')} value={hasQueue ? totalFields : '—'} />
+      <TickerCell ind={ind} label={t('translationStudio.inQueue', 'In queue')} value={hasQueue ? visible.length : '—'} />
       <TickerCell
         ind={ind}
         label={t('translationStudio.pending', 'To translate')}
         value={pendingCount}
         title={t('translationStudio.pendingHint', 'Fields still missing translations')}
       />
-      <TickerCell ind={ind} label={t('translationStudio.locales', 'Locales')} value={targetLocaleCount} />
+      <TickerCell ind={ind} label={t('translationStudio.locales', 'Locales')} value={locales.length} />
       <TickerCell
         ind={ind}
         label={t('translationStudio.coverage', 'Coverage')}
-        value={`${coveragePercent}%`}
-        // The one figure on the strip that says how much work is left.
-        valueColor={coveragePercent < 100 ? ind.tickerUp : undefined}
+        value={hasCoverage && coveragePercent != null ? `${coveragePercent}%` : '—'}
+        valueColor={hasCoverage && coveragePercent != null && coveragePercent < 100 ? ind.tickerUp : undefined}
       />
       <TickerCell
         ind={ind}
         label={t('translationStudio.selected', 'Selected')}
-        value={selected ? `${selectedCovered}/${targetLocaleCount}` : '—'}
+        value={hasCoverage && selected ? `${selected.translatedCount}/${selected.localeCount}` : '—'}
       />
 
       <div
@@ -827,7 +773,7 @@ const TranslationStudio = () => {
       {ticker}
 
       {/* ── ONE BAND — the queue is the index, the editor is the panel ─── */}
-      <div style={{ padding: '22px 24px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div className="p-3 sm:p-5" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
         {/* ── PAGE HEAD ─────────────────────────────────────────────── */}
         <div className="flex flex-wrap items-end justify-between" style={{ gap: 16 }}>
@@ -846,7 +792,7 @@ const TranslationStudio = () => {
           <Btn
             ind={ind}
             onClick={loadQueue}
-            disabled={loading}
+            disabled={loading || editorWorking}
             style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flex: 'none' }}
           >
             <RefreshCw size={13} strokeWidth={1.5} className={loading ? 'animate-spin' : undefined} />
@@ -872,7 +818,7 @@ const TranslationStudio = () => {
           <aside
             ref={leftPanelRef}
             className="relative h-fit lg:sticky lg:top-4"
-            style={{ border: `1px solid ${ind.hairline}`, background: ind.chrome }}
+            style={{ minWidth: 0, border: `1px solid ${ind.hairline}`, background: ind.chrome }}
           >
             <div
               role="separator"
@@ -902,110 +848,13 @@ const TranslationStudio = () => {
               />
             </div>
 
-            {/* Sources — the count is a coverage bar, not a bare fraction. */}
-            <div style={{ padding: '14px 14px 10px', borderBottom: `1px solid ${ind.hairline}` }}>
-              <span style={fieldLabelStyle}>{t('translationStudio.sources', 'Sources')}</span>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {ENTITY_TYPES.filter((entityType) => sourceCounts[entityType].total > 0).map((entityType) => {
-                  const { done, total } = sourceCounts[entityType];
-                  const on = sources.has(entityType);
-                  return (
-                    <button
-                      key={entityType}
-                      type="button"
-                      aria-pressed={on}
-                      onClick={() => toggleSource(entityType)}
-                      className="w-full text-left"
-                      style={{
-                        background: 'transparent', border: 'none', borderRadius: 0,
-                        padding: 0, cursor: 'pointer', opacity: on ? 1 : 0.45,
-                      }}
-                    >
-                      <span className="flex items-center" style={{ gap: 8 }}>
-                        <span
-                          style={{
-                            width: 13, height: 13, flex: 'none', display: 'inline-flex',
-                            alignItems: 'center', justifyContent: 'center',
-                            border: `1px solid ${on ? ind.accent : ind.hairline}`,
-                            background: on ? ind.accent : 'transparent',
-                            color: ind.accentInk,
-                          }}
-                        >
-                          {on && <Check size={9} strokeWidth={2.5} />}
-                        </span>
-                        <span
-                          style={{
-                            flex: 1, minWidth: 0, fontFamily: BODY, fontSize: 12.5, color: ind.ink,
-                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                          }}
-                        >
-                          {t(TRANSLATABLE_ENTITIES[entityType].labelKey, entityType)}
-                        </span>
-                        <span
-                          title={t('translationStudio.sourceCountHint', 'Fully translated records / total records')}
-                          style={{
-                            fontFamily: DISPLAY, fontWeight: 600, fontSize: 11.5, color: ind.inkMuted,
-                            fontVariantNumeric: 'tabular-nums', flex: 'none',
-                          }}
-                        >
-                          {`${done}/${total}`}
-                        </span>
-                      </span>
-                      <span className="block" style={{ marginTop: 5 }}>
-                        <Bar ind={ind} value={total ? done / total : 0} height={5} />
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {ENTITY_TYPES.some((entityType) => sources.has(entityType) && sourceCounts[entityType].total > 0) && (
-              <div style={{ padding: '12px 14px', borderBottom: `1px solid ${ind.hairline}` }}>
-                <span style={fieldLabelStyle}>{t('translationStudio.fields', 'Fields')}</span>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {ENTITY_TYPES.filter((entityType) => sources.has(entityType) && sourceCounts[entityType].total > 0).map((entityType) => (
-                    <div key={entityType}>
-                      {sources.size > 1 && (
-                        <span
-                          className="block"
-                          style={{
-                            fontFamily: DISPLAY, fontWeight: 600, fontSize: 9.5, letterSpacing: '.12em',
-                            textTransform: 'uppercase', color: ind.inkFaint, marginBottom: 4,
-                          }}
-                        >
-                          {t(TRANSLATABLE_ENTITIES[entityType].labelKey, entityType)}
-                        </span>
-                      )}
-                      <div className="flex flex-wrap" style={{ gap: 5 }}>
-                        {TRANSLATABLE_ENTITIES[entityType].fields.map((fieldName) => {
-                          const active = selectedFields.has(fieldFilterKey(entityType, fieldName));
-                          return (
-                            <button
-                              key={fieldName}
-                              type="button"
-                              aria-pressed={active}
-                              onClick={() => toggleField(entityType, fieldName)}
-                              style={chipStyle(active)}
-                            >
-                              {t(`translationStudio.field_${fieldName}`, fieldName.replace(/_/g, ' '))}
-                              {` (${fieldCounts.get(fieldFilterKey(entityType, fieldName)) || 0})`}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
             <div style={{ padding: '12px 14px', borderBottom: `1px solid ${ind.hairline}` }}>
               <div className="flex items-center" style={{ gap: 8, padding: '5px 10px', border: `1px solid ${ind.hairline}` }}>
                 <Search size={13} strokeWidth={1.5} style={{ flex: 'none', color: ind.inkFaint }} />
                 <input
                   type="search"
                   value={query}
+                  disabled={busy}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder={t('translationStudio.searchPlaceholder', 'Search text, record or employee')}
                   aria-label={t('translationStudio.searchPlaceholder', 'Search text, record or employee')}
@@ -1015,9 +864,109 @@ const TranslationStudio = () => {
                   }}
                 />
               </div>
+              <div
+                className="flex flex-wrap"
+                role="group"
+                aria-label={t('translationStudio.status', 'Status')}
+                style={{ gap: 5, marginTop: 9 }}
+              >
+                {statusFilters.map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-pressed={status === value}
+                    title={value === 'missing' ? t('translationStudio.pendingHint', 'Fields still missing translations') : undefined}
+                    disabled={busy}
+                    onClick={() => setStatus(value)}
+                    style={chipStyle(status === value)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              <details style={{ marginTop: 9 }}>
+                <summary style={{ ...caption, color: ind.ink, cursor: 'pointer' }}>
+                  {t('translationStudio.advancedFilters', 'Advanced filters')}
+                  {advancedCount > 0 && ` (${advancedCount})`}
+                </summary>
+                <div className="flex flex-col" style={{ gap: 12, paddingTop: 10 }}>
+                  <label>
+                    <span style={fieldLabelStyle}>{t('translationStudio.languageFilter', 'Language')}</span>
+                    <select
+                      value={language}
+                      onChange={(event) => setLanguage(event.target.value)}
+                      disabled={busy}
+                      style={{ ...textareaStyle, resize: 'none', background: ind.chrome }}
+                    >
+                      <option value="">{t('translationStudio.allLanguages', 'All languages')}</option>
+                      {locales.map((locale) => <option key={locale} value={locale}>{SUPPORTED_LANGUAGES[locale].name}</option>)}
+                    </select>
+                  </label>
+                  <div>
+                    <span style={fieldLabelStyle}>{t('translationStudio.sources', 'Sources')}</span>
+                    <div className="flex flex-wrap" style={{ gap: 5 }}>
+                      {ENTITY_TYPES.filter((type) => queue.sources.has(type)).map((type) => (
+                        <button
+                          key={type}
+                          type="button"
+                          aria-pressed={sources.has(type)}
+                          disabled={busy}
+                          onClick={() => toggleSource(type)}
+                          style={chipStyle(sources.has(type))}
+                        >
+                          {t(TRANSLATABLE_ENTITIES[type].labelKey, type)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {ENTITY_TYPES.some((type) => sources.has(type) && queue.sources.has(type)) && (
+                    <div>
+                      <span style={fieldLabelStyle}>{t('translationStudio.fields', 'Fields')}</span>
+                      <div className="flex flex-col" style={{ gap: 8 }}>
+                        {ENTITY_TYPES.filter((type) => sources.has(type) && queue.sources.has(type)).map((type) => (
+                          <div key={type}>
+                            <span style={caption}>{t(TRANSLATABLE_ENTITIES[type].labelKey, type)}</span>
+                            <div className="flex flex-wrap" style={{ gap: 5, marginTop: 3 }}>
+                              {TRANSLATABLE_ENTITIES[type].fields.map((field) => {
+                                const key = fieldFilterKey(type, field);
+                                const count = queue.fieldCounts.get(key);
+                                if (!count) return null;
+                                const active = selectedFields.has(key);
+                                return (
+                                  <button
+                                    key={key}
+                                    type="button"
+                                    aria-pressed={active}
+                                    disabled={busy}
+                                    onClick={() => toggleField(type, field)}
+                                    style={chipStyle(active)}
+                                  >
+                                    {t(`translationStudio.field_${field}`, field.replace(/_/g, ' '))} ({count})
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <Btn ind={ind} onClick={resetFilters} disabled={busy || !activeFilters} style={{ alignSelf: 'flex-start' }}>
+                    {t('translationStudio.resetAll', 'Reset all')}
+                  </Btn>
+                </div>
+              </details>
             </div>
 
-            <div style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+            <div
+              id="translation-studio-queue"
+              ref={queueListRef}
+              role="region"
+              aria-label={t('translationStudio.inQueue', 'In queue')}
+              tabIndex={-1}
+              style={{ maxHeight: '52vh', overflowY: 'auto' }}
+            >
               {loading && (
                 <div style={{ display: 'flex', justifyContent: 'center', padding: '28px 0' }}>
                   <Loader2 size={18} strokeWidth={1.5} className="animate-spin" style={{ color: ind.inkMuted }} />
@@ -1031,66 +980,146 @@ const TranslationStudio = () => {
               )}
 
               {!loading && !loadError && visible.length === 0 && (
-                <p style={{ ...caption, fontSize: 12.5, padding: '16px 14px' }}>
-                  {t('translationStudio.empty', 'Nothing matches these filters.')}
+                <p role="status" style={{ ...caption, fontSize: 12.5, padding: '16px 14px' }}>
+                  {status === 'missing' && !query.trim()
+                    ? t('translationStudio.noMissing', 'No missing translations match these filters.')
+                    : t('translationStudio.empty', 'Nothing matches these filters.')}
                 </p>
               )}
 
-              {!loading && visible.map((entry, index) => {
-                const covered = coverage.get(entry.key);
-                const done = covered ? covered.size : 0;
-                const active = entry.key === selectedKey;
-                const variant = done === 0 ? 'neutral' : done >= targetLocaleCount ? 'accent' : 'outline';
+              {!loading && !loadError && filteredSearch && (
+                <Btn
+                  ind={ind}
+                  onClick={() => { clearAdvancedFilters(); setStatus('all'); }}
+                  disabled={busy}
+                  style={{ margin: '8px 14px', maxWidth: 'calc(100% - 28px)' }}
+                >
+                  {t('translationStudio.showAllSearchMatches', 'Show all {count} matching fields').replace('{count}', searchMatches.length)}
+                </Btn>
+              )}
+
+              {!loading && !loadError && visible.map((entry, index) => {
+                const active = entry.key === selection?.key;
+                const { translatedCount, localeCount, missingLocales, outdatedLocales } = entry;
+                const variant = missingLocales.length === 0 ? 'accent' : translatedCount ? 'outline' : 'neutral';
+                const languageGroups = [
+                  [missingLocales, t('translationStudio.filter_missing', 'Missing')],
+                  [outdatedLocales, t('translationStudio.filter_stale', 'Out of date')],
+                ];
 
                 return (
-                  <button
+                  <div
                     key={entry.key}
-                    type="button"
-                    onClick={() => setSelectedKey(entry.key)}
-                    className="w-full text-left"
                     style={{
-                      display: 'block', padding: '10px 14px 10px 11px', cursor: 'pointer',
-                      border: 'none', borderRadius: 0,
+                      padding: '8px 14px 9px 11px',
                       borderTop: index === 0 ? 'none' : `1px solid ${ind.rule}`,
-                      // The active row is an accent edge and a wash, never a filled card.
                       borderLeft: `3px solid ${active ? ind.accent : 'transparent'}`,
                       background: active ? ind.accentWash : 'transparent',
-                      transition: 'background .15s ease',
                     }}
-                    onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = ind.hover; }}
-                    onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = 'transparent'; }}
                   >
-                    <span className="flex items-center justify-between" style={{ gap: 8, marginBottom: 3 }}>
-                      <span
-                        style={{
-                          fontFamily: DISPLAY, fontWeight: 600, fontSize: 9.5, letterSpacing: '.12em',
-                          textTransform: 'uppercase', color: ind.inkFaint, minWidth: 0,
-                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {`${t(TRANSLATABLE_ENTITIES[entry.entityType].labelKey, entry.entityType)} · ${t(`translationStudio.field_${entry.field}`, entry.field.replace(/_/g, ' '))}`}
+                    <button
+                      type="button"
+                      aria-current={active || undefined}
+                      disabled={editorWorking}
+                      onClick={() => selectEntry(entry, language)}
+                      className="block w-full text-left"
+                      style={{ border: 0, background: 'transparent', padding: '2px 0', cursor: 'pointer' }}
+                    >
+                      <span className="flex items-center justify-between" style={{ gap: 8, marginBottom: 3 }}>
+                        <span className="truncate" style={{ ...fieldLabelStyle, minWidth: 0, marginBottom: 0 }}>
+                          {`${t(TRANSLATABLE_ENTITIES[entry.entityType].labelKey, entry.entityType)} · ${t(`translationStudio.field_${entry.field}`, entry.field.replace(/_/g, ' '))}`}
+                        </span>
+                        {hasCoverage && (
+                          <span title={t('translationStudio.fieldCoverageHint', 'Translated languages / supported languages')}>
+                            <Tag ind={ind} variant={variant}>{`${translatedCount}/${localeCount}`}</Tag>
+                          </span>
+                        )}
                       </span>
-                      <Tag ind={ind} variant={variant}>{`${done}/${targetLocaleCount}`}</Tag>
-                    </span>
-                    <span className="block line-clamp-2" style={{ fontFamily: BODY, fontSize: 13, color: ind.ink, lineHeight: 1.45 }}>
-                      {entry.sourceText}
-                    </span>
-                    {entry.employeeName && (
-                      <span className="block truncate" style={{ fontFamily: BODY, fontSize: 11.5, color: ind.inkFaint, marginTop: 2 }}>
-                        {entry.employeeName}
+                      {entry.recordLabel !== entry.sourceText && (
+                        <span className="block truncate" title={entry.recordLabel} style={{ ...caption, color: ind.ink, fontWeight: 600 }}>
+                          {entry.recordLabel}
+                        </span>
+                      )}
+                      <span className="line-clamp-3 break-words" style={{ ...caption, color: ind.ink, lineHeight: 1.45 }}>
+                        {entry.sourceText}
                       </span>
-                    )}
-                  </button>
+                      {entry.employeeName && (
+                        <span className="block truncate" style={{ ...caption, fontSize: 11.5, marginTop: 2 }}>
+                          {entry.employeeName}
+                        </span>
+                      )}
+                    </button>
+                    {hasCoverage && languageGroups.map(([codes, label]) => codes.length > 0 && (
+                      <div key={label} role="group" aria-label={label} className="flex flex-wrap items-center" style={{ gap: 4, marginTop: 4 }}>
+                        <span style={{ ...fieldLabelStyle, margin: '0 3px 0 0' }}>{label}</span>
+                        {codes.map((locale) => (
+                          <button
+                            key={locale}
+                            type="button"
+                            aria-label={`${SUPPORTED_LANGUAGES[locale].name} · ${label}`}
+                            title={SUPPORTED_LANGUAGES[locale].name}
+                            disabled={editorWorking}
+                            onClick={() => selectEntry(entry, locale)}
+                            style={{ ...chipStyle(language === locale), padding: '2px 5px', minHeight: 23 }}
+                          >
+                            {locale.toUpperCase()}
+                          </button>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
                 );
               })}
             </div>
+
+            {hasCoverage && queue.sources.size > 0 && (
+              <div style={{ padding: '10px 14px 12px', borderTop: `1px solid ${ind.hairline}` }}>
+                <span style={fieldLabelStyle}>{t('translationStudio.sourceCoverage', 'Source coverage')}</span>
+                <div className="grid grid-cols-2" style={{ gap: 6 }}>
+                  {ENTITY_TYPES.filter((type) => queue.sources.has(type)).map((type) => {
+                    const { records, completeRecords, missingFields, outdatedFields } = queue.sources.get(type);
+                    const nextStatus = missingFields || !outdatedFields ? 'missing' : 'outdated';
+                    const active = sources.size === 1 && sources.has(type) && status === nextStatus;
+                    return (
+                      <Btn
+                        key={type}
+                        ind={ind}
+                        aria-controls="translation-studio-queue"
+                        aria-pressed={active}
+                        disabled={busy}
+                        onClick={() => openSourceQueue(type, nextStatus)}
+                        style={{
+                          minWidth: 0, textAlign: 'left', padding: '5px 7px', textTransform: 'none', letterSpacing: 0,
+                          background: active ? ind.accentWash : 'transparent', borderColor: active ? ind.accent : ind.hairline,
+                        }}
+                      >
+                        <span className="block break-words" style={{ fontFamily: BODY, fontSize: 12 }}>
+                          {t(TRANSLATABLE_ENTITIES[type].labelKey, type)}
+                        </span>
+                        <span className="block" style={{ ...caption, fontSize: 11, marginBottom: 3 }}>
+                          {t('translationStudio.completeRecords', '{done} of {total} records complete').replace('{done}', completeRecords).replace('{total}', records)}
+                        </span>
+                        <span aria-hidden="true" className="block" style={{ height: 4, border: `1px solid ${ind.hairline}` }}>
+                          <span className="block h-full" style={{ background: ind.accent, width: `${100 * completeRecords / records}%` }} />
+                        </span>
+                        <span className="block" style={{ ...caption, fontSize: 11, marginTop: 3 }}>
+                          {nextStatus === 'outdated'
+                            ? t('translationStudio.outdatedFields', 'Outdated fields ({count})').replace('{count}', outdatedFields)
+                            : t('translationStudio.missingFields', 'Fields to translate ({count})').replace('{count}', missingFields)}
+                        </span>
+                      </Btn>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </aside>
 
           {/* ---- Editor --------------------------------------------------- */}
           <Blueprint ind={ind} style={{ padding: '18px 20px 16px', minWidth: 0 }}>
             {!selected && (
               <p style={{ ...caption, padding: '48px 0', textAlign: 'center' }}>
-                {t('translationStudio.selectPrompt', 'Pick a string on the left to translate it.')}
+                {t('translationStudio.chooseTranslation', 'Choose a language in the queue to start translating.')}
               </p>
             )}
 
@@ -1105,6 +1134,7 @@ const TranslationStudio = () => {
                   <div
                     style={{
                       marginTop: 8, padding: '10px 12px', whiteSpace: 'pre-wrap',
+                      overflowWrap: 'anywhere',
                       border: `1px solid ${ind.hairline}`, background: ind.accentWash,
                       fontFamily: BODY, fontSize: 13.5, color: ind.ink, lineHeight: 1.5,
                     }}
@@ -1116,7 +1146,7 @@ const TranslationStudio = () => {
                     <Btn
                       ind={ind}
                       onClick={suggestAll}
-                      disabled={suggestingAll || busy || !isLocalTranslationSupported()}
+                      disabled={editorState !== 'ready' || editorWorking || !isLocalTranslationSupported()}
                       style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
                     >
                       {suggestingAll
@@ -1128,7 +1158,7 @@ const TranslationStudio = () => {
                     <Btn
                       ind={ind}
                       onClick={translateAll}
-                      disabled={suggestingAll || busy || !isLocalTranslationSupported()}
+                      disabled={editorState !== 'ready' || editorWorking || !isLocalTranslationSupported()}
                       style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
                     >
                       <Languages size={13} strokeWidth={1.5} />
@@ -1168,15 +1198,25 @@ const TranslationStudio = () => {
 
                 {editorState === 'ready' && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                    {locales
-                      // Show every locale. The interface language is not proof of
-                      // the source language, and hiding it previously left that
-                      // locale untranslated whenever an editor switched the UI.
-                      .map((locale) => {
+                    <label className="flex items-center self-start" style={{ ...caption, color: ind.ink, gap: 7 }}>
+                      <input
+                        type="checkbox"
+                        checked={missingOnly}
+                        onChange={(event) => setMissingOnly(event.target.checked)}
+                        style={{ accentColor: ind.accent }}
+                      />
+                      {t('translationStudio.missingLanguagesOnly', 'Show missing languages only')}
+                    </label>
+                    {editorLocales.length === 0 && (
+                      <p role="status" style={caption}>
+                        {t('translationStudio.noMissingLanguages', 'This field has a saved translation in every language.')}
+                      </p>
+                    )}
+                    {editorLocales.map((locale) => {
                         const lang = SUPPORTED_LANGUAGES[locale];
                         const value = drafts[locale]?.body || '';
                         const savedEntry = stored[locale];
-                        const stale = savedEntry && isStale(selected, savedEntry.sourceText);
+                        const stale = savedEntry && isOutdatedTranslation(selected, savedEntry.sourceText);
 
                         return (
                           <div key={locale}>
@@ -1221,8 +1261,7 @@ const TranslationStudio = () => {
                                   type="button"
                                   onClick={() => machineDraft(locale)}
                                   disabled={
-                                    drafting === locale
-                                    || suggestingAll
+                                    editorWorking
                                     || !isLocalTranslationSupported()
                                     || availability[locale] === 'unavailable'
                                   }
@@ -1230,7 +1269,7 @@ const TranslationStudio = () => {
                                   aria-label={t('translationStudio.machineDraft', 'Machine draft')}
                                   style={{
                                     ...iconBtnStyle,
-                                    opacity: (drafting === locale || suggestingAll || !isLocalTranslationSupported() || availability[locale] === 'unavailable') ? 0.4 : 1,
+                                    opacity: (editorWorking || !isLocalTranslationSupported() || availability[locale] === 'unavailable') ? 0.4 : 1,
                                   }}
                                 >
                                   {drafting === locale
@@ -1241,10 +1280,10 @@ const TranslationStudio = () => {
                                   <button
                                     type="button"
                                     onClick={() => handleDelete(locale)}
-                                    disabled={busy}
+                                    disabled={!canWrite}
                                     title={t('translationStudio.remove', 'Remove')}
                                     aria-label={t('translationStudio.remove', 'Remove')}
-                                    style={{ ...iconBtnStyle, opacity: busy ? 0.4 : 1 }}
+                                    style={{ ...iconBtnStyle, opacity: canWrite ? 1 : 0.4 }}
                                   >
                                     <Trash2 size={12} strokeWidth={1.5} />
                                   </button>
@@ -1254,9 +1293,14 @@ const TranslationStudio = () => {
 
                             <textarea
                               id={`tr-${locale}`}
+                              ref={(field) => {
+                                if (field) editorFields.current.set(locale, field);
+                                else editorFields.current.delete(locale);
+                              }}
                               rows={Math.min(6, Math.max(2, Math.ceil(selected.sourceText.length / 70)))}
                               value={value}
                               onChange={(e) => updateDraft(locale, e.target.value)}
+                              readOnly={busy}
                               placeholder={selected.sourceText}
                               style={textareaStyle}
                             />
@@ -1266,14 +1310,17 @@ const TranslationStudio = () => {
 
                     <div
                       className="flex flex-wrap items-center"
-                      style={{ gap: 12, paddingTop: 12, borderTop: `1px solid ${ind.rule}` }}
+                      style={{
+                        position: 'sticky', bottom: 0, zIndex: 1, background: ind.ground,
+                        gap: 8, padding: '8px 0', borderTop: `1px solid ${ind.rule}`,
+                      }}
                     >
                       {/* The single solid object on this screen — kept as a
                           ShinyButton so the commit still catches the light. */}
                       <ShinyButton
                         type="button"
-                        onClick={handleSave}
-                        disabled={busy || dirtyLocales.length === 0}
+                        onClick={() => handleSave()}
+                        disabled={!canSave}
                         shineOnHover
                         className="rounded-none border px-3 py-1"
                         style={{
@@ -1282,7 +1329,7 @@ const TranslationStudio = () => {
                           color: dirtyLocales.length ? ind.accentInk : ind.inkMuted,
                           borderColor: dirtyLocales.length ? ind.accent : ind.hairline,
                           opacity: busy ? 0.5 : 1,
-                          cursor: dirtyLocales.length && !busy ? 'pointer' : 'not-allowed',
+                          cursor: canSave ? 'pointer' : 'not-allowed',
                         }}
                       >
                         {busy
@@ -1295,8 +1342,13 @@ const TranslationStudio = () => {
                         </span>
                       </ShinyButton>
 
+                      <Btn ind={ind} onClick={() => handleSave(true)} disabled={!canSave}>
+                        {t('translationStudio.saveNextMissing', 'Save & Next Missing')}
+                      </Btn>
+
                       {feedback && (
                         <span
+                          role="status"
                           className="inline-flex items-center"
                           style={{
                             gap: 6, fontFamily: DISPLAY, fontWeight: 600, fontSize: 11.5,

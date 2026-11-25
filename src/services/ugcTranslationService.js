@@ -160,7 +160,7 @@ export const fetchTranslationCoverage = async () => {
   try {
     const { data, error } = await fetchAllRows(supabase
       .from('hr_ugc_translations')
-      .select('entity_type, entity_id, field, locale, body', { count: 'exact' })
+      .select('entity_type, entity_id, field, locale, body, source_text', { count: 'exact' })
       .order('entity_type').order('entity_id').order('field').order('locale'),
     { orderBy: null });
 
@@ -364,6 +364,9 @@ export const fetchTranslatableRecords = async ({ entityTypes = ENTITY_TYPES } = 
               field,
               sourceText: text,
               recordLabel: normalizeSource(row.goal?.title || row[config.titleField]) || String(row.id),
+              recordTitleKey: row.goal_id != null
+                ? recordKey('goal', row.goal_id, 'title')
+                : recordKey(entityType, row.id, config.titleField),
               employeeName: row.employee?.name || row.goal?.employee?.name || row.author || '',
               updatedAt: row[dateField] || null,
               key: recordKey(entityType, row.id, field),
@@ -379,13 +382,20 @@ export const fetchTranslatableRecords = async ({ entityTypes = ENTITY_TYPES } = 
   }
 };
 
+// A text match applies across records only when every saved translation
+// agrees on its wording. null keeps a conflict from being reused later.
+export const indexReusableTranslation = (byText, sourceText, body) => {
+  const source = normalizeSource(sourceText);
+  if (!source) return;
+  if (!byText.has(source)) byText.set(source, body);
+  else if (byText.get(source) !== body) byText.set(source, null);
+};
+
 /**
  * Turns loaded rows into the two indexes the render path consults.
  *
- * byRecord wins over byText: a per-record translation was written with that
- * record in front of the author, whereas a text match is an inference — correct
- * almost always, but "Closed" on a task and "Closed" on a leave request can
- * legitimately differ in a gendered or cased target language.
+ * byRecord wins over byText: a per-record translation has the context of its
+ * source record, which can matter even when two source strings are identical.
  */
 export const buildTranslationIndex = (rows = []) => {
   const byRecord = new Map();
@@ -396,18 +406,7 @@ export const buildTranslationIndex = (rows = []) => {
     if (!body) return;
 
     byRecord.set(recordKey(row.entity_type, row.entity_id, row.field), body);
-
-    const source = normalizeSource(row.source_text);
-    // Only exact, unambiguous matches are reusable. If two records disagree on
-    // what the same sentence means, neither reading is safe to apply blindly to
-    // a third record, so the text index drops the string entirely and those
-    // records keep their own per-record entries.
-    if (!source) return;
-    if (byText.has(source) && byText.get(source) !== body) {
-      byText.set(source, null);
-      return;
-    }
-    if (!byText.has(source)) byText.set(source, body);
+    indexReusableTranslation(byText, row.source_text, body);
   });
 
   return { byRecord, byText };

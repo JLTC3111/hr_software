@@ -26,6 +26,34 @@ test('Studio loads task comments after record 500 even with a smaller server pag
   assert.equal(client.calls.filter(call => call.table === 'workload_tasks' && call.method === 'range').length, 6);
 });
 
+test('Studio finds normalized exact titles and their outstanding fields across all source and coverage pages', async () => {
+  const tasks = Array.from({ length: 701 }, (_, id) => ({ id, title: `Task ${id}` }));
+  tasks[0].title = 'Earlier Đánh giá – “Bàn giao” notes';
+  tasks[700] = { id: 700, title: 'Đánh\u00a0giá\n– “Bàn giao”', description: 'Checklist' };
+  const translations = tasks.map(({ id, title }) => ({
+    entity_type: 'task', entity_id: String(id), field: 'title', locale: 'en',
+    body: id === 700 ? 'Handover review' : `English ${id}`, source_text: title,
+  }));
+  const { service, client } = fixture({ workload_tasks: tasks, hr_ugc_translations: translations }, {}, { maxRows: 137 });
+  const { buildStudioQueue, indexStudioTranslations, searchStudioQueue } = loadSource('src/utils/translationStudioQueue.js', {
+    '../services/ugcTranslationService.js': service,
+  });
+  const [records, coverage] = await Promise.all([service.fetchTranslatableRecords(), service.fetchTranslationCoverage()]);
+  const locales = ['en', 'vn'];
+  const saved = indexStudioTranslations(coverage.data, locales);
+  const { fields } = buildStudioQueue(records.data, saved, locales);
+
+  assert.deepEqual(Array.from(searchStudioQueue(fields, saved, ' DANH   GIA - "BAN GIAO" '), (row) => row.key), [
+    'task:700:title', 'task:700:description', 'task:0:title',
+  ]);
+  assert.deepEqual(Array.from(searchStudioQueue(fields, saved, 'Handover review'), (row) => row.key), [
+    'task:700:title', 'task:700:description',
+  ]);
+  assert.equal(fields.get('task:700:title').outdatedLocales.length, 0);
+  const selection = client.calls.find(({ table, method }) => table === 'hr_ugc_translations' && method === 'select');
+  assert.match(selection.args[0], /source_text/);
+});
+
 test('goal comments and check-in notes have distinct editable keys and parent context', async () => {
   const { client, service } = fixture({
     workload_tasks: [{ id: 1, title: 'Task', comments: 'Task note' }],
