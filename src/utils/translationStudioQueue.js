@@ -8,6 +8,7 @@ export const isOutdatedTranslation = (entry, storedSource) => {
 };
 
 export function indexStudioTranslations(rows, locales) {
+  // Persisted keys are app locales (vn, jp, kr), as in the reader lookup.
   const supported = new Set(locales);
   const index = new Map();
   for (const row of rows) {
@@ -22,31 +23,59 @@ export function indexStudioTranslations(rows, locales) {
   return index;
 }
 
+const SOURCE_SCRIPT_MARKERS = [
+  ['vn', /[đăơưạ-ỹ]/iu],
+  ['jp', /[\p{Script=Hiragana}\p{Script=Katakana}]/u],
+  ['kr', /\p{Script=Hangul}/u],
+  ['th', /\p{Script=Thai}/u],
+  ['ru', /\p{Script=Cyrillic}/u],
+];
+
+export function studioOriginalLocale(sourceText, saved, locales) {
+  const text = normalizeSource(sourceText).normalize('NFC');
+  const scripts = SOURCE_SCRIPT_MARKERS.filter(([locale, pattern]) => locales.includes(locale) && pattern.test(text));
+  if (scripts.length) return scripts.length === 1 ? scripts[0][0] : null;
+
+  // The legacy English/Vietnamese workflow saved eight targets and left the
+  // original unwritten. Only accept that omission when the whole target set
+  // is present and the text is consistent with the omitted locale.
+  const absent = locales.filter((locale) => !saved?.has(locale));
+  if (absent.length !== 1) return null;
+  if (absent[0] === 'en' && /^\p{ASCII}+$/u.test(text) && /[a-z]/i.test(text)) return 'en';
+  if (absent[0] === 'vn' && /[âêô]/iu.test(text)) return 'vn';
+  return null;
+}
+
 export function buildStudioQueue(entries, translations, locales) {
-  // Sources don't store a language. Every supported locale is an editable
-  // slot, independent of the editor's interface language or browser models.
-  const applicable = [...new Set(locales)];
+  const supported = [...new Set(locales)];
   const fields = new Map();
   const records = new Map();
   const sources = new Map();
   const fieldCounts = new Map();
   let missingCount = 0;
+  let missingTranslationCount = 0;
   let outdatedCount = 0;
 
   for (const entry of entries) {
-    if (fields.has(entry.key)) continue;
+    if (!normalizeSource(entry.sourceText) || fields.has(entry.key)) continue;
     const saved = translations.get(entry.key);
-    const missingLocales = applicable.filter((locale) => !saved?.has(locale));
-    const outdatedLocales = applicable.filter((locale) => isOutdatedTranslation(entry, saved?.get(locale)?.sourceText));
+    const originalLocale = entry.originalLocale === undefined
+      ? studioOriginalLocale(entry.sourceText, saved, supported)
+      : entry.originalLocale;
+    const targets = supported.filter((locale) => locale !== originalLocale);
+    const missingLocales = targets.filter((locale) => !saved?.has(locale));
+    const outdatedLocales = supported.filter((locale) => isOutdatedTranslation(entry, saved?.get(locale)?.sourceText));
     fields.set(entry.key, {
-      ...entry, missingLocales, outdatedLocales,
-      translatedCount: applicable.length - missingLocales.length,
-      localeCount: applicable.length,
+      ...entry, originalLocale, missingLocales, outdatedLocales,
+      translatedCount: targets.length - missingLocales.length,
+      localeCount: targets.length,
     });
 
     const fieldKey = fieldFilterKey(entry.entityType, entry.field);
     fieldCounts.set(fieldKey, (fieldCounts.get(fieldKey) || 0) + 1);
-    const source = sources.get(entry.entityType) || { records: 0, completeRecords: 0, missingFields: 0, outdatedFields: 0 };
+    const source = sources.get(entry.entityType) || {
+      records: 0, completeRecords: 0, missingFields: 0, missingTranslations: 0, outdatedFields: 0,
+    };
     sources.set(entry.entityType, source);
     const record = `${entry.entityType}:${entry.entityId}`;
     if (!records.has(record)) {
@@ -58,14 +87,16 @@ export function buildStudioQueue(entries, translations, locales) {
       if (records.get(record)) source.completeRecords -= 1;
       records.set(record, false);
       source.missingFields += 1;
+      source.missingTranslations += missingLocales.length;
       missingCount += 1;
+      missingTranslationCount += missingLocales.length;
     }
     if (outdatedLocales.length) {
       source.outdatedFields += 1;
       outdatedCount += 1;
     }
   }
-  return { fields, fieldCounts, sources, missingCount, outdatedCount };
+  return { fields, fieldCounts, sources, missingCount, missingTranslationCount, outdatedCount };
 }
 
 const normalizeSearch = (value) => normalizeSource(value)
@@ -114,8 +145,9 @@ export function searchStudioQueue(fields, translations, query) {
 export function filterStudioQueue(items, { status, sources, fields, language }) {
   return items.filter((item) => {
     if (!sources.has(item.entityType) || !fields.has(fieldFilterKey(item.entityType, item.field))) return false;
-    if (status === 'all') return true;
-    if (status === 'complete') return item.missingLocales.length === 0;
+    if (status === 'all' || status === 'complete') {
+      return (!language || language !== item.originalLocale) && (status === 'all' || item.missingLocales.length === 0);
+    }
     if (status === 'partial' && !item.translatedCount) return false;
     const pending = status === 'outdated' ? item.outdatedLocales : item.missingLocales;
     return language ? pending.includes(language) : pending.length > 0;

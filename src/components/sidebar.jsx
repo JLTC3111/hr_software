@@ -25,7 +25,7 @@ import { useNotifications } from '../contexts/NotificationContext.jsx'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import { isTranslationEditor } from '../utils/translationAccess.js'
 import { subscribeTranslationQueue, getTranslationQueueCount } from '../utils/translationQueueStatus.js'
-import { getIndustry, DISPLAY, BODY } from '../theme/industry.js'
+import { getIndustry, solidButtonFill, DISPLAY, BODY } from '../theme/industry.js'
 
 const RAIL_COLLAPSED = 64;
 const RAIL_EXPANDED = 236;
@@ -254,9 +254,26 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
     return hoverKey === key ? ind.hover : 'transparent';
   };
 
-  /** Count in a hairline box. The unread dot is a 5×5 square, never a circle. */
-  const Badge = ({ count, collapsed }) => {
+  const Badge = ({ count, collapsed, translation, active }) => {
     if (!count) return null;
+    if (translation) {
+      const fill = solidButtonFill(ind);
+      return (
+        <span
+          aria-hidden="true"
+          title={t('translationStudio.pendingHint', 'Each field still missing a translation is counted once.')}
+          style={{
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flex: 'none',
+            minWidth: 16, height: 16, paddingInline: 5, borderRadius: 999,
+            fontFamily: DISPLAY, fontSize: 11, fontWeight: 600, lineHeight: 1, fontVariantNumeric: 'tabular-nums',
+            whiteSpace: 'nowrap', background: active ? ind.accentInk : fill, color: active ? fill : ind.accentInk,
+            ...(collapsed ? { position: 'absolute', top: -7, right: 5 } : { marginLeft: 'auto' }),
+          }}
+        >
+          {count}
+        </span>
+      );
+    }
     if (collapsed) {
       return (
         <span
@@ -381,7 +398,11 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
                 const hasSubItems = item.subItems && item.subItems.length > 0;
                 // Submenus are expanded by default; only collapsed when explicitly toggled off
                 const isExpanded = expandedMenus[item.name] !== false;
-                const badgeCount = item.path === '/notifications' ? unreadCount : item.path === '/translations' ? translationCount : 0;
+                const isTranslation = item.path === '/translations';
+                const badgeCount = item.path === '/notifications' ? unreadCount : isTranslation ? translationCount : 0;
+                const badgeLabel = isTranslation && badgeCount
+                  ? t('translationStudio.missingFields', 'Fields to translate ({count})').replace('{count}', badgeCount)
+                  : '';
 
                 if (item.href) return (
                   <a
@@ -432,7 +453,8 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
                         onClick={closeMobileMenu}
                         onMouseEnter={() => { setHoveredItem(item.name); setHoverKey(item.name); }}
                         onMouseLeave={() => { setHoveredItem(null); setHoverKey(null); }}
-                        title={isCollapsed ? item.name : undefined}
+                        title={badgeLabel ? `${item.name} · ${badgeLabel}` : isCollapsed ? item.name : undefined}
+                        aria-label={badgeLabel ? `${item.name} · ${badgeLabel}` : isTranslation ? item.name : undefined}
                         style={({ isActive }) => ({
                           ...rowBase,
                           background: rowBg(item.name, isActive),
@@ -446,12 +468,12 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
                                 strokeWidth={1.5}
                                 style={{ color: isActive ? ind.accentInk : ind.inkGhost }}
                               />
-                              {isCollapsed && <Badge count={badgeCount} collapsed />}
+                              {isCollapsed && <Badge count={badgeCount} collapsed translation={isTranslation} active={isActive} />}
                             </IconCell>
                             {!isCollapsed && (
                               <>
                                 <span style={labelStyle(isActive)}>{item.name}</span>
-                                <Badge count={badgeCount} />
+                                <Badge count={badgeCount} translation={isTranslation} active={isActive} />
                               </>
                             )}
                           </>

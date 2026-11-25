@@ -54,9 +54,82 @@ test('coverage deduplicates supported languages and counts records separately fr
   assert.deepEqual([...queue.fields.get('task:2:title').outdatedLocales], ['vn']);
   assert.equal(queue.fields.size, 4);
   assert.equal(queue.missingCount, 2);
+  assert.equal(queue.missingTranslationCount, 17);
   assert.equal(queue.outdatedCount, 1);
-  assert.deepEqual({ ...queue.sources.get('task') }, { records: 2, completeRecords: 1, missingFields: 1, outdatedFields: 1 });
-  assert.deepEqual({ ...queue.sources.get('goal') }, { records: 1, completeRecords: 0, missingFields: 1, outdatedFields: 0 });
+  assert.deepEqual({ ...queue.sources.get('task') }, { records: 2, completeRecords: 1, missingFields: 1, missingTranslations: 8, outdatedFields: 1 });
+  assert.deepEqual({ ...queue.sources.get('goal') }, { records: 1, completeRecords: 0, missingFields: 1, missingTranslations: 9, outdatedFields: 0 });
+});
+
+test('the audited eight-target legacy coverage restores 48 of 49 records with one incomplete field', () => {
+  const { model } = services({});
+  const entries = [];
+  const rows = [];
+  const addRecord = (entityType, entityId, gaps) => {
+    gaps.forEach((gap, i) => {
+      const field = `field_${i}`;
+      const sourceText = gap === 'vn' ? 'Bàn giao tài liệu' : gap === 'weak-vn' ? 'Kê khai' : 'Handover documentation';
+      entries.push({ entityType, entityId, field, key: `${entityType}:${entityId}:${field}`, sourceText });
+      if (gap === 'all') return;
+      for (const locale of locales.filter((code) => code !== gap && !(gap === 'weak-vn' && code === 'vn'))) {
+        rows.push(translation(entityId, field, locale, `Saved ${locale}`, sourceText, entityType));
+      }
+    });
+    entries.push({ entityType, entityId, field: 'blank', key: `${entityType}:${entityId}:blank`, sourceText: ' \t\n ' });
+  };
+  let englishTasks = 19;
+  for (let record = 0; record < 35; record += 1) {
+    const gaps = Array.from({ length: record < 21 ? 3 : 2 }, (_, field) => {
+      if (record === 0 || (record <= 6 && field === 0)) return null;
+      if (record === 34 && field === 1) return 'all';
+      if (record === 34) return 'weak-vn';
+      if (englishTasks > 0) { englishTasks -= 1; return 'en'; }
+      return 'vn';
+    });
+    addRecord('task', record, gaps);
+  }
+  for (let record = 0; record < 4; record += 1) addRecord('goal', record, ['en', 'vn']);
+  addRecord('goal_check_in', 0, ['en']);
+  addRecord('review', 0, ['en', 'en', 'en', 'en']);
+  for (let record = 0; record < 8; record += 1) addRecord('leave', record, [record < 2 ? 'en' : 'vn']);
+
+  const saved = model.indexStudioTranslations(rows, locales);
+  const queue = model.buildStudioQueue(entries, saved, locales);
+  const strictMissing = [...queue.fields.keys()].filter((key) => saved.get(key)?.size !== locales.length);
+  const strictIncomplete = new Set(strictMissing.map((key) => {
+    const { entityType, entityId } = queue.fields.get(key);
+    return `${entityType}:${entityId}`;
+  }));
+  assert.equal(rows.length, 897);
+  assert.equal(queue.fields.size, 112);
+  assert.equal(strictMissing.length, 103);
+  assert.equal(49 - strictIncomplete.size, 1);
+  assert.equal(queue.missingCount, 1);
+  for (const [type, complete, records] of [['task', 34, 35], ['goal', 4, 4], ['goal_check_in', 1, 1], ['review', 1, 1], ['leave', 8, 8]]) {
+    assert.equal(queue.sources.get(type).completeRecords, complete);
+    assert.equal(queue.sources.get(type).records, records);
+  }
+  assert.equal(queue.fields.get('task:34:field_0').localeCount, 8, 'an original language does not require a saved copy');
+  assert.equal(queue.fields.get('task:34:field_0').translatedCount, 8);
+  assert.equal(queue.fields.get('task:34:field_1').translatedCount, 0);
+});
+
+test('a known original is excluded even when saved, while real target gaps stay filterable', () => {
+  const { model } = services({});
+  const key = 'task:1:title';
+  const text = 'Đổi lịch họp';
+  const saved = model.indexStudioTranslations(locales.filter((locale) => !['en', 'fr'].includes(locale))
+    .map((locale) => translation(1, 'title', locale, 'Saved', text)), locales);
+  const queue = model.buildStudioQueue([{ key, entityType: 'task', entityId: '1', field: 'title', sourceText: text }], saved, locales);
+  const entry = queue.fields.get(key);
+  assert.equal(entry.originalLocale, 'vn');
+  assert.equal(entry.localeCount, 8);
+  assert.equal(entry.translatedCount, 6);
+  assert.deepEqual([...entry.missingLocales], ['en', 'fr']);
+  assert.equal(queue.missingCount, 1);
+  assert.equal(queue.missingTranslationCount, 2);
+  const filters = { status: 'missing', sources: new Set(['task']), fields: new Set(['task:title']) };
+  assert.equal(model.filterStudioQueue([entry], { ...filters, language: 'vn' }).length, 0);
+  assert.equal(model.filterStudioQueue([entry], { ...filters, language: 'fr' }).length, 1);
 });
 
 test('an exact saved parent title finds related notes even when the goal source is filtered out', async () => {
@@ -90,20 +163,23 @@ test('search finds titles shown through manual text reuse and respects exact ove
   assert.deepEqual(matches([shared, translation(3, 'title', 'en', 'Transfer', 'Bàn giao')]), ['task:1:title']);
 });
 
-function studio({ role = 'admin', saveError = false, fetchError = false, machine = false } = {}) {
-  const records = [
+function studio({ role = 'admin', saveError = false, fetchError = false, machine = false, legacy = false, deferRefresh = false } = {}) {
+  const records = legacy ? [{ id: 1, title: 'Legacy English source', description: ' ' }] : [
     { id: 1, title: 'Open task', description: 'Description to translate.' },
     { id: 2, title: 'Complete task' },
     { id: 3, title: 'Old task' },
   ];
-  const saved = [
+  const saved = legacy ? locales.filter((locale) => locale !== 'en')
+    .map((locale) => translation(1, 'title', locale, `Saved ${locale}`, 'Legacy English source')) : [
     ...locales.filter((locale) => locale !== 'fr').map((locale) => translation(1, 'title', locale, 'Saved', 'Open task')),
     ...locales.map((locale) => translation(2, 'title', locale, locale === 'fr' ? 'État final' : 'Saved', 'Complete task')),
     ...locales.map((locale) => translation(3, 'title', locale, 'Saved', locale === 'fr' ? 'Former source' : 'Old task')),
   ];
   const { service, model } = services({
-    workload_tasks: records, performance_goals: [{ id: 7, title: 'Goal without translations' }], hr_ugc_translations: saved,
+    workload_tasks: records, performance_goals: legacy ? [] : [{ id: 7, title: 'Goal without translations' }], hr_ugc_translations: saved,
   });
+  let releaseRefresh;
+  const refreshing = deferRefresh ? new Promise((resolve) => { releaseRefresh = resolve; }) : null;
   const calls = { saves: [], selected: [], focus: [], published: [], queues: 0, reinstall: 0 };
   const translate = (key, fallback) => additions[key] || key.split('.').reduce((value, part) => value?.[part], english) || fallback;
   const hooks = [];
@@ -161,12 +237,22 @@ function studio({ role = 'admin', saveError = false, fetchError = false, machine
         calls.selected.push(id);
         return fetchError ? Promise.resolve({ success: false }) : service.fetchRecordTranslations(type, id);
       },
+      fetchLocaleTranslations: async (locale) => {
+        await refreshing;
+        return service.fetchLocaleTranslations(locale);
+      },
       saveTranslationBatch: async (entries) => {
         calls.saves.push(...entries);
         if (saveError) return { success: false, error: 'Write failed' };
         for (const entry of entries) {
           saved.push(translation(entry.entityId, entry.field, entry.locale, entry.body, entry.sourceText, entry.entityType));
         }
+        return { success: true };
+      },
+      deleteTranslation: async ({ entityType, entityId, field, locale }) => {
+        const index = saved.findIndex((row) => row.entity_type === entityType && row.entity_id === entityId
+          && row.field === field && row.locale === locale);
+        if (index >= 0) saved.splice(index, 1);
         return { success: true };
       },
     },
@@ -200,7 +286,7 @@ function studio({ role = 'admin', saveError = false, fetchError = false, machine
     } while (changed);
   };
   return {
-    calls, flush,
+    calls, flush, releaseRefresh,
     find: (fn) => findAll(tree, fn)[0],
     button: (label) => findAll(tree, ({ type, props, children }) => ['Btn', 'button', 'ShinyButton'].includes(type)
       && (props?.['aria-label'] === label || text(children) === label))[0],
@@ -213,6 +299,8 @@ test('the default queue and independent filters expose missing work and explain 
   const screen = studio();
   await screen.flush();
   assert.equal(screen.button('Missing').props['aria-pressed'], true);
+  assert.equal(screen.calls.published.at(-1), 3);
+  assert.equal(screen.find(({ props }) => props?.label === 'Missing translations').props.value, 19);
   assert.equal(screen.find(({ type }) => type === 'details').props.open, undefined);
   assert.equal(screen.calls.selected.length, 0);
   assert.match(screen.text(), /Open task/);
@@ -321,6 +409,67 @@ test('existing automatic suggestions and ordinary Save retain manual overrides a
   assert.deepEqual(screen.calls.selected, ['1']);
   assert.equal(screen.find(({ props }) => props?.label === 'Selected').props.value, '9/9');
   assert.equal(screen.calls.published.at(-1), 2);
+});
+
+test('deleting and restoring one target updates the field, source, and sidebar counts as soon as the write succeeds', async () => {
+  const screen = studio({ legacy: true, deferRefresh: true });
+  const count = (label) => screen.find(({ props }) => props?.label === label).props.value;
+  await screen.flush();
+  assert.equal(count('Incomplete fields'), 0);
+  assert.deepEqual(screen.calls.published, [0]);
+  assert.match(screen.text(), /1 of 1 records complete/);
+
+  screen.button('Complete').props.onClick();
+  await screen.flush();
+  screen.find(({ props }) => props && Object.hasOwn(props, 'aria-current')).props.onClick();
+  await screen.flush();
+  assert.equal(count('Selected'), '8/8');
+  const remove = screen.button('Remove').props.onClick();
+  await screen.flush();
+  assert.equal(screen.calls.reinstall, 0, 'the locale index refresh is still pending');
+  assert.equal(count('Selected'), '7/8');
+  assert.equal(count('Incomplete fields'), 1);
+  assert.equal(count('Missing translations'), 1);
+  assert.deepEqual(screen.calls.published, [0, 1]);
+  assert.match(screen.text(), /0 of 1 records complete/);
+  screen.releaseRefresh();
+  await remove;
+  await screen.flush();
+
+  screen.button('Refresh').props.onClick();
+  await screen.flush();
+  screen.button('Missing').props.onClick();
+  await screen.flush();
+  assert.ok(screen.button('de · Missing'));
+  assert.equal(screen.button('en · Missing'), undefined, 'the original language is not a target');
+  screen.find(({ props }) => props?.type === 'checkbox').props.onChange({ target: { checked: true } });
+  await screen.flush();
+  assert.deepEqual(screen.inputs(), ['tr-de']);
+
+  screen.find(({ props }) => props?.id === 'tr-de').props.onChange({ target: { value: 'Ersatz' } });
+  await screen.flush();
+  await screen.button('Save (1)').props.onClick();
+  await screen.flush();
+  assert.equal(count('Selected'), '8/8');
+  assert.equal(count('Missing translations'), 0);
+  assert.equal(screen.calls.published.at(-1), 0);
+  assert.match(screen.text(), /1 of 1 records complete/);
+});
+
+test('a deletion from a complete field does not turn the removed target into an inferred original', async () => {
+  const screen = studio();
+  await screen.flush();
+  screen.button('Complete').props.onClick();
+  await screen.flush();
+  screen.find(({ props }) => props && Object.hasOwn(props, 'aria-current')).props.onClick();
+  await screen.flush();
+  await screen.button('Remove').props.onClick();
+  await screen.flush();
+  assert.equal(screen.find(({ props }) => props?.label === 'Selected').props.value, '8/9');
+  assert.equal(screen.calls.published.at(-1), 4);
+  screen.button('Missing').props.onClick();
+  await screen.flush();
+  assert.match(screen.text(), /Complete task/);
 });
 
 test('a failed write keeps the draft in place and leaves coverage and navigation unchanged', async () => {

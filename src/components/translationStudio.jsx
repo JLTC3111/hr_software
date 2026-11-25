@@ -45,9 +45,9 @@ import {
   fieldFilterKey,
   filterStudioQueue,
   indexStudioTranslations,
-  isOutdatedTranslation,
   nextMissingStudioTranslation,
   searchStudioQueue,
+  studioOriginalLocale,
 } from '../utils/translationStudioQueue.js';
 
 /**
@@ -235,8 +235,20 @@ const TranslationStudio = () => {
       return;
     }
 
-    setEntries(records.data);
-    setCoverage(indexStudioTranslations(translations.data || [], locales));
+    const saved = indexStudioTranslations(translations.data || [], locales);
+    // Retain the original-language inference for the same source text after a
+    // target is deleted. Only the target should become missing.
+    setEntries((previous) => {
+      const byKey = new Map(previous.map((entry) => [entry.key, entry]));
+      return records.data.map((entry) => {
+        const loaded = byKey.get(entry.key);
+        const originalLocale = loaded?.sourceText === entry.sourceText
+          ? loaded.originalLocale
+          : studioOriginalLocale(entry.sourceText, saved.get(entry.key), locales);
+        return { ...entry, originalLocale };
+      });
+    });
+    setCoverage(saved);
     // The queue reads the source tables, which exist regardless; only the
     // translations table depends on migration 018. So the Studio can be fully
     // populated and still have nowhere to save to — say so explicitly rather
@@ -522,11 +534,20 @@ const TranslationStudio = () => {
       setStored(next);
       const saved = new Map(Object.entries(next));
       updateFieldCoverage(selected.key, saved);
+      // Adding a target can establish the legacy set. Clearing a target must
+      // never reclassify that language as the original in the loaded queue.
+      const originalLocale = !selected.originalLocale && saved.size > Object.keys(stored).length
+        ? studioOriginalLocale(selected.sourceText, saved, locales)
+        : selected.originalLocale;
+      const nextEntries = originalLocale === selected.originalLocale ? entries : entries.map((entry) => (
+        entry.key === selected.key ? { ...entry, originalLocale } : entry
+      ));
+      if (nextEntries !== entries) setEntries(nextEntries);
 
       let savedMessage = t('translationStudio.saved', 'Saved');
       if (advance) {
         const nextCoverage = new Map(coverage).set(selected.key, saved);
-        const updatedQueue = buildStudioQueue(entries, nextCoverage, locales);
+        const updatedQueue = buildStudioQueue(nextEntries, nextCoverage, locales);
         const remaining = filterStudioQueue(searchStudioQueue(updatedQueue.fields, nextCoverage, query), filters);
         const target = nextMissingStudioTranslation(visible, remaining, selected.key, language);
         if (target) selectEntry(updatedQueue.fields.get(target.key), target.locale);
@@ -660,7 +681,7 @@ const TranslationStudio = () => {
     + Number(selectedFields.size !== FIELD_FILTER_KEYS.length) + Number(Boolean(language));
   const activeFilters = advancedCount > 0 || status !== 'missing' || Boolean(query);
   const filteredSearch = Boolean(query.trim()) && searchMatches.length > visible.length;
-  const editorLocales = missingOnly ? locales.filter((locale) => !stored[locale]) : locales;
+  const editorLocales = missingOnly ? selected?.missingLocales || [] : locales;
   const statusFilters = [
     ['missing', t('translationStudio.filter_missing', 'Missing')],
     ['partial', t('translationStudio.filter_partial', 'Partial')],
@@ -684,9 +705,14 @@ const TranslationStudio = () => {
       <TickerCell ind={ind} label={t('translationStudio.inQueue', 'In queue')} value={hasQueue ? visible.length : '—'} />
       <TickerCell
         ind={ind}
-        label={t('translationStudio.pending', 'To translate')}
+        label={t('translationStudio.pending', 'Incomplete fields')}
         value={pendingCount}
-        title={t('translationStudio.pendingHint', 'Fields still missing translations')}
+        title={t('translationStudio.pendingHint', 'Each field still missing a translation is counted once.')}
+      />
+      <TickerCell
+        ind={ind}
+        label={t('translationStudio.missingTranslationCount', 'Missing translations')}
+        value={hasCoverage ? queue.missingTranslationCount : '—'}
       />
       <TickerCell ind={ind} label={t('translationStudio.locales', 'Locales')} value={locales.length} />
       <TickerCell
@@ -875,7 +901,7 @@ const TranslationStudio = () => {
                     key={value}
                     type="button"
                     aria-pressed={status === value}
-                    title={value === 'missing' ? t('translationStudio.pendingHint', 'Fields still missing translations') : undefined}
+                    title={value === 'missing' ? t('translationStudio.pendingHint', 'Each field still missing a translation is counted once.') : undefined}
                     disabled={busy}
                     onClick={() => setStatus(value)}
                     style={chipStyle(status === value)}
@@ -1030,7 +1056,7 @@ const TranslationStudio = () => {
                           {`${t(TRANSLATABLE_ENTITIES[entry.entityType].labelKey, entry.entityType)} · ${t(`translationStudio.field_${entry.field}`, entry.field.replace(/_/g, ' '))}`}
                         </span>
                         {hasCoverage && (
-                          <span title={t('translationStudio.fieldCoverageHint', 'Translated languages / supported languages')}>
+                          <span title={t('translationStudio.fieldCoverageHint', 'Translated target languages / required target languages')}>
                             <Tag ind={ind} variant={variant}>{`${translatedCount}/${localeCount}`}</Tag>
                           </span>
                         )}
@@ -1077,7 +1103,7 @@ const TranslationStudio = () => {
                 <span style={fieldLabelStyle}>{t('translationStudio.sourceCoverage', 'Source coverage')}</span>
                 <div className="grid grid-cols-2" style={{ gap: 6 }}>
                   {ENTITY_TYPES.filter((type) => queue.sources.has(type)).map((type) => {
-                    const { records, completeRecords, missingFields, outdatedFields } = queue.sources.get(type);
+                    const { records, completeRecords, missingFields, missingTranslations, outdatedFields } = queue.sources.get(type);
                     const nextStatus = missingFields || !outdatedFields ? 'missing' : 'outdated';
                     const active = sources.size === 1 && sources.has(type) && status === nextStatus;
                     return (
@@ -1107,6 +1133,11 @@ const TranslationStudio = () => {
                             ? t('translationStudio.outdatedFields', 'Outdated fields ({count})').replace('{count}', outdatedFields)
                             : t('translationStudio.missingFields', 'Fields to translate ({count})').replace('{count}', missingFields)}
                         </span>
+                        {missingTranslations > 0 && (
+                          <span className="block" style={{ ...caption, fontSize: 11 }}>
+                            {t('translationStudio.missingTranslationCount', 'Missing translations')} ({missingTranslations})
+                          </span>
+                        )}
                       </Btn>
                     );
                   })}
@@ -1209,14 +1240,14 @@ const TranslationStudio = () => {
                     </label>
                     {editorLocales.length === 0 && (
                       <p role="status" style={caption}>
-                        {t('translationStudio.noMissingLanguages', 'This field has a saved translation in every language.')}
+                        {t('translationStudio.noMissingLanguages', 'Every required language for this field is covered.')}
                       </p>
                     )}
                     {editorLocales.map((locale) => {
                         const lang = SUPPORTED_LANGUAGES[locale];
                         const value = drafts[locale]?.body || '';
                         const savedEntry = stored[locale];
-                        const stale = savedEntry && isOutdatedTranslation(selected, savedEntry.sourceText);
+                        const stale = selected.outdatedLocales.includes(locale);
 
                         return (
                           <div key={locale}>
