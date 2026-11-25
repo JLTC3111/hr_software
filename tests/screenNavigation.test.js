@@ -101,15 +101,15 @@ test('Task Listing holds its tab and opened task in the URL, not in useState', (
   assert.doesNotMatch(taskListing, /setOpenTaskId/);
 });
 
-test('opening a task pushes and the screen correcting itself replaces', () => {
+test('opening a task pushes while cleanup replaces an obsolete address', () => {
   const taskListing = source('src/components/taskListing.jsx');
 
   // Opening a row is a navigation: Back must return to the ledger.
   assert.match(taskListing, /const openTask = useCallback\(\(id\) => \{[\s\S]*?go\(\{ task: id \}\);/);
 
-  // Choosing the tab for the viewer, and clearing a dead link, are corrections
-  // rather than places, so they must not become Back steps.
-  assert.match(taskListing, /go\(\{ tab: 'closed' \}, \{ replace: true \}\)/);
+  assert.match(taskListing, /applyLegacyTaskTab\(saved, nav\.tab\)/);
+  assert.match(taskListing, /go\(\{ tab: null \}, \{ replace: true \}\)/);
+  assert.doesNotMatch(taskListing, /go\(\{ tab: 'closed'/);
   assert.match(taskListing, /go\(\{ task: null \}, \{ replace: true \}\)/);
 });
 

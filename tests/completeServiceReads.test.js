@@ -3,9 +3,11 @@ import assert from 'node:assert/strict';
 import { loadSource } from './helpers/loadSource.js';
 import { queryFixture } from './helpers/queryFixture.js';
 import { fetchAllRows } from '../src/utils/fetchAllRows.js';
+import * as workloadDates from '../src/utils/workloadDates.js';
 
 function services(client) {
   const shared = {
+    '../utils/workloadDates.js': workloadDates,
     '../utils/fetchAllRows.js': { fetchAllRows },
     '../config/supabaseClient': { supabase: client },
     '../config/supabaseClient.js': { supabase: client },

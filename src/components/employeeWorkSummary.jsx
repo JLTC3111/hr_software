@@ -56,6 +56,17 @@ export default function EmployeeWorkSummary({ summary, loading, error, ind, copy
           <p data-work-summary-overview style={{ fontFamily: BODY, fontSize: 14, lineHeight: 1.8, color: ind.ink, margin: 0, overflowWrap: 'anywhere', userSelect: 'text' }}>
             {summary.overview.join(' ')}
           </p>
+          {summary.score?.overall && (
+            <dl className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" style={{ gap: '6px 16px', margin: '12px 0 0' }}>
+              {[summary.score.overall, ...summary.score.components, ...summary.score.details].map(([label, value]) => (
+                <div key={label} className="flex justify-between gap-2" style={{ borderTop: `1px solid ${ind.hairline}`, padding: '5px 0' }}>
+                  <dt style={muted}>{label}</dt>
+                  <dd style={{ margin: 0, color: ind.ink, fontWeight: 600 }}>{value}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+          {summary.score?.notes.map((note) => <p key={note} style={{ ...muted, marginTop: 6 }}>{note}</p>)}
           {summary.sections.map(section => (
             <details key={`${summary.employeeId}-${section.key}`} open={section.key === 'completed'}
               style={{ borderTop: `1px solid ${ind.hairline}`, marginTop: 12, paddingTop: 10 }}>

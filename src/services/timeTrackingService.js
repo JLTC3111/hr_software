@@ -2250,10 +2250,10 @@ export const getAllEmployees = async () => {
   }
 
   try {
-    const { data, error } = await supabase
+    const { data, error } = await fetchAllRows(supabase
       .from('employees')
-      .select('*')
-      .order('name');
+      .select('*', { count: 'exact' })
+      .order('name'));
 
     if (error) throw error;
     return { success: true, data };

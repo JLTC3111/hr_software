@@ -120,9 +120,11 @@ test('the review sheet files manager ratings on the review row, not as a self-as
   assert.doesNotMatch(taskReview, /handleSaveSkillAssessment\(\);\s*$/);
 });
 
-test('Task Listing uses the wrapping Seg control for filter chips', () => {
+test('Task Listing wraps independent ownership, status and sort controls', () => {
   const taskListing = source('src/components/taskListing.jsx');
-  assert.match(taskListing, /<Seg\b/);
+  assert.match(taskListing, /grid-cols-2[^"\n]*md:grid-cols-3/);
+  for (const control of ['owner', 'status', 'sort', 'direction']) assert.ok(taskListing.includes(`filterControl('${control}',`));
+  assert.match(taskListing, /aria-pressed=\{preferences\.groupByEmployee\}/);
 });
 
 test('Reports period labels do not include romanization glosses', async () => {

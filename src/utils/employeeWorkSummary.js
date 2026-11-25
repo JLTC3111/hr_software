@@ -1,17 +1,12 @@
 import { LEAVE_ENTRY_TYPES, summarizeAttendance } from './attendanceRules.js';
+import { computeEmployeePerformance, reportScoreBasis, reportScorePresentation } from './reportExportHelpers.js';
+import { isCalendarDay, selectReportTasks, taskReportDay, vietnamCalendarDay } from './workloadDates.js';
 
 // Keep the summary, report preview and exports on the same calendar dates.
 export const reportRecordDate = (item) =>
-  String(item?.date || (item?.status === 'completed' && item?.completion_date) || item?.due_date || item?.target_date || item?.start_date || item?.created_at || '').slice(0, 10);
+  String(item?.date || item?.due_date || item?.target_date || item?.start_date || item?.created_at || '').slice(0, 10);
 
-export const validReportRange = (startDate, endDate) => {
-  const validDate = (value) => {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(value || '')) return false;
-    const date = new Date(`${value}T12:00:00Z`);
-    return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
-  };
-  return validDate(startDate) && validDate(endDate) && startDate <= endDate;
-};
+export const validReportRange = (startDate, endDate) => isCalendarDay(startDate) && isCalendarDay(endDate) && startDate <= endDate;
 
 const fallbackText = (_key, fallback) => fallback;
 const hours = (value) => Number(value || 0).toFixed(1);
@@ -39,12 +34,21 @@ export const buildEmployeeWorkSummary = (employee, data = {}, {
   const select = (rows) => (rows || []).filter(row => belongs(row) && inRange(row));
   const timeEntries = scope.timeEntries ? select(data.timeEntries) : [];
   const overtimeLogs = scope.timeEntries ? select(data.overtimeLogs) : [];
-  const tasks = scope.tasks ? select(data.tasks) : [];
+  const taskToday = data.taskToday ?? vietnamCalendarDay();
+  const taskSelection = selectReportTasks(scope.tasks ? (data.tasks || []).filter(belongs) : [], { startDate, endDate, today: taskToday });
+  const tasks = taskSelection.tasks;
+  const taskDateIssues = scope.tasks ? [...taskSelection.taskDateIssues, ...(data.taskDateIssues || []).filter(({ task }) => belongs(task))] : [];
   const goals = scope.goals ? select(data.goals) : [];
   // Approved leave governs hours even if its export section is unticked.
   const leaveRequests = (data.leaveForAttendance || data.leave || []).filter(belongs);
   const leave = scope.leave ? leaveRequests.filter(row => row.start_date <= endDate && (row.end_date || row.start_date) >= startDate) : [];
   const attendance = summarizeAttendance({ timeEntries, overtimeLogs, leaveRequests, employeeId: employee.id, startDate, endDate });
+  const performance = computeEmployeePerformance(employee, timeEntries, tasks, goals, {
+    overtimeLogs, leaveRequests, startDate, endDate, taskDateIssues, taskToday,
+    scoreScope: { timeEntries: Boolean(scope.timeEntries), tasks: Boolean(scope.tasks), goals: Boolean(scope.goals) },
+  });
+  const score = reportScorePresentation(performance, t);
+  if (score.overall) score.notes.push(reportScoreBasis(t));
   const completedTasks = tasks.filter(task => statusKey(task.status) === 'completed');
   const otherTasks = tasks.filter(task => statusKey(task.status) !== 'completed');
   const goalProgress = (goal) => statusKey(goal.status) === 'completed'
@@ -55,14 +59,13 @@ export const buildEmployeeWorkSummary = (employee, data = {}, {
     overtimeLogs: overtimeLogs.filter(row => String(row.status ?? 'pending').toLowerCase() === 'pending'),
     leaveRequests, employeeId: employee.id, startDate, endDate,
   }).total_hours;
-  const missingCompletionDates = completedTasks.filter(task => !task.completion_date).length;
-  const hasRecords = timeEntries.length + overtimeLogs.length + tasks.length + goals.length + leave.length > 0;
+  const hasRecords = timeEntries.length + overtimeLogs.length + tasks.length + goals.length + leave.length + taskDateIssues.length > 0;
   const overview = [];
   if (hasRecords && scope.timeEntries) overview.push(say('timeSentence',
     '{name} recorded {hours} hours across {days} worked days, including {overtime} overtime hours and {wfh} hours working from home.',
     { name: employeeName, hours: hours(attendance.total_hours), days: attendance.days_worked,
       overtime: hours(attendance.overtime_hours + attendance.holiday_overtime_hours), wfh: hours(attendance.wfh_hours) }));
-  if (tasks.length) overview.push(say('taskSentence', 'Completed {completed} of {total} tasks recorded for this period.', { completed: completedTasks.length, total: tasks.length }));
+  if (performance.tasksCount) overview.push(say('taskSentence', 'Completed {completed} of {total} eligible tasks for this period.', { completed: performance.completedTasks, total: performance.tasksCount }));
   if (goals.length) overview.push(say('goalSentence', 'Goals tracked: {total}; currently completed: {completed}; current average progress: {progress}%.',
     { total: goals.length, completed: goals.filter(goal => statusKey(goal.status) === 'completed').length, progress: avgGoalProgress.toFixed(1) }));
   if (leave.length) overview.push(say('leaveSentence', 'Approved leave: {days} working days.', { days: attendance.leave_days }));
@@ -75,7 +78,7 @@ export const buildEmployeeWorkSummary = (employee, data = {}, {
   };
   const taskItem = (task, index) => ({
     key: `task-${task.id ?? index}`,
-    date: reportRecordDate(task),
+    date: taskReportDay(task, taskToday),
     title: textForField(task, 'title', 'task') || t('dataType.task', 'Task'),
     meta: translateStatus(task.status),
     details: [
@@ -112,17 +115,18 @@ export const buildEmployeeWorkSummary = (employee, data = {}, {
   })) });
   const notes = [];
   if (pendingHours > 0) notes.push(say('pendingHours', '{hours} hours are awaiting approval and are included in the total.', { hours: hours(pendingHours) }));
-  if (missingCompletionDates) notes.push(say('missingCompletion', 'Completed tasks without a completion date: {count}. The report uses their due, start or creation date.', { count: missingCompletionDates }));
   if (goals.length) notes.push(say('goalSnapshot', 'Goal statuses and progress reflect the latest records, not a historical snapshot.'));
   if (!hasRecords) overview.push(say('empty', 'No work records were found for this employee in the selected period and record types.'));
-  return { employeeId: String(employee.id), employeeName, startDate, endDate, hasRecords, overview, notes,
+  return { employeeId: String(employee.id), employeeName, startDate, endDate, hasRecords, overview, notes, score,
     sections: sections.filter(section => section.items.length),
-    metrics: { totalHours: attendance.total_hours, completedTasks: completedTasks.length, tasks: tasks.length, goals: goals.length } };
+    metrics: { totalHours: attendance.total_hours, completedTasks: completedTasks.length, tasks: tasks.length, eligibleTasks: performance.tasksCount, goals: goals.length } };
 };
 
 /** Plain, complete rows shared by copy, CSV and Excel. */
 export const employeeWorkSummaryRows = (summary, t = fallbackText) => summary ? [
   ...summary.overview.map(text => [t('reports.excel.sheets.summary', 'Summary'), text]),
+  ...(summary.score?.overall ? [summary.score.overall, ...summary.score.components, ...summary.score.details] : []),
+  ...(summary.score?.notes || []).map(text => [t('reports.scoreCalculation', 'Score calculation'), text]),
   ...summary.sections.flatMap(section => section.items.map(item => [section.title,
     [item.date, item.title, item.meta, ...item.details].filter(Boolean).join('\n')])),
   ...summary.notes.map(text => [t('timeTracking.notes', 'Notes'), text]),

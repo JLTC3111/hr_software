@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   buildEmployeeWorkSummary, employeeWorkSummaryRows, employeeWorkSummaryText,
-  reportRecordDate, validReportRange,
+  validReportRange,
 } from '../src/utils/employeeWorkSummary.js';
 import english from '../src/translations/additions/en.js';
 
@@ -10,7 +10,7 @@ const employee = { id: 'a', name: 'Employee A' };
 const period = { startDate: '2026-10-01', endDate: '2026-10-31' };
 const task = (id, date, extra = {}) => ({ id, employee_id: 'a', title: `Work ${id}`, status: 'completed', completion_date: date, ...extra });
 const time = (date, hours, extra = {}) => ({ employee_id: 'a', date, hours, status: 'approved', hour_type: 'regular', ...extra });
-const summary = (data, options = {}) => buildEmployeeWorkSummary(employee, data, { ...period, ...options });
+const summary = (data, options = {}) => buildEmployeeWorkSummary(employee, { taskToday: '2027-12-31', ...data }, { ...period, ...options });
 
 test('monthly, quarterly, annual and custom summaries include both boundary dates', () => {
   const dates = ['2025-12-31', '2026-01-01', '2026-01-31', '2026-02-01', '2026-03-31', '2026-04-01', '2026-12-31', '2027-01-01'];
@@ -46,11 +46,11 @@ test('completed work follows completion dates; missing dates are disclosed rathe
     task(5, null, { created_at: '2026-10-03T23:59:59Z' }),
     task(6, null),
   ] });
-  assert.equal(result.metrics.completedTasks, 4);
-  assert.deepEqual(result.sections[0].items.map(item => item.key), ['task-1', 'task-3', 'task-4', 'task-5']);
-  assert.match(result.notes.join(' '), /without a completion date: 3/);
+  assert.equal(result.metrics.completedTasks, 1);
+  assert.deepEqual(result.sections[0].items.map(item => item.key), ['task-1']);
+  assert.equal(result.score.overall, null);
+  assert.match(result.score.notes.join(' '), /4 completed tasks have no recorded completion date/);
   assert.match(employeeWorkSummaryText(result), /Delivered the payroll migration/);
-  assert.equal(reportRecordDate(task(7, '2026-10-31T23:59:59Z')), '2026-10-31');
 });
 
 test('hours match attendance rules, include overtime and pending hours, and exclude other employees', () => {
@@ -100,12 +100,14 @@ test('task statuses stay separate and assessments are preserved without inferrin
   ] });
   assert.equal(result.metrics.completedTasks, 1);
   assert.equal(result.metrics.tasks, 3);
+  assert.equal(result.metrics.eligibleTasks, 2);
   assert.equal(result.sections.find(section => section.key === 'other').items.length, 2);
   const text = employeeWorkSummaryText(result);
   assert.match(text, /Verified 28 records/);
   assert.match(text, /Reviewed by the team/);
   assert.match(text, /80% done/);
-  assert.doesNotMatch(text, /Private work of B|100%|50%/);
+  assert.doesNotMatch(text, /Private work of B/);
+  assert.doesNotMatch(result.sections.flatMap(section => section.items.map(item => item.meta)).join(' '), /100%|50%/);
 });
 
 test('groups repeated notes by text while preserving every distinct note and date beyond preview limits', () => {

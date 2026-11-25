@@ -37,3 +37,16 @@ GRANT SELECT ON storage.objects TO anon;
 -- Reproduce bucket-agnostic policies from the shared production project.
 CREATE POLICY other_app_upload ON storage.objects FOR INSERT TO public WITH CHECK (auth.uid() IS NOT NULL);
 CREATE POLICY other_app_privileged_delete ON storage.objects FOR DELETE TO public USING (owner_id = auth.uid()::text);
+
+CREATE SCHEMA realtime;
+CREATE TABLE realtime.messages (payload jsonb, event text, topic text, private boolean, extension text);
+ALTER TABLE realtime.messages ENABLE ROW LEVEL SECURITY;
+GRANT USAGE ON SCHEMA realtime TO anon, authenticated;
+GRANT SELECT, INSERT ON realtime.messages TO anon, authenticated;
+CREATE FUNCTION realtime.topic() RETURNS text LANGUAGE sql STABLE AS $$
+  SELECT nullif(current_setting('realtime.topic', true), '')::text;
+$$;
+CREATE FUNCTION realtime.send(payload jsonb, event text, topic text, private boolean DEFAULT true)
+RETURNS void LANGUAGE sql AS $$
+  INSERT INTO realtime.messages VALUES (payload, event, topic, private, 'broadcast');
+$$;

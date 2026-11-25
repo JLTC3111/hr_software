@@ -12,6 +12,7 @@ import * as employeeStatus from '../src/utils/employeeStatus.js';
 import * as employeePosition from '../src/utils/employeePositionKey.js';
 import * as locale from '../src/utils/localeFormat.js';
 import * as workSummary from '../src/utils/employeeWorkSummary.js';
+import * as workloadDates from '../src/utils/workloadDates.js';
 import { fetchAllRows } from '../src/utils/fetchAllRows.js';
 import en from '../src/translations/en.js';
 import { loadSource } from './helpers/loadSource.js';
@@ -77,7 +78,10 @@ function exportFixture({ failEntries = false, failSource = null, employeeId = nu
       const index = cursor++;
       if (!(index in states)) {
         let value = typeof initial === 'function' ? initial() : initial;
-        if (value?.timeEntries && value?.employees) value = { timeEntries: entries, employees, tasks, goals, leave: [], overtimeLogs };
+        if (value?.timeEntries && value?.employees) {
+          value = { timeEntries: entries, employees, tasks, goals, leave: [], overtimeLogs,
+            selectionKey: `${employeeId || 'all'}:2026-07-01:2026-09-30` };
+        }
         if (value?.startDate && value?.endDate) value = { startDate: '2026-07-01', endDate: '2026-09-30' };
         states[index] = value;
       }
@@ -92,8 +96,12 @@ function exportFixture({ failEntries = false, failSource = null, employeeId = nu
     '../contexts/ThemeContext': { useTheme: () => ({ isDarkMode: false }) },
     '../contexts/AuthContext': { useAuth: () => ({ user: { id: 'admin', role: 'admin' } }) },
     '../hooks/useSessionGuard.js': { useSessionGuard: () => ({ handleSessionAuthError: () => false }), useAuthenticatedPageRefresh: callback => { refresh = callback; } },
+    '../hooks/useWorkloadTaskRefresh.js': { useWorkloadTaskRefresh() {} },
     '../utils/demoHelper': { isDemoMode: () => false, getDemoEmployeeName: employee => employee?.name || 'Unknown' },
-    '../services/timeTrackingService': { getOvertimeLogs: source('overtime'), getAllLeaveRequests: source('leave') },
+    '../services/timeTrackingService': {
+      getOvertimeLogs: source('overtime'), getAllLeaveRequests: source('leave'),
+      getAllEmployees: async () => failSource === 'employees' ? { success: false, error: 'Read failed' } : { success: true, data: employees },
+    },
     '../services/workloadService': { getAllTasks: taskRead || source('tasks') },
     '../services/performanceService': { getAllPerformanceGoals: source('goals') },
     '../utils/supabaseTimeout': { withTimeout: promise => promise }, '../config/requestTimeouts': {},
@@ -102,6 +110,7 @@ function exportFixture({ failEntries = false, failSource = null, employeeId = nu
     '../utils/fetchAllRows.js': { fetchAllRows },
     '../utils/reportExportHelpers.js': { ...helpers, loadPdfLogo: async () => null, loadPdfProfileImage: async () => null },
     '../utils/employeeWorkSummary.js': workSummary,
+    '../utils/workloadDates.js': workloadDates,
     './employeeWorkSummary.jsx': 'work-summary',
     '../utils/attendanceRules.js': attendance, '../utils/timeEntryHelpers.js': timeEntryHelpers, '../utils/localeFormat.js': locale,
     '../services/translateService.js': {
@@ -195,8 +204,8 @@ test('failed attendance fetch does not download an incomplete report', async () 
   assert.match(fixture.alerts[0].message, /error/i);
 });
 
-test('failed task or goal fetch cannot masquerade as an empty category in the score', async () => {
-  for (const failSource of ['tasks', 'goals']) {
+test('failed task, goal or roster fetch cannot masquerade as an empty category in the score', async () => {
+  for (const failSource of ['tasks', 'goals', 'employees']) {
     const fixture = exportFixture({ failSource });
     fixture.gate.resolve();
     await fixture.run();
@@ -266,7 +275,7 @@ test('Excel keeps task descriptions and notes in the work summary without a dupl
   assert.ok(workbook.getWorksheet(en.reports.excel.sheets.goals));
   const summarySheet = workbook.getWorksheet('Work summary');
   assert.ok(summarySheet);
-  assert.ok(summarySheet.getColumn(3).values.some(value => String(value).includes('Completed 1 of 2 tasks')));
+  assert.ok(summarySheet.getColumn(3).values.some(value => String(value).includes('Completed 1 of 2 eligible tasks')));
   assert.ok(summarySheet.getColumn(3).values.some(value => String(value).includes('Translated All checks complete')));
   const summary = summarySheet.getColumn(3).values.join('\n');
   for (const task of detailedTasks) {
@@ -294,7 +303,8 @@ test('failed source reads show an error instead of a successful partial employee
     await fixture.refresh();
     const panel = find(fixture.render(), node => node.type === 'work-summary');
     assert.match(panel.props.error, /Failed to load data/);
-    assert.equal(panel.props.summary.hasRecords, false);
+    assert.equal(panel.props.summary, null);
+    assert.equal(find(fixture.render(), node => node.props?.title === en.reports.exportingIncludes).props.disabled, true);
   }
 });
 
@@ -353,8 +363,38 @@ test('overtime-only work can be summarised and exported in every format', async 
     if (format === 'csv') assert.match(await fixture.content(), /Overnight production support/);
     if (format === 'pdf') {
       assert.match(fixture.texts.flat().join('\n'), /3\.0h/);
+      assert.match(fixture.texts.flat().join('\n'), /Overall Performance Score/);
       assert.doesNotMatch(fixture.texts.flat().join('\n'), /Work summary|Overnight production support/);
     }
+  }
+});
+
+test('screen, copy, PDF, CSV and Excel share the redistributed score and its explanation', async () => {
+  for (const format of ['csv', 'xlsx', 'pdf']) {
+    const fixture = exportFixture({ format, employeeId: 'a', entryCount: 132, cached: false });
+    fixture.gate.resolve();
+    await fixture.refresh();
+    const panel = find(fixture.render(), node => node.type === 'work-summary');
+    assert.deepEqual(panel.props.summary.score.overall, ['Overall Performance Score', '100.0%']);
+    assert.deepEqual(panel.props.summary.score.components, [['Time worked score (100.0%)', '100.0%']]);
+    assert.match(panel.props.copyText(), /Overall Performance Score: 100\.0%/);
+    assert.match(panel.props.copyText(), /no eligible tasks/);
+    assert.equal(find(fixture.render(), node => node.props?.label === en.reports.completionRate && node.props?.suffix === '%'), undefined);
+    await fixture.run();
+
+    let output;
+    if (format === 'pdf') output = fixture.texts.flat(Infinity).join('\n');
+    else if (format === 'csv') output = await fixture.content();
+    else {
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(await fixture.bytes());
+      const cells = [];
+      workbook.eachSheet(sheet => sheet.eachRow(row => row.eachCell(cell => cells.push(cell.text))));
+      output = cells.join('\n');
+    }
+    assert.match(output, /Time worked score \(100\.0%\)/, format);
+    assert.match(output, /no eligible tasks/, format);
+    assert.doesNotMatch(output, /52\.6%|Task delivery score \(47\.4%\)/, format);
   }
 });
 
@@ -368,6 +408,33 @@ test('monthly task output follows completion dates instead of old due dates', as
   const csv = await fixture.content();
   assert.ok(csv.includes('Delivered this period'));
   assert.ok(!csv.includes('Delivered next period'));
+});
+
+test('a missing completion date withholds the score across summaries and each export', async () => {
+  for (const format of ['csv', 'xlsx', 'pdf']) {
+    const fixture = exportFixture({ format, entryCount: 4, employeeId: 'a', cached: false, tasks: [
+      { id: 3, title: 'Unverified task', status: 'completed', due_date: '2026-07-18', completion_date: null },
+    ] });
+    fixture.gate.resolve();
+    await fixture.refresh();
+    const panel = find(fixture.render(), node => node.type === 'work-summary');
+    assert.equal(panel.props.summary.metrics.completedTasks, 0);
+    assert.equal(panel.props.summary.score.overall, null);
+    assert.match(panel.props.copyText(), /scores are unavailable/);
+    await fixture.run();
+
+    if (format === 'csv') assert.match(await fixture.content(), /scores are unavailable/);
+    if (format === 'pdf') {
+      const text = fixture.texts.flat(Infinity).join('\n');
+      assert.match(text, /scores are unavailable/);
+      assert.doesNotMatch(text, /Overall Performance Score/);
+    }
+    if (format === 'xlsx') {
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(await fixture.bytes());
+      assert.ok(workbook.getWorksheet('Work summary').getColumn(3).values.some(value => String(value).includes('scores are unavailable')));
+    }
+  }
 });
 
 

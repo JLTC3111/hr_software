@@ -128,6 +128,15 @@ try {
   psql(database, readFileSync(path.join(root, 'tests/database/platform.sql'), 'utf8'));
   const migrations = readdirSync(path.join(root, 'supabase/migrations')).filter(file => file.endsWith('.sql')).sort();
   for (const migration of migrations) {
+    const taskMigration = migration.includes('enforce_workload_task_lifecycle');
+    const workloadFingerprint = "SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM public.workload_tasks t WHERE id IN (739998,739999);";
+    let historicalTasks;
+    if (taskMigration) {
+      psql(database, `INSERT INTO public.employees(id,name,email) VALUES ('legacy-tasks','Legacy Tasks','legacy-tasks@example.test');
+        INSERT INTO public.workload_tasks(id,employee_id,title,status,completion_date) VALUES
+        (739998,'legacy-tasks','Missing date','completed',NULL), (739999,'legacy-tasks','Future date','completed','2099-01-01');`);
+      historicalTasks = psql(database, workloadFingerprint);
+    }
     if (migration.includes('enforce_hr_access')) {
       psql(database, readFileSync(path.join(root, 'tests/database/upgrade-fixture.sql'), 'utf8'));
       let legacyGuardWorked = false;
@@ -146,11 +155,13 @@ try {
     }
     psql(database, `BEGIN;\n${readFileSync(path.join(root, 'supabase/migrations', migration), 'utf8')}\nCOMMIT;`);
     console.log(`Replayed ${migration}`);
+    if (taskMigration && psql(database, workloadFingerprint) !== historicalTasks) throw new Error('Workload migration modified legacy tasks');
   }
   console.log(psql(database, readFileSync(path.join(root, 'tests/database/hr-access.sql'), 'utf8')));
   console.log(psql(database, sqlFile('tests/database/translation-comments.sql')));
   console.log(psql(database, sqlFile('tests/database/audit-fixes.sql')));
   console.log(psql(database, sqlFile('tests/database/time-clock-read-policy.sql')));
+  console.log(psql(database, sqlFile('tests/database/workload-task-lifecycle.sql')));
 
   // Separate databases keep the original access regressions independent from
   // attendance fixtures. Production has not received the access-hardening

@@ -1,4 +1,5 @@
 import { summarizeAttendance, workingDateKeys } from './attendanceRules.js';
+import { calendarDayDistance, isOpenWorkloadTask, taskCompletionIssue, vietnamCalendarDay, workloadStatus } from './workloadDates.js';
 export { workingDateKeys } from './attendanceRules.js';
 
 // Only translate authored fields actually written by the selected format.
@@ -65,8 +66,8 @@ const parseStamp = (value) => {
 const daysBetween = (from, to) =>
   Math.round((startOfLocalDay(to) - startOfLocalDay(from)) / DAY_MS);
 
-const isTaskClosed = (task) =>
-  String(task?.status ?? '').toLowerCase().replace(/_/g, '-') === 'completed';
+const isTaskClosed = (task) => workloadStatus(task) === 'completed';
+const isScoredTask = (task) => ['pending', 'in-progress', 'completed'].includes(workloadStatus(task));
 
 /**
  * Calendar days a task was given (start → due) vs days it actually took
@@ -74,17 +75,18 @@ const isTaskClosed = (task) =>
  * was typed in — often after the work was already done — so it is not a start.
  */
 export const getTaskDurationDays = (task, now = new Date()) => {
-  const startedAt = parseStamp(task?.start_date);
-  const dueAt = parseStamp(task?.due_date);
-  const completedAt = parseStamp(task?.completion_date || task?.completed_at);
+  const startedAt = task?.start_date ? vietnamCalendarDay(task.start_date) : null;
+  const dueAt = task?.due_date ? vietnamCalendarDay(task.due_date) : null;
+  const today = vietnamCalendarDay(now);
+  const completedAt = isTaskClosed(task) && !taskCompletionIssue(task) ? task.completion_date : null;
 
-  const estimated = startedAt && dueAt && dueAt >= startedAt ? Math.max(1, daysBetween(startedAt, dueAt)) : null;
+  const estimated = startedAt && dueAt && dueAt >= startedAt ? Math.max(1, calendarDayDistance(startedAt, dueAt)) : null;
 
   let actual = null;
   if (startedAt && completedAt && completedAt >= startedAt) {
-    actual = Math.max(0, daysBetween(startedAt, completedAt));
-  } else if (startedAt && !isTaskClosed(task)) {
-    actual = Math.max(0, daysBetween(startedAt, now));
+    actual = calendarDayDistance(startedAt, completedAt);
+  } else if (startedAt && today && isOpenWorkloadTask(task)) {
+    actual = Math.max(0, calendarDayDistance(startedAt, today));
   }
 
   const variance = estimated != null && actual != null ? actual - estimated : null;
@@ -100,6 +102,8 @@ export const filterExportSnapshotByScope = (scope = {}, snapshot = {}) => ({
   timeEntries: scope.timeEntries ? (snapshot.timeEntries || []) : [],
   overtimeLogs: scope.timeEntries ? (snapshot.overtimeLogs || []) : [],
   tasks: scope.tasks ? (snapshot.tasks || []) : [],
+  taskDateIssues: scope.tasks ? (snapshot.taskDateIssues || []) : [],
+  taskToday: snapshot.taskToday,
   goals: scope.goals ? (snapshot.goals || []) : [],
   leave: scope.leave ? (snapshot.leave || []) : [],
   // Leave still governs the hour totals when its section is unticked: approved
@@ -169,58 +173,71 @@ export const aggregateHoursByType = (timeEntries, attendance = {}) =>
 
 export const computeExportStats = (timeEntries = [], tasks = [], goals = [], leave = [], attendance = {}) => {
   const totalHours = summarizeAttendance({ leaveRequests: leave, ...attendance, timeEntries }).total_hours;
+  const today = attendance.taskToday ?? vietnamCalendarDay();
+  const eligibleTasks = tasks.filter((task) => isScoredTask(task) && !taskCompletionIssue(task, today));
+  const completedTasks = eligibleTasks.filter(isTaskClosed).length;
   return {
     totalRecords: timeEntries.length + (attendance.overtimeLogs?.length ?? 0) + tasks.length + goals.length + leave.length,
     timeEntriesCount: timeEntries.length,
     tasksCount: tasks.length,
+    eligibleTasksCount: eligibleTasks.length,
     goalsCount: goals.length,
     leaveCount: leave.length,
     totalHours: formatHours(totalHours),
     approvedTime: timeEntries.filter((entry) => entry.status === 'approved').length,
     pendingTime: timeEntries.filter((entry) => entry.status === 'pending').length,
-    completedTasks: tasks.filter((task) => task.status === 'completed').length,
+    completedTasks,
     inProgressTasks: tasks.filter((task) => task.status === 'in_progress' || task.status === 'in-progress').length,
     achievedGoals: goals.filter((goal) => goal.status === 'completed').length,
     inProgressGoals: goals.filter((goal) => goal.status === 'in_progress' || goal.status === 'in-progress').length,
     averageGoalProgress: goals.length
       ? Math.round(goals.reduce((sum, goal) => sum + (Number(goal.progress) || 0), 0) / goals.length)
       : 0,
-    taskCompletionRate: tasks.length
-      ? Math.round((tasks.filter((task) => task.status === 'completed').length / tasks.length) * 100)
-      : 0
+    taskCompletionRate: eligibleTasks.length
+      ? Math.round((completedTasks / eligibleTasks.length) * 100)
+      : null
   };
 };
 
 export const computeEmployeePerformance = (employee, timeEntries = [], tasks = [], goals = [], attendance = {}) => {
-  const employeeTimeEntries = timeEntries.filter((entry) => String(entry.employee_id) === String(employee.id));
-  const employeeTasks = tasks.filter((task) => String(task.employee_id) === String(employee.id));
-  const employeeGoals = goals.filter((goal) => String(goal.employee_id) === String(employee.id));
+  const { scoreScope } = attendance;
+  const timeIncluded = scoreScope?.timeEntries !== false;
+  const tasksIncluded = scoreScope?.tasks !== false;
+  const goalsIncluded = scoreScope?.goals !== false;
+  const belongs = (row) => String(row.employee_id) === String(employee.id);
+  const employeeTimeEntries = timeIncluded ? timeEntries.filter(belongs) : [];
+  const employeeTaskRecords = tasksIncluded ? tasks.filter(belongs) : [];
+  const taskToday = attendance.taskToday ?? vietnamCalendarDay();
+  const taskDateIssues = tasksIncluded ? (attendance.taskDateIssues || []).filter(({ task }) => belongs(task)) : [];
+  const employeeTasks = employeeTaskRecords.filter((task) => {
+    const issue = taskCompletionIssue(task, taskToday);
+    if (issue) taskDateIssues.push({ task, issue });
+    return !issue && isScoredTask(task);
+  });
+  const employeeGoals = goalsIncluded ? goals.filter(belongs) : [];
+  const overtimeLogs = timeIncluded ? (attendance.overtimeLogs || []).filter(belongs) : [];
 
-  const attendanceSummary = summarizeAttendance({ ...attendance, timeEntries: employeeTimeEntries, employeeId: employee.id });
+  const attendanceSummary = summarizeAttendance({ ...attendance, overtimeLogs, timeEntries: employeeTimeEntries, employeeId: employee.id });
   const totalHours = attendanceSummary.total_hours;
   const approvedEntries = employeeTimeEntries.filter((entry) => entry.status === 'approved').length;
-  const completedTasks = employeeTasks.filter((task) => task.status === 'completed').length;
-  const taskCompletionRate = employeeTasks.length ? (completedTasks / employeeTasks.length) * 100 : 0;
+  const completedTasks = employeeTasks.filter(isTaskClosed).length;
+  const taskCompletionRate = employeeTasks.length ? (completedTasks / employeeTasks.length) * 100 : null;
   const avgGoalProgress = employeeGoals.length
     ? employeeGoals.reduce((sum, goal) => sum + (goal.status === 'completed' ? 100 : Math.max(0, Math.min(100, Number(goal.progress_percentage ?? goal.progress) || 0))), 0) / employeeGoals.length
     : 0;
   const expectedHours = expectedReportHours(attendance.startDate, attendance.endDate);
-  const hasTime = employeeTimeEntries.length > 0 || (attendance.overtimeLogs || []).some((log) =>
-    String(log.employee_id) === String(employee.id));
+  const hasTime = employeeTimeEntries.length > 0 || overtimeLogs.length > 0;
   const hasRecords = hasTime || employeeTasks.length > 0 || employeeGoals.length > 0;
   // Keep shared attendance rules (including leave and rejected-entry exclusions).
   // Overtime contributes hours, not a second approval-based score.
-  const timeScore = hasRecords && attendance.scoreScope?.timeEntries !== false && expectedHours > 0
+  const timeScore = hasRecords && timeIncluded && expectedHours > 0
     ? Math.min(100, Math.max(0, totalHours) / expectedHours * 100) : null;
 
   const measuredDurations = employeeTasks.filter(isTaskClosed).flatMap((task) => {
-    const start = parseStamp(task.start_date);
-    const due = parseStamp(task.due_date);
-    const end = parseStamp(task.completion_date || task.completed_at);
-    // Older rows can have due dates before their starts. Do not turn those
-    // into one-day estimates or invent a finish date to score them.
-    if (!start || !due || !end || due < start || end < start) return [];
-    return [{ estimated: Math.max(1, daysBetween(start, due)), actual: Math.max(0, daysBetween(start, end)) }];
+    const start = task.start_date && vietnamCalendarDay(task.start_date);
+    const due = task.due_date && vietnamCalendarDay(task.due_date);
+    if (!start || !due || due < start) return [];
+    return [{ estimated: Math.max(1, calendarDayDistance(start, due)), actual: calendarDayDistance(start, task.completion_date) }];
   });
   const estimatedTaskDays = measuredDurations.reduce((sum, duration) => sum + duration.estimated, 0);
   const actualTaskDays = measuredDurations.reduce((sum, duration) => sum + duration.actual, 0);
@@ -228,14 +245,14 @@ export const computeEmployeePerformance = (employee, timeEntries = [], tasks = [
     ? Math.min(100, estimatedTaskDays / Math.max(1, actualTaskDays) * 100) : null;
   // Equal shares for task volume delivered (completed / assigned) and duration
   // efficiency. With no valid durations, use completion alone, not a guessed 0.
-  const taskScore = hasRecords && attendance.scoreScope?.tasks !== false
+  const taskScore = taskCompletionRate != null && !taskDateIssues.length
     ? (taskEfficiency == null ? taskCompletionRate : (taskCompletionRate + taskEfficiency) / 2) : null;
   const categoryScores = { time: timeScore, tasks: taskScore, goals: employeeGoals.length ? avgGoalProgress : null };
   const weightTotal = Object.entries(categoryScores).reduce((sum, [key, score]) =>
     sum + (score == null ? 0 : REPORT_PERFORMANCE_WEIGHTS[key]), 0);
   const weights = Object.fromEntries(Object.entries(categoryScores).map(([key, score]) =>
     [key, score == null || !weightTotal ? 0 : REPORT_PERFORMANCE_WEIGHTS[key] / weightTotal * 100]));
-  const overallScore = weightTotal
+  const overallScore = weightTotal && !taskDateIssues.length
     ? Object.entries(categoryScores).reduce((sum, [key, score]) => sum + (score ?? 0) * weights[key] / 100, 0).toFixed(1)
     : null;
 
@@ -248,8 +265,9 @@ export const computeEmployeePerformance = (employee, timeEntries = [], tasks = [
     expectedHours,
     timeScore: timeScore == null ? null : timeScore.toFixed(1),
     tasksCount: employeeTasks.length,
+    recordedTasksCount: employeeTaskRecords.length,
     completedTasks,
-    taskCompletionRate: taskCompletionRate.toFixed(1),
+    taskCompletionRate: taskDateIssues.length ? null : taskCompletionRate?.toFixed(1) ?? null,
     taskEfficiency: taskEfficiency == null ? null : taskEfficiency.toFixed(1),
     taskScore: taskScore == null ? null : taskScore.toFixed(1),
     estimatedTaskDays,
@@ -259,7 +277,52 @@ export const computeEmployeePerformance = (employee, timeEntries = [], tasks = [
     avgGoalProgress: avgGoalProgress.toFixed(1),
     overallScore,
     weights,
+    tasksIncluded,
+    taskDateIssues,
   };
+};
+
+export const reportScoreBasis = (t) => t('reports.scoreBasis', 'Base weights are 50% time worked, 45% task delivery and 5% goals. Weights are shared proportionally across applicable components. Time uses regular, work-from-home and overtime hours against 176 hours per full month, prorated for partial months. Task delivery averages completion rate and duration efficiency when durations are available.');
+
+export const reportTaskDateNotes = (issues, t) => {
+  const notes = [];
+  const missing = issues.filter(({ issue }) => issue === 'missing').length;
+  const invalid = issues.length - missing;
+  if (missing) notes.push(t('reports.workSummary.missingCompletion', '{count} completed tasks have no recorded completion date.').replace('{count}', String(missing)));
+  if (invalid) notes.push(t('reports.invalidCompletionDates', '{count} completed tasks have future or invalid completion dates.').replace('{count}', String(invalid)));
+  if (issues.length) notes.push(t('reports.scorePendingTaskDates', 'Task delivery and overall scores are unavailable until the completion dates are verified.'));
+  return notes;
+};
+
+export const reportScorePresentation = (performance, t) => {
+  const weighted = (label, key, score) => [`${label} (${performance.weights[key].toFixed(1)}%)`, `${score}%`];
+  const components = [];
+  const details = [];
+  const notes = [];
+  if (performance.timeScore != null) {
+    components.push(weighted(t('reports.timeWorkedScore', 'Time worked score'), 'time', performance.timeScore));
+    details.push([t('reports.expectedHours', 'Expected regular hours'), formatHours(performance.expectedHours)]);
+  }
+  if (performance.taskScore != null) {
+    components.push(weighted(t('reports.taskDeliveryScore', 'Task delivery score'), 'tasks', performance.taskScore));
+    details.push([t('reports.completedAssigned', 'Completed / eligible tasks'), `${performance.completedTasks}/${performance.tasksCount}`]);
+    if (performance.measuredTaskCount) {
+      details.push([t('reports.taskDurationTotals', 'Planned / actual task days'), `${performance.estimatedTaskDays}/${performance.actualTaskDays}`]);
+      details.push([t('reports.taskEfficiency', 'Task duration efficiency'), `${performance.taskEfficiency}%`]);
+    }
+  } else if (performance.taskDateIssues.length) {
+    notes.push(...reportTaskDateNotes(performance.taskDateIssues, t));
+  } else if (performance.tasksIncluded) {
+    notes.push(t('reports.noScoredTasks', 'Task delivery is not applicable. There are no eligible tasks in this period.'));
+  }
+  if (performance.weights.goals > 0) {
+    components.push(weighted(t('reports.excel.performance.avgGoalProgress', 'Average Goal Progress'), 'goals', performance.avgGoalProgress));
+  }
+  const overall = performance.overallScore == null ? null : [
+    t('reports.excel.performance.overallScore', 'Overall Performance Score:').replace(/:\s*$/, ''),
+    `${performance.overallScore}%`,
+  ];
+  return { overall, components: performance.taskDateIssues.length ? [] : components, details: performance.taskDateIssues.length ? [] : details, notes };
 };
 
 export const escapeCsvCell = (value) => {

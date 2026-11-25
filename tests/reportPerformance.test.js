@@ -69,7 +69,7 @@ test('task delivery uses completed/assigned counts and never guesses progress fr
   assert.equal(performance.measuredTaskCount, 1);
 });
 
-test('missing or inconsistent dates are excluded from duration scoring', () => {
+test('missing or inconsistent completion dates withhold task and overall scores', () => {
   const performance = computeEmployeePerformance(employee, [], [
     task({ start_date: null }),
     task({ due_date: '2026-08-01' }),
@@ -79,8 +79,10 @@ test('missing or inconsistent dates are excluded from duration scoring', () => {
   ], [], period);
   assert.equal(performance.taskEfficiency, null);
   assert.equal(performance.measuredTaskCount, 0);
-  assert.equal(performance.taskScore, '80.0');
-  assert.equal(performance.overallScore, '37.9', 'zero recorded hours must not transfer the time weight to tasks');
+  assert.equal(performance.taskCompletionRate, null);
+  assert.equal(performance.taskDateIssues.length, 2);
+  assert.equal(performance.taskScore, null);
+  assert.equal(performance.overallScore, null);
 });
 
 test('empty scope has no score; records belonging to another employee do not affect it', () => {
@@ -99,10 +101,37 @@ test('approved leave and rejected hours retain the shared attendance exclusions'
   assert.equal(performance.totalHours, 2);
 });
 
-test('goals alone cannot replace the time and task weights', () => {
+test('goals alone keep an applicable time target and redistribute the absent task weight', () => {
   const performance = computeEmployeePerformance(employee, [], [], [{ employee_id: 'a', status: 'completed' }], period);
-  assert.equal(performance.overallScore, '5.0');
+  assert.equal(performance.overallScore, '9.1');
   assert.equal(performance.timeScore, '0.0');
-  assert.equal(performance.taskScore, '0.0');
-  assert.deepEqual(performance.weights, { time: 50, tasks: 45, goals: 5 });
+  assert.equal(performance.taskScore, null);
+  assert.equal(performance.weights.tasks, 0);
+  assert.equal(performance.weights.time.toFixed(1), '90.9');
+  assert.equal(performance.weights.goals.toFixed(1), '9.1');
+});
+
+test('verified empty tasks release their weight while assigned but unfinished tasks retain it', () => {
+  const unassigned = computeEmployeePerformance(employee, [time(176)], [], [], period);
+  assert.equal(unassigned.taskCompletionRate, null);
+  assert.equal(unassigned.taskScore, null);
+  assert.equal(unassigned.overallScore, '100.0');
+  assert.deepEqual(unassigned.weights, { time: 100, tasks: 0, goals: 0 });
+
+  const unfinished = computeEmployeePerformance(employee, [time(176)], [task({ status: 'pending' })], [], period);
+  assert.equal(unfinished.taskCompletionRate, '0.0');
+  assert.equal(unfinished.taskScore, '0.0');
+  assert.equal(unfinished.weights.tasks.toFixed(1), '47.4');
+  assert.equal(unfinished.overallScore, '52.6');
+});
+
+test('an explicitly unchecked score component never consumes weight or contributes hours', () => {
+  const performance = computeEmployeePerformance(employee, [time(176)], [task()], [{ employee_id: 'a', status: 'completed' }], {
+    ...period, scoreScope: { timeEntries: false, tasks: true, goals: false }, overtimeLogs: [time(2)],
+  });
+  assert.equal(performance.totalHours, 0);
+  assert.equal(performance.timeScore, null);
+  assert.equal(performance.goalsCount, 0);
+  assert.equal(performance.overallScore, '75.0');
+  assert.deepEqual(performance.weights, { time: 0, tasks: 100, goals: 0 });
 });

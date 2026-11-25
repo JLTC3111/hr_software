@@ -7,6 +7,7 @@ import { useLanguage, SUPPORTED_LANGUAGES } from "../contexts/LanguageContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
+import { useWorkloadTaskRefresh } from '../hooks/useWorkloadTaskRefresh.js';
 import { isDemoMode, getDemoEmployeeName, getDemoTaskTitle, getDemoTaskDescription, getDemoGoalTitle, getDemoGoalDescription, getDemoTimeEntries } from '../utils/demoHelper';
 import {
   Download,
@@ -45,6 +46,9 @@ import {
   loadPdfProfileImage,
   meterFilledBlocks,
   PDF_TOKENS,
+  reportScoreBasis,
+  reportScorePresentation,
+  reportTaskDateNotes,
   withBarPercents
 } from '../utils/reportExportHelpers.js';
 import { localDateKey, summarizeAttendance } from '../utils/attendanceRules.js';
@@ -55,6 +59,7 @@ import { SlidingNumber } from './motion-primitives';
 import { NumberTicker } from './ui/number-ticker';
 import { DatePicker } from './ui/date-picker.jsx';
 import { formatDate } from '../utils/localeFormat.js';
+import { formatWorkloadDay, selectReportTasks, taskReportDay, vietnamCalendarDay } from '../utils/workloadDates.js';
 import { cn } from '@/lib/utils';
 import { getIndustry, DISPLAY, BODY, figure, rampAt } from '../theme/industry.js';
 import { Bar, Tag, Btn, Seg, Kicker, ColumnHeading, TickerCell, LiveClock, FlatListbox } from './ui/industry.jsx';
@@ -105,6 +110,17 @@ const withinRange = (item, startDate, endDate) => {
 };
 
 const formatPercent = (value) => value == null ? '—' : `${value}%`;
+
+const requireReportRows = (result, fallback) => {
+  if (!result?.success || !Array.isArray(result.data)) throw new Error(result?.error || fallback);
+  return result.data;
+};
+
+const meanReportScore = (performances) => {
+  if (performances.some(({ taskDateIssues }) => taskDateIssues.length)) return null;
+  const scores = performances.flatMap(({ overallScore }) => overallScore == null ? [] : [Number(overallScore)]);
+  return scores.length ? (scores.reduce((sum, score) => sum + score, 0) / scores.length).toFixed(1) : null;
+};
 
 /** ISO-8601 week number, so the volume strip agrees with payroll's week labels. */
 const isoWeekNumber = (date) => {
@@ -403,22 +419,16 @@ const Reports = () => {
     alert(message);
   };
 
-  const scoreBasis = t('reports.scoreBasis', 'Time worked 50%, task delivery 45%, goals 5%; goals without records are excluded and their weight is redistributed. Time = regular/WFH plus overtime hours against 176 hours per full month (partial months prorated), capped at 100%. Tasks = equal shares of completion rate and planned/actual days for completed tasks; missing or invalid durations are excluded. Difficulty is not yet recorded.');
+  const scoreBasis = reportScoreBasis(t);
   const translationNote = t('reports.translationNote', 'Available translations are included. Text still being translated is kept as originally entered.');
-  const taskPeriodBasis = t('reports.taskPeriodBasis', 'Completed tasks use the completion date; other tasks use the due date, or start/created date when undated.');
+  const taskPeriodBasis = t('reports.taskPeriodBasis', 'Reporting uses Vietnam calendar days. Completed tasks use the recorded completion date. Other tasks use the deadline, start or creation day in that order. Cancelled tasks are excluded from completion scoring.');
   const scoreRows = (performance) => {
-    const weightedLabel = (label, key) => `${label} (${performance.weights[key].toFixed(1)}%)`;
-    return [
-      [t('reports.expectedHours', 'Expected regular hours'), performance.expectedHours == null ? '—' : formatHours(performance.expectedHours)],
-      [t('reports.excel.metrics.regularHours', 'Regular Hours'), formatHours(performance.regularHours)],
-      [t('reports.excel.metrics.overtimeHours', 'Overtime Hours'), formatHours(performance.overtimeHours)],
-      [weightedLabel(t('reports.timeWorkedScore', 'Time worked score'), 'time'), formatPercent(performance.timeScore)],
-      [t('reports.completedAssigned', 'Tasks completed / assigned'), `${performance.completedTasks}/${performance.tasksCount}`],
-      [t('reports.taskDurationTotals', 'Planned / actual task days'), performance.measuredTaskCount ? `${performance.estimatedTaskDays}/${performance.actualTaskDays}` : '—'],
-      [t('reports.taskEfficiency', 'Task duration efficiency'), formatPercent(performance.taskEfficiency)],
-      [weightedLabel(t('reports.taskDeliveryScore', 'Task delivery score'), 'tasks'), formatPercent(performance.taskScore)],
-      [weightedLabel(t('reports.excel.performance.avgGoalProgress', 'Average Goal Progress'), 'goals'), formatPercent(performance.goalsCount ? performance.avgGoalProgress : null)],
-    ];
+    const { components, details, notes } = reportScorePresentation(performance, t);
+    return [...components, ...details, ...notes.map((note) => [t('reports.scoreCalculation', 'Score calculation'), note])];
+  };
+  const scoreComponentsText = (performance, separator = ' · ') => {
+    const { components, notes } = reportScorePresentation(performance, t);
+    return [...components.map(([label, value]) => `${label}${separator}${value}`), ...notes].join('\n');
   };
   const taskProgress = (task) => task.status === 'completed'
     ? '100%'
@@ -433,13 +443,12 @@ const Reports = () => {
   // 03 · Period
   const [dateRange, setDateRange] = useState('this-month');
   const [customReportPeriod, setCustomReportPeriod] = useState('month');
-  const [filters, setFilters] = useState({
-    startDate: localDateKey(new Date(new Date().getFullYear(), new Date().getMonth(), 1)),
-    endDate: localDateKey(new Date())
+  const [filters, setFilters] = useState(() => {
+    const today = vietnamCalendarDay();
+    return { startDate: `${today.slice(0, 7)}-01`, endDate: today };
   });
 
-  const periodEnd = new Date(`${filters.endDate}T00:00:00`);
-  const taskAsOf = periodEnd < new Date() ? periodEnd : new Date();
+  const taskAsOf = filters.endDate < vietnamCalendarDay() ? filters.endDate : vietnamCalendarDay();
 
   // Preview ledger
   const [sortKey, setSortKey] = useState('date');
@@ -466,32 +475,18 @@ const Reports = () => {
     timeEntries: [],
     overtimeLogs: [],
     tasks: [],
+    taskDateIssues: [],
     goals: [],
     leave: [],
     employees: [],
     selectionKey: null,
   });
+  const reportReady = !loading && !fetchError && reportData.selectionKey === reportSelectionKey;
 
   // Warm PDF font cache for CJK/Thai exports so the first PDF download is reliable.
   useEffect(() => {
     prefetchPdfFonts(currentLanguage);
   }, [currentLanguage]);
-
-  // Get employees list
-  useEffect(() => {
-    const fetchEmployees = async () => {
-      try {
-        const employeesResponse = await timeTrackingService.getAllEmployees();
-        const employees = employeesResponse.success ? employeesResponse.data : [];
-        console.log('Loaded employees:', employees.map(e => ({ id: e.id, type: typeof e.id, name: e.name })));
-        setReportData(prev => ({ ...prev, employees }));
-      } catch (error) {
-        console.error('Error fetching employees:', error);
-        handleSessionAuthError(error);
-      }
-    };
-    fetchEmployees();
-  }, []);
 
   const activeEmployees = useMemo(
     () => filterActiveEmployees(reportData.employees),
@@ -508,33 +503,29 @@ const Reports = () => {
    * 02 · People resolved into the one list every figure on the sheet is scoped
    * to. A named person wins over a unit, a unit over the whole roster.
    */
-  const cohort = useMemo(() => {
+  const selectCohort = useCallback((employees) => {
     if (selectedEmployee !== 'all') {
-      return reportData.employees.filter((emp) => String(emp.id) === String(selectedEmployee));
+      return employees.filter((emp) => String(emp.id) === String(selectedEmployee));
     }
-    let list = activeOnly ? activeEmployees : reportData.employees;
+    let list = activeOnly ? filterActiveEmployees(employees) : employees;
     if (selectedUnit !== 'all') {
       list = list.filter((emp) => (emp.department || '') === selectedUnit);
     }
     return list;
-  }, [selectedEmployee, selectedUnit, activeOnly, activeEmployees, reportData.employees]);
+  }, [selectedEmployee, selectedUnit, activeOnly]);
+  const cohort = useMemo(() => selectCohort(reportData.employees), [selectCohort, reportData.employees]);
 
   const cohortIds = useMemo(() => new Set(cohort.map((emp) => String(emp.id))), [cohort]);
 
-  /**
-   * Rows belong to the cohort by employee id. Until the roster has loaded there
-   * is nothing to match against, so everything passes rather than nothing.
-   */
   const inCohort = useCallback((item) => {
-    if (reportData.employees.length === 0) return true;
     const id = item?.employee_id ?? item?.employee?.id;
     if (id == null) return false;
     return cohortIds.has(String(id));
-  }, [cohortIds, reportData.employees.length]);
+  }, [cohortIds]);
 
   // Update date filters when range changes
   useEffect(() => {
-    const today = new Date();
+    const today = new Date(`${vietnamCalendarDay()}T12:00:00`);
     let startDate, endDate = localDateKey(today);
 
     switch (dateRange) {
@@ -580,257 +571,103 @@ const Reports = () => {
     }
   }, [dateRange]);
 
-  // Fetch data when filters change
-  const fetchReportData = useCallback(async (options = {}) => {
-    const { silent = false } = options;
-    const requestId = ++reportRequestRef.current;
-    const selectionKey = `${selectedEmployee}:${filters.startDate}:${filters.endDate}`;
-    if (!silent) {
-      setLoading(true);
-      setFetchError(null); // Clear any previous errors
-    }
-    try {
-      if (!validReportRange(filters.startDate, filters.endDate)) {
-        throw new Error(t('reports.workSummary.invalidDates', 'Choose a valid start and end date, with the start date on or before the end date.'));
-      }
-      // Skip session validation in demo mode - demo data doesn't require authentication
-      if (!isDemoMode()) {
-        // Validate session before fetching
-        const sessionValidation = await validateAndRefreshSession();
-        if (!sessionValidation.success) {
-          throw new Error(sessionValidation.error);
-        }
-      }
-      
-      // Wrap fetch logic with retry mechanism
-      await retryWithBackoff(async () => {
-        const { startDate, endDate } = filters;
-        // Don't parse as int - IDs might be UUIDs
-        const employeeId = selectedEmployee === 'all' ? null : selectedEmployee;
-
-      const fetchTimeEntries = async () => {
-        let allTimeEntries = [];
-        let error = null;
-
-        if (isDemoMode()) {
-          const demoEntries = getDemoTimeEntries();
-          allTimeEntries = demoEntries
-            .filter(entry => entry.date && entry.date >= startDate && entry.date <= endDate)
-            .sort((a, b) => new Date(b.date) - new Date(a.date));
-        } else {
-          const result = await withTimeout(
-            fetchAllRows(supabase
-              .from('time_entries')
-              .select(`
-                *,
-                employee:employees!time_entries_employee_id_fkey(id, name, department, position)
-              `, { count: 'exact' })
-              .gte('date', startDate)
-              .lte('date', endDate)
-              .order('date', { ascending: false })),
-            DEFAULT_REQUEST_TIMEOUT
-          );
-          allTimeEntries = result.data;
-          error = result.error;
-        }
-
-        if (error) {
-          throw error;
-        }
-
-        let filteredEntries = allTimeEntries || [];
-        if (employeeId) {
-          filteredEntries = filteredEntries.filter(entry =>
-            String(entry.employee_id) === String(employeeId)
-          );
-        }
-        return filteredEntries;
-      };
-
-      const fetchTasks = async () => {
-        const tasksResponse = await getAllTasks(employeeId ? { employeeId } : {});
-        if (!tasksResponse.success) throw new Error(tasksResponse.error || 'Unable to load report tasks');
-        let tasks = tasksResponse.success ? tasksResponse.data : [];
-        if (employeeId) {
-          tasks = tasks.filter(task => String(task.employee_id) === String(employeeId));
-        }
-        return tasks.filter(task => withinRange(task, startDate, endDate));
-      };
-
-      const fetchGoals = async () => {
-        const goalsResponse = await performanceService.getAllPerformanceGoals(
-          employeeId ? { employeeId } : {}
-        );
-        if (!goalsResponse.success) throw new Error(goalsResponse.error || 'Unable to load report goals');
-        let goals = goalsResponse.success ? goalsResponse.data : [];
-        if (employeeId) {
-          goals = goals.filter(goal => String(goal.employee_id) === String(employeeId));
-        }
-        return goals.filter(goal => withinRange(goal, startDate, endDate));
-      };
-
-      const fetchLeave = async () => {
-        const leaveResponse = await timeTrackingService.getAllLeaveRequests({ startDate, endDate, ...(employeeId ? { employeeId } : {}) });
-        if (!leaveResponse.success) throw new Error(leaveResponse.error);
-        let leaveData = leaveResponse.success ? leaveResponse.data : [];
-        if (employeeId) {
-          leaveData = leaveData.filter(req => String(req.employee_id) === String(employeeId));
-        }
-        leaveData = leaveData.filter(req => {
-          const s = (req.start_date || '').slice(0, 10);
-          const e = (req.end_date || req.start_date || '').slice(0, 10);
-          return s <= endDate && e >= startDate;
-        });
-        return leaveData;
-      };
-
-      // All four types are always loaded: scope is a set of tick boxes now, and
-      // ticking one must not cost a round trip.
-      const [timeEntries, tasks, goals, leaveData, overtimeResult] = await Promise.all([
-        fetchTimeEntries(),
-        fetchTasks(),
-        fetchGoals(),
-        fetchLeave(),
-        timeTrackingService.getOvertimeLogs(employeeId, { startDate, endDate }),
-      ]);
-      if (!overtimeResult.success) throw new Error(overtimeResult.error);
-      if (requestId !== reportRequestRef.current || reportSelectionRef.current !== selectionKey) return;
-      setFetchError(null);
-
-      setReportData(prev => ({
-        ...prev,
-        timeEntries,
-        overtimeLogs: overtimeResult.data || [],
-        tasks,
-        goals,
-        selectionKey,
-        // Leave arrives without its employee joined; the roster already loaded
-        // is the only place to resolve the name and unit from.
-        leave: leaveData.map(req => ({
-          ...req,
-          employee: req.employee || prev.employees.find(emp => String(emp.id) === String(req.employee_id)) || null
-        }))
-      }));
-      }, {
-        maxRetries: 2,
-        shouldRetry: isRetryableError,
-        onRetry: (error, attempt, delay) => {
-          console.log(`🔄 Reports: Retrying fetch (${attempt}/2) after ${delay}ms...`);
-        }
-      });
-    } catch (error) {
-      if (requestId !== reportRequestRef.current || reportSelectionRef.current !== selectionKey) return;
-      setReportData(prev => ({ ...prev, timeEntries: [], overtimeLogs: [], tasks: [], goals: [], leave: [], selectionKey }));
-      console.error('Error fetching report data:', error);
-
-      if (handleSessionAuthError(error, { silent, setFetchError })) {
-        if (!silent) setLoading(false);
-        return;
-      }
-      
-      // Set user-visible error message for other errors
-      setFetchError(validReportRange(filters.startDate, filters.endDate)
-        ? t('errors.loadFailed', 'Failed to load data')
-        : t('reports.workSummary.invalidDates', 'Choose a valid start and end date, with the start date on or before the end date.'));
-    } finally {
-      if (requestId === reportRequestRef.current) setLoading(false);
-    }
-  }, [filters, selectedEmployee, handleSessionAuthError, t]);
-
-  const loadAllReportDataForExport = useCallback(async () => {
+  const readReportData = useCallback(async () => {
     const { startDate, endDate } = filters;
     const employeeId = selectedEmployee === 'all' ? null : selectedEmployee;
+    const employeeFilter = employeeId ? { employeeId } : {};
     if (!validReportRange(startDate, endDate)) {
       throw new Error(t('reports.workSummary.invalidDates', 'Choose a valid start and end date, with the start date on or before the end date.'));
     }
-
     if (!isDemoMode()) {
-      const sessionValidation = await validateAndRefreshSession();
-      if (!sessionValidation.success) {
-        throw new Error(sessionValidation.error);
-      }
+      const session = await validateAndRefreshSession();
+      if (!session.success) throw new Error(session.error);
     }
 
+    const belongs = (row) => !employeeId || String(row.employee_id) === String(employeeId);
     const fetchTimeEntries = async () => {
       if (isDemoMode()) {
         return getDemoTimeEntries()
-          .filter((entry) => entry.date && entry.date >= startDate && entry.date <= endDate
-            && (!employeeId || String(entry.employee_id) === String(employeeId)))
+          .filter((entry) => entry.date && entry.date >= startDate && entry.date <= endDate && belongs(entry))
           .sort((a, b) => new Date(b.date) - new Date(a.date));
       }
-
       let query = supabase
         .from('time_entries')
-        .select(`
-          *,
-          employee:employees!time_entries_employee_id_fkey(id, name, department, position)
-        `, { count: 'exact' })
+        .select('*, employee:employees!time_entries_employee_id_fkey(id, name, department, position)', { count: 'exact' })
         .gte('date', startDate)
         .lte('date', endDate)
         .order('date', { ascending: false });
       if (employeeId) query = query.eq('employee_id', employeeId);
       const { data, error } = await withTimeout(fetchAllRows(query), DEFAULT_REQUEST_TIMEOUT);
       if (error) throw error;
-      return data || [];
+      return data;
     };
 
-    // These sources are independent. Keep a fresh, complete export snapshot,
-    // but pay for the slowest source instead of adding every round trip.
-    const [allTimeEntries, overtimeResult, tasksResponse, goalsResponse, leaveResponse] = await Promise.all([
+    const [timeEntries, overtimeResult, tasksResult, goalsResult, leaveResult, employeesResult] = await Promise.all([
       fetchTimeEntries(),
       timeTrackingService.getOvertimeLogs(employeeId, { startDate, endDate }),
-      getAllTasks(employeeId ? { employeeId } : {}),
-      performanceService.getAllPerformanceGoals(employeeId ? { employeeId } : {}),
-      timeTrackingService.getAllLeaveRequests({ startDate, endDate, ...(employeeId ? { employeeId } : {}) }),
+      withTimeout(getAllTasks(employeeFilter), DEFAULT_REQUEST_TIMEOUT),
+      performanceService.getAllPerformanceGoals(employeeFilter),
+      timeTrackingService.getAllLeaveRequests({ startDate, endDate, ...employeeFilter }),
+      timeTrackingService.getAllEmployees(),
     ]);
-    if (!overtimeResult.success) throw new Error(overtimeResult.error);
-    if (!tasksResponse.success) throw new Error(tasksResponse.error || 'Unable to load report tasks');
-    if (!goalsResponse.success) throw new Error(goalsResponse.error || 'Unable to load report goals');
+    const taskToday = vietnamCalendarDay();
+    const taskSelection = selectReportTasks(requireReportRows(tasksResult, 'Unable to load report tasks').filter(belongs), {
+      startDate, endDate, today: taskToday,
+    });
+    const goals = requireReportRows(goalsResult, 'Unable to load report goals')
+      .filter((goal) => belongs(goal) && withinRange(goal, startDate, endDate));
+    const employees = requireReportRows(employeesResult, 'Unable to load report employees');
+    const employeeById = new Map(employees.map((employee) => [String(employee.id), employee]));
+    const leave = requireReportRows(leaveResult, 'Unable to load report leave').filter((request) => {
+      const start = (request.start_date || '').slice(0, 10);
+      const end = (request.end_date || request.start_date || '').slice(0, 10);
+      return belongs(request) && start <= endDate && end >= startDate;
+    }).map((request) => ({
+      ...request,
+      employee: request.employee || employeeById.get(String(request.employee_id)) || null,
+    }));
+    const overtimeLogs = requireReportRows(overtimeResult, 'Unable to load report overtime').filter(belongs);
+    return { timeEntries, overtimeLogs, ...taskSelection, taskToday, goals, leave, employees };
+  }, [filters, selectedEmployee, t]);
 
-    let tasks = tasksResponse.success ? tasksResponse.data || [] : [];
-    if (employeeId) {
-      tasks = tasks.filter((task) => String(task.employee_id) === String(employeeId));
+  const fetchReportData = useCallback(async ({ silent = false } = {}) => {
+    const requestId = ++reportRequestRef.current;
+    const isCurrent = () => requestId === reportRequestRef.current && reportSelectionRef.current === reportSelectionKey;
+    if (!silent) setLoading(true);
+    try {
+      const snapshot = await retryWithBackoff(readReportData, { maxRetries: 2, shouldRetry: isRetryableError });
+      if (!isCurrent()) return;
+      setReportData({ ...snapshot, selectionKey: reportSelectionKey });
+      setFetchError(null);
+    } catch (error) {
+      if (!isCurrent()) return;
+      setReportData((previous) => ({ ...previous, selectionKey: null }));
+      if (handleSessionAuthError(error, { silent, setFetchError })) return;
+      console.error('Error fetching report data:', error);
+      setFetchError(validReportRange(filters.startDate, filters.endDate)
+        ? t('errors.loadFailed', 'Failed to load data')
+        : t('reports.workSummary.invalidDates', 'Choose a valid start and end date, with the start date on or before the end date.'));
+    } finally {
+      if (isCurrent()) setLoading(false);
     }
-    tasks = tasks.filter((task) => withinRange(task, startDate, endDate));
+  }, [readReportData, reportSelectionKey, filters, handleSessionAuthError, t]);
 
-    let goals = goalsResponse.success ? goalsResponse.data || [] : [];
-    if (employeeId) {
-      goals = goals.filter((goal) => String(goal.employee_id) === String(employeeId));
-    }
-    goals = goals.filter((goal) => withinRange(goal, startDate, endDate));
-
-    if (!leaveResponse.success) throw new Error(leaveResponse.error);
-    let leave = leaveResponse.success ? leaveResponse.data || [] : [];
-    if (employeeId) {
-      leave = leave.filter((req) => String(req.employee_id) === String(employeeId));
-    }
-    leave = leave
-      .filter((req) => {
-        const s = (req.start_date || '').slice(0, 10);
-        const e = (req.end_date || req.start_date || '').slice(0, 10);
-        return s <= endDate && e >= startDate;
-      })
-      .map((req) => ({
-        ...req,
-        employee: req.employee || reportData.employees.find((emp) => String(emp.id) === String(req.employee_id)) || null,
-      }));
-
-    // The screen keeps the unscoped fetch so the figures stay live; the export
-    // gets the cohort-narrowed copy so the file matches what 02 · People says.
-    const selectionKey = `${selectedEmployee}:${startDate}:${endDate}`;
-    if (reportSelectionRef.current === selectionKey) {
-      setReportData((prev) => ({ ...prev, timeEntries: allTimeEntries, overtimeLogs: overtimeResult.data || [], tasks, goals, leave, selectionKey }));
-    }
-
+  const loadAllReportDataForExport = useCallback(async () => {
+    const snapshot = await readReportData();
+    const employees = selectCohort(snapshot.employees);
+    const ids = new Set(employees.map((employee) => String(employee.id)));
+    const included = (row) => ids.has(String(row.employee_id ?? row.employee?.id));
     return {
-      timeEntries: allTimeEntries.filter(inCohort),
-      overtimeLogs: (overtimeResult.data || []).filter(inCohort),
-      tasks: tasks.filter(inCohort),
-      goals: goals.filter(inCohort),
-      leave: leave.filter(inCohort),
-      employees: cohort,
+      timeEntries: snapshot.timeEntries.filter(included),
+      overtimeLogs: snapshot.overtimeLogs.filter(included),
+      tasks: snapshot.tasks.filter(included),
+      taskDateIssues: snapshot.taskDateIssues.filter(({ task }) => included(task)),
+      taskToday: snapshot.taskToday,
+      goals: snapshot.goals.filter(included),
+      leave: snapshot.leave.filter(included),
+      employees,
     };
-  }, [filters, selectedEmployee, reportData.employees, inCohort, cohort, t]);
+  }, [readReportData, selectCohort]);
 
   const getFilteredExportData = useCallback(async () => {
     const snapshot = await loadAllReportDataForExport();
@@ -850,6 +687,8 @@ const Reports = () => {
 
   // Use visibility refresh hook to reload data when page becomes visible after idle
   useAuthenticatedPageRefresh(memoizedFetchReportData);
+  useWorkloadTaskRefresh(selectedEmployee === 'all' ? reportData.employees.map(({ id }) => id) : [selectedEmployee],
+    memoizedFetchReportData, { enabled: Boolean(user) && !isDemoMode() });
 
   // Handle sort column click
   const handleSort = (key) => {
@@ -875,8 +714,10 @@ const Reports = () => {
     overtimeLogs: (reportData.overtimeLogs || []).filter(inCohort),
     leave: (reportData.leave || []).filter(inCohort),
     tasks: (reportData.tasks || []).filter(inCohort),
+    taskDateIssues: (reportData.taskDateIssues || []).filter(({ task }) => inCohort(task)),
+    taskToday: reportData.taskToday,
     goals: (reportData.goals || []).filter(inCohort),
-  }), [reportData.timeEntries, reportData.overtimeLogs, reportData.leave, reportData.tasks, reportData.goals, inCohort]);
+  }), [reportData, inCohort]);
 
   /** The export scope proper: the cohort narrowed to the ticked record types. */
   const scopedData = useMemo(() => ({
@@ -884,6 +725,8 @@ const Reports = () => {
     overtimeLogs: scope.timeEntries ? cohortData.overtimeLogs : [],
     leave: scope.leave ? cohortData.leave : [],
     tasks: scope.tasks ? cohortData.tasks : [],
+    taskDateIssues: scope.tasks ? cohortData.taskDateIssues : [],
+    taskToday: cohortData.taskToday,
     goals: scope.goals ? cohortData.goals : [],
   }), [cohortData, scope]);
 
@@ -901,9 +744,17 @@ const Reports = () => {
   }), [filters, t, scope, translateNotes]);
 
   const workSummaryData = useMemo(() => ({ ...scopedData, leaveForAttendance: cohortData.leave }), [scopedData, cohortData.leave]);
-  const workSummary = useMemo(() => selectedEmployee !== 'all' && cohort.length === 1
+  const workSummary = useMemo(() => reportReady && selectedEmployee !== 'all' && cohort.length === 1
     ? makeWorkSummary(cohort[0], workSummaryData) : null,
-  [selectedEmployee, cohort, workSummaryData, makeWorkSummary]);
+  [reportReady, selectedEmployee, cohort, workSummaryData, makeWorkSummary]);
+
+  const cohortPerformance = useMemo(() => reportReady && selectedEmployee === 'all' && (scope.timeEntries || scope.tasks || scope.goals)
+    ? cohort.map((employee) => ({ employee, performance: computeEmployeePerformance(employee, scopedData.timeEntries, scopedData.tasks, scopedData.goals, {
+      ...filters, overtimeLogs: scopedData.overtimeLogs, leaveRequests: cohortData.leave, scoreScope: scope,
+      taskDateIssues: scopedData.taskDateIssues, taskToday: scopedData.taskToday,
+    }) })) : [], [reportReady, selectedEmployee, cohort, scopedData, cohortData.leave, filters, scope]);
+  const cohortScore = meanReportScore(cohortPerformance.map(({ performance }) => performance));
+  const taskDateNotes = reportTaskDateNotes(scopedData.taskDateIssues, t);
 
   const exportWorkSummaries = (snapshot, ugcMap) => snapshot.employees
     .map(employee => makeWorkSummary(employee, snapshot, ugcMap))
@@ -984,7 +835,7 @@ const Reports = () => {
         ...common(task),
         key: `task-${task.id ?? index}`,
         kind: 'task',
-        date: recordDate(task),
+        date: taskReportDay(task, scopedData.taskToday),
         note: isDemoMode() ? getDemoTaskTitle(task, t) : (task.title || ''),
         noteIsUgc: !isDemoMode(),
         typeLabel: translatePriority(task.priority) || t('dataType.task', 'Task'),
@@ -1502,10 +1353,16 @@ const Reports = () => {
       // `employees` is already the 02 · People cohort — unit, active-only and
       // single-person selection are resolved before the snapshot gets here.
       const { timeEntries, tasks, goals, leave, employees } = exportData;
-      const attendance = { leaveRequests: exportData.leaveForAttendance, overtimeLogs: exportData.overtimeLogs, ...filters, scoreScope: scope };
+      const attendance = {
+        ...filters, scoreScope: scope,
+        leaveRequests: exportData.leaveForAttendance, overtimeLogs: exportData.overtimeLogs,
+        taskDateIssues: exportData.taskDateIssues, taskToday: exportData.taskToday,
+      };
       const exportStats = computeExportStats(timeEntries, tasks, goals, leave, attendance);
+      const performances = employees.map((employee) => computeEmployeePerformance(employee, timeEntries, tasks, goals, attendance));
+      const overallScore = selectedEmployee === 'all' ? meanReportScore(performances) : null;
 
-      if (exportStats.totalRecords === 0) {
+      if (exportStats.totalRecords === 0 && !attendance.taskDateIssues.length) {
         alert(t('reports.noData', 'No data available for the selected period'));
         return;
       }
@@ -1523,7 +1380,9 @@ const Reports = () => {
         `"${t('reports.period', 'Period')}: ${filters.startDate} ${t('reports.to', 'to')} ${filters.endDate}"`,
         `"${t('employees.name', 'Name')}:- ${describeExportSubject(employees)}"`,
         `"${translationNote}"`,
-        `"${taskPeriodBasis}"`
+        `"${taskPeriodBasis}"`,
+        `"${scoreBasis}"`,
+        ...reportTaskDateNotes(attendance.taskDateIssues, t).map((note) => `"${note}"`)
       ];
 
       const sections = [{
@@ -1538,7 +1397,9 @@ const Reports = () => {
           [t('reports.totalHours', 'Total Hours'), `${exportStats.totalHours}h`],
           [t('reports.approved', 'Approved'), exportStats.approvedTime],
           [t('reports.completedTasks', 'Completed Tasks'), exportStats.completedTasks],
-          [t('reports.achievedGoals', 'Achieved Goals'), exportStats.achievedGoals]
+          [t('reports.achievedGoals', 'Achieved Goals'), exportStats.achievedGoals],
+          ...(overallScore != null
+            ? [[t('reports.excel.performance.overallScore', 'Overall Performance Score:'), formatPercent(overallScore)]] : []),
         ]
       }];
 
@@ -1565,7 +1426,7 @@ const Reports = () => {
       if (selectedEmployee !== 'all') {
         const employee = employees.find((emp) => String(emp.id) === String(selectedEmployee));
         if (employee) {
-          const performance = computeEmployeePerformance(employee, timeEntries, tasks, goals, attendance);
+          const performance = performances[employees.indexOf(employee)];
           sections.push({
             title: t('reports.excel.performance.header', 'EMPLOYEE PERFORMANCE').toUpperCase(),
             headers: [
@@ -1575,9 +1436,9 @@ const Reports = () => {
             rows: [
               [t('reports.excel.performance.name', 'Name'), getDemoEmployeeName(employee, t)],
               [t('reports.excel.metrics.totalHours', 'Total Hours Logged'), performance.totalHours.toFixed(1)],
-              [t('reports.excel.metrics.totalTasks', 'Total Tasks'), performance.tasksCount],
+              [t('reports.excel.metrics.totalTasks', 'Total Tasks'), performance.recordedTasksCount],
               [t('reports.excel.performance.approvalRate', 'Approval Rate'), formatPercent(performance.timeApprovalRate)],
-              [t('reports.excel.performance.taskCompletionRate', 'Task Completion Rate'), formatPercent(performance.tasksCount ? performance.taskCompletionRate : null)],
+              [t('reports.excel.performance.taskCompletionRate', 'Task Completion Rate'), formatPercent(performance.taskCompletionRate)],
               [t('reports.excel.metrics.totalGoals', 'Total Goals'), performance.goalsCount],
               ...scoreRows(performance),
               [t('reports.excel.performance.overallScore', 'Overall Performance Score:'), formatPercent(performance.overallScore)],
@@ -1595,18 +1456,20 @@ const Reports = () => {
             t('reports.excel.metrics.totalTasks', 'Total Tasks'),
             t('reports.excel.metrics.completedTasks', 'Completed Tasks'),
             t('reports.excel.metrics.totalGoals', 'Total Goals'),
-            t('reports.excel.performance.overallScore', 'Overall Score')
+            t('reports.excel.performance.overallScore', 'Overall Score'),
+            t('reports.scoreCalculation', 'Score calculation'),
           ],
-          rows: employees.map((employee) => {
-            const performance = computeEmployeePerformance(employee, timeEntries, tasks, goals, attendance);
+          rows: employees.map((employee, index) => {
+            const performance = performances[index];
             return [
               getDemoEmployeeName(employee, t),
               translateDepartment(employee.department),
               performance.totalHours.toFixed(1),
-              performance.tasksCount,
+              performance.recordedTasksCount,
               performance.completedTasks,
               performance.goalsCount,
-              formatPercent(performance.overallScore)
+              formatPercent(performance.overallScore),
+              scoreComponentsText(performance),
             ];
           })
         });
@@ -1645,9 +1508,15 @@ const Reports = () => {
       const goals = exportSnapshot.goals;
       const leave = exportSnapshot.leave;
       const employees = exportSnapshot.employees;
-      const attendance = { leaveRequests: exportSnapshot.leaveForAttendance, overtimeLogs: exportSnapshot.overtimeLogs, ...filters, scoreScope: scope };
+      const attendance = {
+        ...filters, scoreScope: scope,
+        leaveRequests: exportSnapshot.leaveForAttendance, overtimeLogs: exportSnapshot.overtimeLogs,
+        taskDateIssues: exportSnapshot.taskDateIssues, taskToday: exportSnapshot.taskToday,
+      };
+      const exportStats = computeExportStats(timeEntries, tasks, goals, leave, attendance);
+      const performances = employees.map((employee) => computeEmployeePerformance(employee, timeEntries, tasks, goals, attendance));
 
-      if (timeEntries.length === 0 && exportSnapshot.overtimeLogs.length === 0 && tasks.length === 0 && goals.length === 0 && leave.length === 0) {
+      if (exportStats.totalRecords === 0 && !attendance.taskDateIssues.length) {
         alert(t('reports.noData', 'No data available for the selected period'));
         return;
       }
@@ -1723,11 +1592,17 @@ const Reports = () => {
       summarySheet.getCell(`A${currentRow}`).font = { bold: true };
       currentRow += 2;
 
-      for (const note of [translationNote, taskPeriodBasis, scoreBasis]) {
+      for (const note of [translationNote, taskPeriodBasis, scoreBasis, ...reportTaskDateNotes(attendance.taskDateIssues, t)]) {
         summarySheet.mergeCells(`A${currentRow}:C${currentRow}`);
         summarySheet.getCell(`A${currentRow}`).value = note;
         summarySheet.getCell(`A${currentRow}`).alignment = { wrapText: true, vertical: 'top' };
         summarySheet.getRow(currentRow).height = note === scoreBasis ? 100 : 35;
+        currentRow += 2;
+      }
+      const cohortScore = selectedEmployee === 'all' ? meanReportScore(performances) : null;
+      if (cohortScore != null) {
+        summarySheet.getCell(`A${currentRow}`).value = tr('reports.excel.performance.overallScore', 'Overall Performance Score:');
+        summarySheet.getCell(`B${currentRow}`).value = formatPercent(cohortScore);
         currentRow += 2;
       }
 
@@ -1795,8 +1670,7 @@ const Reports = () => {
       
       // Tasks Metrics with Styling
       if (tasks.length > 0) {
-        const completedTasks = tasks.filter(t => t.status === 'completed').length;
-        const inProgressTasks = tasks.filter(t => t.status === 'in_progress' || t.status === 'in-progress').length;
+        const { completedTasks, inProgressTasks } = exportStats;
         const highPriority = tasks.filter(t => t.priority === 'high').length;
         const { totalEstimated, totalActual } = tasks.reduce((sum, task) => {
           const duration = getTaskDurationDays(task, taskAsOf);
@@ -1937,9 +1811,8 @@ const Reports = () => {
           
           // Performance Metrics Section
           const employeeTimeEntries = timeEntries.filter(e => e.employee_id === employee.id);
-          const employeeTasks = tasks.filter(t => t.employee_id === employee.id);
           const employeeGoals = goals.filter(g => g.employee_id === employee.id);
-          const performance = computeEmployeePerformance(employee, timeEntries, tasks, goals, attendance);
+          const performance = performances[employees.indexOf(employee)];
           
           perfSheet.getCell(`A${perfRow}`).value = tr('reports.excel.performance.performanceMetrics', 'Performance Metrics');
           perfSheet.getCell(`A${perfRow}`).font = { size: 12, bold: true, color: { argb: 'FFFFFFFF' } };
@@ -2054,20 +1927,19 @@ const Reports = () => {
           perfRow++;
           
           // Task Performance
-          const completedTasks = employeeTasks.filter(t => t.status === 'completed').length;
-          const taskCompletionRate = employeeTasks.length > 0 ? ((completedTasks / employeeTasks.length) * 100).toFixed(1) : 0;
+          const { completedTasks, recordedTasksCount, tasksCount, taskCompletionRate } = performance;
           
           addMetric(
             perfLabels.totalTasks,
-            employeeTasks.length,
-            employeeTasks.length > 0 ? statusLabels.active : statusLabels.noTasks,
+            recordedTasksCount,
+            recordedTasksCount > 0 ? statusLabels.active : statusLabels.noTasks,
             `${completedTasks} ${perfLabels.completed}`
           );
           addMetric(
             perfLabels.taskCompletionRate,
-            formatPercent(employeeTasks.length ? taskCompletionRate : null),
-            !employeeTasks.length ? '—' : taskCompletionRate >= 80 ? statusLabels.excellent : taskCompletionRate >= 60 ? statusLabels.good : statusLabels.needsImprovement,
-            `${completedTasks}/${employeeTasks.length} ${perfLabels.completed}`
+            formatPercent(taskCompletionRate),
+            taskCompletionRate == null ? '—' : taskCompletionRate >= 80 ? statusLabels.excellent : taskCompletionRate >= 60 ? statusLabels.good : statusLabels.needsImprovement,
+            `${completedTasks}/${tasksCount} ${perfLabels.completed}`
           );
           perfRow++;
           
@@ -2147,7 +2019,8 @@ const Reports = () => {
           tr('reports.excel.metrics.completedTasks', 'Completed Tasks'),
           tr('reports.excel.metrics.totalGoals', 'Total Goals'),
           tr('reports.excel.performance.avgGoalProgress', 'Average Goal Progress'),
-          tr('reports.excel.performance.overallScore', 'Overall Score')
+          tr('reports.excel.performance.overallScore', 'Overall Score'),
+          tr('reports.scoreCalculation', 'Score calculation'),
         ];
 
         overviewHeaders.forEach((header, idx) => {
@@ -2159,18 +2032,19 @@ const Reports = () => {
         });
 
         employees.forEach((employee, idx) => {
-          const performance = computeEmployeePerformance(employee, timeEntries, tasks, goals, attendance);
+          const performance = performances[idx];
           const rowNum = idx + 2;
           const rowData = [
             getDemoEmployeeName(employee, t),
             translateDepartment(employee.department),
             translatePosition(employee.position),
             Number(performance.totalHours.toFixed(1)),
-            performance.tasksCount,
+            performance.recordedTasksCount,
             performance.completedTasks,
             performance.goalsCount,
             performance.goalsCount ? Number(performance.avgGoalProgress) : null,
-            performance.overallScore == null ? null : Number(performance.overallScore)
+            performance.overallScore == null ? null : Number(performance.overallScore),
+            scoreComponentsText(performance),
           ];
 
           rowData.forEach((value, colIdx) => {
@@ -2183,11 +2057,14 @@ const Reports = () => {
               cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF3E8FF' } };
             }
           });
+          const scoreCell = overviewSheet.getCell(rowNum, overviewHeaders.length);
+          scoreCell.alignment = { wrapText: true, vertical: 'middle' };
+          overviewSheet.getRow(rowNum).height = 16 * scoreCell.text.split('\n').reduce((lines, line) => lines + Math.max(1, Math.ceil(line.length / 48)), 0);
         });
 
         overviewSheet.columns = [
           { width: 22 }, { width: 16 }, { width: 16 }, { width: 14 },
-          { width: 12 }, { width: 14 }, { width: 12 }, { width: 16 }, { width: 14 }
+          { width: 12 }, { width: 14 }, { width: 12 }, { width: 16 }, { width: 14 }, { width: 48 },
         ];
         overviewSheet.views = [{ state: 'frozen', xSplit: 0, ySplit: 1 }];
       }
@@ -2670,10 +2547,14 @@ const Reports = () => {
       const goals = exportSnapshot.goals;
       const leave = exportSnapshot.leave;
       const employees = exportSnapshot.employees;
-      const attendance = { leaveRequests: exportSnapshot.leaveForAttendance, overtimeLogs: exportSnapshot.overtimeLogs, ...filters, scoreScope: scope };
+      const attendance = {
+        ...filters, scoreScope: scope,
+        leaveRequests: exportSnapshot.leaveForAttendance, overtimeLogs: exportSnapshot.overtimeLogs,
+        taskDateIssues: exportSnapshot.taskDateIssues, taskToday: exportSnapshot.taskToday,
+      };
       const exportStats = computeExportStats(timeEntries, tasks, goals, leave, attendance);
 
-      if (exportStats.totalRecords === 0) {
+      if (exportStats.totalRecords === 0 && !attendance.taskDateIssues.length) {
         alert(t('reports.noData', 'No data available for the selected period'));
         return;
       }
@@ -2879,33 +2760,24 @@ const Reports = () => {
 
       // One employee → that employee's score; "all" → mean over the employees that
       // actually have records in this period (employees with none would skew it to 0).
-      const scoredEmployees = selectedEmployee === 'all'
-        ? employees
-        : employees.filter((emp) => String(emp.id) === String(selectedEmployee));
-      const employeeScores = scoredEmployees
-        .map((employee) => computeEmployeePerformance(employee, timeEntries, tasks, goals, attendance))
-        .filter((performance) => (
-          selectedEmployee !== 'all'
-          || performance.timeEntriesCount > 0
-          || performance.tasksCount > 0
-          || performance.goalsCount > 0
-        ))
-        .filter((performance) => performance.overallScore !== null)
-        .map((performance) => Number(performance.overallScore))
-        .filter((score) => Number.isFinite(score));
-
-      if (employeeScores.length > 0 && (timeEntries.length > 0 || tasks.length > 0 || goals.length > 0)) {
-        const overallScore = employeeScores.reduce((sum, score) => sum + score, 0) / employeeScores.length;
+      const performances = employees.map((employee) => computeEmployeePerformance(employee, timeEntries, tasks, goals, attendance));
+      const overallScore = meanReportScore(performances);
+      if (overallScore != null) {
         layout.meterRow({
           label: t('reports.excel.performance.overallScore', 'Overall Performance Score:'),
-          valueText: `${overallScore.toFixed(1)}%`,
+          valueText: formatPercent(overallScore),
           filled: meterFilledBlocks(overallScore)
         });
         layout.paragraph(cleanTextForPDF(scoreBasis, unicodeFontLoaded));
-        if (selectedEmployee !== 'all' && scoredEmployees.length === 1) {
-          const performance = computeEmployeePerformance(scoredEmployees[0], timeEntries, tasks, goals, attendance);
-          layout.summaryGrid(scoreRows(performance).map(([label, value]) => summaryCell(label, value)));
-        }
+      }
+      if (selectedEmployee === 'all') {
+        reportTaskDateNotes(attendance.taskDateIssues, t).forEach((note) => layout.paragraph(cleanTextForPDF(note, unicodeFontLoaded)));
+      }
+      if (selectedEmployee !== 'all' && performances.length === 1) {
+        const { components, details, notes } = reportScorePresentation(performances[0], t);
+        const cells = [...components, ...details].map(([label, value]) => summaryCell(label, value));
+        if (cells.length) layout.summaryGrid(cells);
+        notes.forEach((note) => layout.paragraph(cleanTextForPDF(note, unicodeFontLoaded)));
       }
       layout.paragraph(cleanTextForPDF(translationNote, unicodeFontLoaded));
 
@@ -3049,7 +2921,7 @@ const Reports = () => {
               task.self_assessment && `${t('taskListing.selfAssessment', 'Self Assessment')}: ${mapUgc(ugcMap, task.self_assessment)}`,
               task.comments && `${t('timeTracking.notes', 'Notes')}: ${mapUgc(ugcMap, task.comments)}`,
             ].filter(Boolean).join('\n\n');
-            const dateLine = (key, label, value) => `${t(key, label)}: ${formatDate(value, currentLanguage, { day: '2-digit', month: 'short', year: 'numeric' }) || '—'}`;
+            const dateLine = (key, label, value) => `${t(key, label)}: ${formatWorkloadDay(value, currentLanguage, { day: '2-digit', month: 'short', year: 'numeric' }) || '-'}`;
             const status = [
               translateStatus(task.status),
               `${t('reports.pdf.headers.progress', 'Progress')}: ${taskProgress(task)}`,
@@ -3077,7 +2949,13 @@ const Reports = () => {
           {
             rowPageBreak: 'avoid',
             keepSpace: 110,
-            caption: `${t('reports.completedTasks', 'Completed Tasks')}: ${exportStats.completedTasks}/${tasks.length} (${exportStats.taskCompletionRate}%) · ${t('reports.inProgress', 'In Progress')}: ${exportStats.inProgressTasks}. ${taskPeriodBasis}`,
+            caption: [
+              exportStats.eligibleTasksCount
+                ? `${t('reports.completedTasks', 'Completed Tasks')} ${exportStats.completedTasks}/${exportStats.eligibleTasksCount} (${exportStats.taskCompletionRate}%)`
+                : t('reports.noScoredTasks', 'Task delivery is not applicable. There are no eligible tasks in this period.'),
+              `${t('reports.inProgress', 'In Progress')} ${exportStats.inProgressTasks}`,
+              taskPeriodBasis,
+            ].join(' | '),
           }
         );
       }
@@ -3165,25 +3043,31 @@ const Reports = () => {
           [
             pdfHead('reports.excel.performance.name', 'Name'),
             pdfHead('reports.excel.performance.department', 'Department'),
-            pdfHead('reports.excel.metrics.totalHours', 'Hours'),
-            pdfHead('reports.excel.metrics.totalTasks', 'Tasks'),
-            pdfHead('reports.excel.metrics.completedTasks', 'Completed'),
-            pdfHead('reports.excel.metrics.totalGoals', 'Goals'),
-            pdfHead('reports.excel.performance.overallScore', 'Score')
+            pdfHead('reports.hours', 'Hours'),
+            pdfHead('reports.tasks', 'Tasks'),
+            pdfHead('reports.completed', 'Completed'),
+            pdfHead('reports.goals', 'Goals'),
+            pdfHead('reports.excel.performance.overallScore', 'Score'),
+            pdfHead('reports.scoreCalculation', 'Score calculation'),
           ],
-          employees.map((employee) => {
-            const performance = computeEmployeePerformance(employee, timeEntries, tasks, goals, attendance);
+          employees.map((employee, index) => {
+            const performance = performances[index];
             return [
               cleanTextForPDF(getDemoEmployeeName(employee, t), unicodeFontLoaded),
               cleanTextForPDF(translateDepartment(employee.department), unicodeFontLoaded),
               formatHours(performance.totalHours),
-              String(performance.tasksCount),
+              String(performance.recordedTasksCount),
               String(performance.completedTasks),
               String(performance.goalsCount),
-              formatPercent(performance.overallScore)
+              formatPercent(performance.overallScore),
+              scoreComponentsText(performance, '  ').split('\n').map((line) => cleanTextForPDF(line, unicodeFontLoaded)).join('\n'),
             ];
           }),
-          6
+          7,
+          {
+            0: { cellWidth: 23 }, 1: { cellWidth: 23 }, 2: { cellWidth: 16 }, 3: { cellWidth: 12 },
+            4: { cellWidth: 17 }, 5: { cellWidth: 12 }, 6: { cellWidth: 23 }, 7: { cellWidth: 54 },
+          },
         );
       }
 
@@ -3359,7 +3243,7 @@ const Reports = () => {
     { value: 'pdf', label: 'PDF' },
   ];
   const exportRowCount = totals.rows + scopedData.overtimeLogs.length;
-  const exportDisabled = exporting || exportRowCount === 0 || !validReportRange(filters.startDate, filters.endDate);
+  const exportDisabled = exporting || !reportReady || (exportRowCount === 0 && !scopedData.taskDateIssues.length) || !validReportRange(filters.startDate, filters.endDate);
 
   const runExport = () => {
     if (exportFormat === 'xlsx') return exportToExcel();
@@ -3399,23 +3283,23 @@ const Reports = () => {
         }}
       >
         <TickerCell ind={ind}>
-          <LiveClock ind={ind} live={!loading && totals.rows > 0} />
+          <LiveClock ind={ind} live={reportReady && totals.rows > 0} />
         </TickerCell>
         <TickerCell
           ind={ind}
           label={t('reports.inScope', 'In scope')}
-          value={totals.rows.toLocaleString()}
+          value={reportReady ? totals.rows.toLocaleString() : '—'}
         />
         {/* Light steel singles out the one figure on the strip that asks for
             something to be done before the file is written. */}
         <TickerCell
           ind={ind}
           label={t('reports.pending', 'Pending')}
-          value={totals.pending.toLocaleString()}
-          valueColor={totals.pending > 0 ? ind.tickerUp : undefined}
+          value={reportReady ? totals.pending.toLocaleString() : '—'}
+          valueColor={reportReady && totals.pending > 0 ? ind.tickerUp : undefined}
           title={t('reports.pendingTickerHint', 'Time entries and leave still awaiting approval')}
         />
-        <TickerCell ind={ind} label={t('reports.people', 'People')} value={totals.people.toLocaleString()} />
+        <TickerCell ind={ind} label={t('reports.people', 'People')} value={reportReady ? totals.people.toLocaleString() : '—'} />
         <TickerCell ind={ind} label={t('reports.range', 'Range')} value={rangeLabel} />
 
         <div
@@ -3434,6 +3318,7 @@ const Reports = () => {
 
         {fetchError && (
           <div
+            role="alert"
             style={{
               border: `1px solid ${ind.ink}`, padding: '12px 14px', marginBottom: 20,
               display: 'flex', gap: 12, alignItems: 'flex-start',
@@ -3443,18 +3328,10 @@ const Reports = () => {
             <div style={{ flex: 1, minWidth: 0 }}>
               <Kicker ind={ind} color={ind.ink}>{t('common.error', 'Error')}</Kicker>
               <p style={{ ...caption, marginTop: 4 }}>{fetchError}</p>
-              <Btn ind={ind} onClick={() => { setFetchError(null); fetchReportData(); }} style={{ marginTop: 10 }}>
+              <Btn ind={ind} onClick={() => fetchReportData()} style={{ marginTop: 10 }}>
                 {t('common.retry', 'Try Again')}
               </Btn>
             </div>
-            <button
-              type="button"
-              onClick={() => setFetchError(null)}
-              aria-label={t('common.close', 'Close')}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: ind.inkMuted, padding: 0, flex: 'none' }}
-            >
-              <X size={15} strokeWidth={1.5} />
-            </button>
           </div>
         )}
 
@@ -3535,7 +3412,7 @@ const Reports = () => {
                         display: 'block', marginTop: 6,
                       }}
                     >
-                      <SlidingNumber value={card.count} />
+                      {reportReady ? <SlidingNumber value={card.count} /> : '—'}
                     </span>
                   </button>
                 );
@@ -3688,7 +3565,7 @@ const Reports = () => {
           key={reportSelectionKey}
           ind={ind}
           summary={workSummary}
-          loading={selectedEmployee !== 'all' && (loading || reportData.selectionKey !== reportSelectionKey)}
+          loading={!fetchError && !reportReady}
           error={!validReportRange(filters.startDate, filters.endDate)
             ? t('reports.workSummary.invalidDates', 'Choose a valid start and end date, with the start date on or before the end date.')
             : fetchError}
@@ -3696,6 +3573,23 @@ const Reports = () => {
             buildUgcTranslateMap(collectExportUgcStrings(scopedData.timeEntries, scopedData.tasks, scopedData.goals, [], { demo: isDemoMode(), overtimeLogs: scopedData.overtimeLogs }))), t)}
         />
 
+        {(cohortScore != null || (reportReady && selectedEmployee === 'all' && taskDateNotes.length > 0)) && (
+          <details style={{ border: `1px solid ${ind.hairline}`, padding: '12px 16px', marginBottom: 20 }}>
+            <summary style={{ cursor: 'pointer', fontWeight: 600 }}>
+              {t('reports.performanceSummary', 'Performance Summary')} · {formatPercent(cohortScore)}
+            </summary>
+            <p style={{ ...caption, marginTop: 8 }}>{scoreBasis}</p>
+            {taskDateNotes.map((note) => <p key={note} style={caption}>{note}</p>)}
+            {cohortPerformance.map(({ employee, performance }) => (
+              <div key={employee.id} style={{ borderTop: `1px solid ${ind.hairline}`, padding: '8px 0', marginTop: 6 }}>
+                <strong>{getDemoEmployeeName(employee, t)} · {formatPercent(performance.overallScore)}</strong>
+                <p style={{ ...caption, whiteSpace: 'pre-line' }}>{scoreComponentsText(performance)}</p>
+              </div>
+            ))}
+          </details>
+        )}
+
+        {reportReady && <>
         {/* ── COMPOSITION ───────────────────────────────────────────── */}
         <Band ind={ind} className="grid-cols-1 md:grid-cols-2 xl:grid-cols-4">
           <Cell ind={ind}>
@@ -3836,7 +3730,12 @@ const Reports = () => {
 
           <Cell ind={ind}>
             <PanelHead ind={ind} title={t('reports.beforeYouExport', 'Before you export')} />
-            {checks.length === 0 ? (
+            {taskDateNotes.length > 0 && (
+              <p role="status" style={{ ...caption, marginBottom: 8 }}>
+                {taskDateNotes.slice(0, -1).join(' ')}
+              </p>
+            )}
+            {checks.length === 0 && taskDateNotes.length === 0 ? (
               <div className="flex items-start" style={{ gap: 9 }}>
                 <CheckCircle size={14} strokeWidth={1.5} style={{ flex: 'none', marginTop: 2, color: ind.accent }} />
                 <p style={{ ...caption, fontSize: 12.5 }}>
@@ -3885,10 +3784,8 @@ const Reports = () => {
           const overtimeHours = attendanceTotals.overtime_hours + attendanceTotals.holiday_overtime_hours;
           const wfhHours = attendanceTotals.wfh_hours;
           const daysWorked = attendanceTotals.days_worked;
-          const completedTasks = scopedData.tasks.filter((task) => task.status === 'completed').length;
-          const taskRate = scopedData.tasks.length > 0
-            ? Number(((completedTasks / scopedData.tasks.length) * 100).toFixed(1))
-            : 0;
+          const { completedTasks, eligibleTasksCount } = computeExportStats([], scopedData.tasks);
+          const taskRate = eligibleTasksCount && !scopedData.taskDateIssues.length ? completedTasks / eligibleTasksCount * 100 : null;
           const goalProgress = scopedData.goals.length > 0
             ? Number((scopedData.goals.reduce((sum, goal) => sum + (goal.status === 'completed' ? 100 : (Number(goal.progress) || 0)), 0) / scopedData.goals.length).toFixed(1))
             : 0;
@@ -3960,10 +3857,14 @@ const Reports = () => {
                     </div>
                     <StatLine ind={ind} label={t('reports.completed', 'Completed')} value={completedTasks} />
                     <div style={{ marginTop: 6 }}>
-                      <StatLine ind={ind} label={t('reports.completionRate', 'Completion Rate')} value={taskRate} decimals={1} suffix="%" />
+                      {scopedData.taskDateIssues.length > 0
+                        ? <p style={caption}>{t('reports.scorePendingTaskDates', 'Task delivery and overall scores are unavailable until the completion dates are verified.')}</p>
+                        : taskRate == null
+                        ? <p style={caption}>{t('reports.noScoredTasks', 'Task delivery is not applicable. There are no eligible tasks in this period.')}</p>
+                        : <StatLine ind={ind} label={t('reports.completionRate', 'Completion Rate')} value={taskRate} decimals={1} suffix="%" />}
                     </div>
                     <div style={{ marginTop: 9 }}>
-                      <Bar ind={ind} value={taskRate / 100} height={6} />
+                      {taskRate != null && <Bar ind={ind} value={taskRate / 100} height={6} />}
                     </div>
                   </div>
 
@@ -4176,6 +4077,7 @@ const Reports = () => {
             </div>
           </div>
         </div>
+        </>}
       </div>
 
       {/* ── EXPORT DOCK — the only place on the sheet that writes a file ─ */}
@@ -4199,9 +4101,9 @@ const Reports = () => {
           </div>
           <p style={{ ...noteStyle, marginTop: 3 }}>
             {[
-              `${exportRowCount.toLocaleString()} ${t('reports.rows', 'rows')}`,
+              reportReady ? `${exportRowCount.toLocaleString()} ${t('reports.rows', 'rows')}` : null,
               `${scopeCount} ${t('reports.recordTypes', 'record types')}`,
-              exportFormat === 'csv' && totals.rows > 0
+              reportReady && exportFormat === 'csv' && totals.rows > 0
                 ? `${t('reports.estimated', 'est.')} ${formatBytes(estimatedCsvBytes)}`
                 : null,
             ].filter(Boolean).join(' · ')}
@@ -4239,14 +4141,14 @@ const Reports = () => {
               ? <Loader2 size={13} strokeWidth={1.5} className="animate-spin" />
               : <Download size={13} strokeWidth={1.5} style={{ opacity: 0.85 }} />}
             <span style={{ ...figureStyle, fontSize: 12.5, letterSpacing: '.06em', textTransform: 'uppercase' }}>
-              {`${t('reports.export', 'Export')} ${exportRowCount.toLocaleString()} ${t('reports.records', 'records')}`}
+              {reportReady ? `${t('reports.export', 'Export')} ${exportRowCount.toLocaleString()} ${t('reports.records', 'records')}` : t('reports.export', 'Export')}
             </span>
           </SpecularButton>
         </div>
       </div>
 
       {/* ── People with nothing in range ─────────────────────────────── */}
-      {peopleListOpen && (
+      {reportReady && peopleListOpen && (
         <div
           role="dialog"
           aria-modal="true"

@@ -1,44 +1,5 @@
-/**
- * Task Listing — a ledger of tasks (4a) and the spec sheet for one of them (4b).
- *
- * The one idea both screens encode: a task here is never a free-standing to-do,
- * it is emitted by a record. In this database that record is the employee row a
- * `workload_tasks` row hangs off, so every group band names the record, every
- * row carries the source that opened it, and every second line states a
- * consequence with a real number instead of restating the title.
- *
- * Where the numbers come from — everything is derived, nothing is stored twice:
- *   open           status is neither completed nor cancelled
- *   overdue        open and its due date is already past
- *   due today      open and its due date is today
- *   unscheduled    open and it has no due date at all — it cannot be chased,
- *                  which is this schema's version of "blocked on something else"
- *   closed on time closed, had a due date, and its close stamp lands on or
- *                  before the end of that day (close stamp = completion_date
- *                  when the row carries one, otherwise updated_at)
- *   record N/M     every task on that record, closed ones included, so the
- *                  fraction stays the record's true state while the rows below
- *                  it obey the segment filter
- *   elapsed        start_date → completion_date (or → today), measured against
- *                  the window start_date → due_date. created_at is entry time,
- *                  not when the work ran, so it is not the start.
- *
- * Deliberate substitutions from the design spec: there are no task lists,
- * dependencies or sub-steps, so `01 Steps` is the task's own lifecycle, `02
- * Chain` is the record chain, and `03 Elapsed` is start → close against the
- * due-date window. Start and completion are backdatable calendar dates because
- * work is often logged after it finished; created_at is only when the row was
- * typed in.
- *
- * A viewer without canViewReports only ever fetches their own tasks, so the
- * same layout degrades to a one-person ledger rather than leaking the org's
- * workload.
- *
- * Design system: "Industry" (src/theme/industry.js). Radius is 0 everywhere,
- * cards are outlines with four registration corners, urgency reads through
- * words and ink weight rather than red and green.
- */
-import _React, { useCallback, useEffect, useMemo, useState } from 'react';
+// Work queue and task detail use the same scoped task records.
+import _React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertCircle, ArrowRight, Check, ChevronDown, Download, Plus, Search, Trash2, X,
 } from 'lucide-react';
@@ -48,36 +9,29 @@ import { useAuth } from '../contexts/AuthContext.jsx';
 import * as workloadService from '../services/workloadService.js';
 import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
 import { validateAndRefreshSession } from '../utils/sessionHelper.js';
-import { isRealtimeMutation } from '../utils/realtimeHelpers.js';
+import { useWorkloadTaskRefresh } from '../hooks/useWorkloadTaskRefresh.js';
 import { isDemoMode, getDemoEmployeeName, getDemoTaskTitle, getDemoTaskDescription } from '../utils/demoHelper.js';
 import { filterActiveEmployees } from '../utils/employeeStatus.js';
 import { getEmployeePositionI18nKey } from '../utils/employeePositionKey.js';
 import { escapeCsvCell, getTaskDurationDays } from '../utils/reportExportHelpers.js';
-import { formatDate } from '../utils/localeFormat.js';
+import {
+  applyLegacyTaskTab, DEFAULT_TASK_LIST_PREFERENCES, groupTaskListRows, isNewTaskAssignment,
+  normalizeTaskListPreferences, readTaskListPreferences, selectTaskListView, TASK_LIST_DUE_FILTERS,
+  TASK_LIST_PAGE_SIZE, TASK_LIST_SORTS, TASK_LIST_STATUSES, taskDueWindow, writeTaskListPreferences,
+} from '../utils/taskListView.js';
+import { calendarDayDistance, formatWorkloadDay, formatWorkloadTimestamp, taskCompletionIssue, vietnamCalendarDay } from '../utils/workloadDates.js';
 import { DatePicker } from './ui/date-picker.jsx';
 import { TranslatedText } from './ui/translated-text.jsx';
 import { FetchElapsedPill } from './ui/fetch-elapsed-pill';
 import { getIndustry, DISPLAY, BODY, figure } from '../theme/industry.js';
 import { useScreenNavigation } from '../hooks/useScreenNavigation.js';
 import {
-  Blueprint, Bar, Tag, Btn, Seg, TickerCell, LiveClock, ColumnHeading, FlatListbox,
+  Blueprint, Bar, Tag, Btn, TickerCell, LiveClock, ColumnHeading, FlatListbox,
 } from './ui/industry.jsx';
 
 /* ------------------------------------------------------------------ *
  * Screen constants
  * ------------------------------------------------------------------ */
-
-const DAY_MS = 86400000;
-
-/** The ledger opens truncated and says so; SHOW ALL lifts both caps. */
-const MAX_GROUPS = 3;
-const MAX_ROWS_PER_GROUP = 4;
-
-/** Decision column: two items carry buttons, two more are named. */
-const DECISION_CARDS = 2;
-const DECISION_ROWS = 2;
-/** "Your day" lists this many of the signed-in user's own tasks. */
-const YOUR_DAY_ROWS = 5;
 
 /** A due date this many days out or nearer is worth naming in days, not a date. */
 const NEAR_DAYS = 6;
@@ -114,36 +68,12 @@ const TASK_LISTING_NAV = {
 
 const norm = (value) => String(value ?? '').toLowerCase().replace(/_/g, '-');
 
-const startOfDay = (date) => {
-  const copy = new Date(date);
-  copy.setHours(0, 0, 0, 0);
-  return copy;
-};
-
-/** Whole days from `from` to `to`, both snapped to midnight. */
-const daysBetween = (from, to) => Math.round((startOfDay(to) - startOfDay(from)) / DAY_MS);
-
 const isClosed = (task) => norm(task.status) === CLOSED_STATUS;
 const isCancelled = (task) => norm(task.status) === CANCELLED_STATUS;
 
-/** The stamp we treat as "when this closed". completion_date is the backdated
- *  calendar day; updated_at stands in only when that field was never filled. */
-const closeStampOf = (task) => task.completion_date || task.completed_at || task.updated_at || null;
-
-const localIsoDate = (date = new Date()) => {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-};
-
-/** ĐẶNG LÊ MINH → "ĐM". Two letters, condensed, in a hairline square. */
-const initialsOf = (name) => {
-  const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return '—';
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-};
+const completionIssueLabel = (issue, t) => issue === 'missing'
+  ? t('taskListing.completionDateMissing', 'Completion date is missing')
+  : t('taskListing.completionDateUnverified', 'Verify the completion date');
 
 /**
  * Real ids are uuids on Supabase and short strings in demo mode, and neither is
@@ -214,8 +144,8 @@ function SquareCheck({ ind, done, size = 15, onClick, label, disabled }) {
 /** Text only — no pill, no dot, no colour chip. */
 function StateWord({ ind, state, label }) {
   const tone = {
-    done: { color: ind.ink, opacity: 0.45 },
-    cancelled: { color: ind.ink, opacity: 0.45 },
+    done: { color: ind.dark ? '#9dd9b8' : '#216041' },
+    cancelled: { color: ind.inkGhost },
     open: { color: ind.inkGhost },
     progress: { color: ind.inkGhost },
     unscheduled: { color: ind.accent },
@@ -234,54 +164,6 @@ function StateWord({ ind, state, label }) {
 }
 
 /** 22×22 hairline initials square + name. */
-function OwnerCell({ ind, name, muted, size = 22 }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-      <span
-        aria-hidden="true"
-        style={{
-          width: size, height: size, flex: 'none',
-          border: `1px solid ${ind.hairline}`,
-          display: 'grid', placeItems: 'center',
-          fontFamily: DISPLAY, fontWeight: 600, fontSize: 10,
-          color: ind.ink, opacity: muted ? 0.6 : 1,
-        }}
-      >
-        {initialsOf(name)}
-      </span>
-      <span
-        style={{
-          fontFamily: BODY, fontSize: 12.5, color: ind.ink, opacity: muted ? 0.6 : 1,
-          minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-        }}
-      >
-        {name}
-      </span>
-    </div>
-  );
-}
-
-/** N / M DONE + a hairline bar at the matching share. Never rounded. */
-function GroupProgress({ ind, done, total, label }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 'none' }}>
-      <span
-        style={{
-          fontFamily: DISPLAY, fontWeight: 600, fontSize: 12, letterSpacing: '.06em',
-          textTransform: 'uppercase', color: ind.inkGhost, whiteSpace: 'nowrap',
-          fontVariantNumeric: 'tabular-nums',
-        }}
-      >
-        {`${done} / ${total} ${label}`}
-      </span>
-      <div style={{ width: 76, flex: 'none' }}>
-        <Bar ind={ind} value={total > 0 ? done / total : 0} height={6} />
-      </div>
-    </div>
-  );
-}
-
-/** A fixed relation word beside its subject — the grammar of `02 Chain`. */
 function RelationRow({ ind, relation, strong, subject, detail, onClick }) {
   const body = (
     <>
@@ -374,25 +256,6 @@ function InlineLink({ ind, onClick, children, size = 11.5 }) {
 }
 
 /** SHOW ALL → · CHANGE ⌄ — a tracked condensed link with a trailing glyph. */
-function ActionLink({ ind, onClick, children, icon = ArrowRight }) {
-  const Glyph = icon;
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      style={{
-        display: 'inline-flex', alignItems: 'center', gap: 6,
-        background: 'none', border: 'none', padding: 0, cursor: 'pointer',
-        fontFamily: DISPLAY, fontWeight: 600, fontSize: 11, letterSpacing: '.12em',
-        textTransform: 'uppercase', color: ind.accentDeep,
-      }}
-    >
-      {children}
-      <Glyph size={12} strokeWidth={1.5} />
-    </button>
-  );
-}
-
 /* ------------------------------------------------------------------ *
  * Task form — the one modal on the screen
  * ------------------------------------------------------------------ */
@@ -521,6 +384,8 @@ function TaskFormModal({
                 value={form.completionDate || ''}
                 onChange={(event) => setForm({ ...form, completionDate: event.target.value })}
                 min={form.startDate || undefined}
+                max={vietnamCalendarDay()}
+                disabled={form.status !== 'completed'}
                 aria-label={t('taskListing.completionDate', 'Completion Date')}
               />
             </div>
@@ -553,6 +418,7 @@ function TaskFormModal({
                 <option value="pending">{t('taskListing.statusPending', 'Pending')}</option>
                 <option value="in-progress">{t('taskListing.statusInProgress', 'In Progress')}</option>
                 <option value="completed">{t('taskListing.statusCompleted', 'Completed')}</option>
+                <option value="cancelled">{t('taskListing.stateCancelled', 'Cancelled')}</option>
               </FlatListbox>
             </div>
           </div>
@@ -620,16 +486,22 @@ const TaskListing = ({ employees, allEmployees }) => {
   const { t, currentLanguage } = useLanguage();
 
   const ind = useMemo(() => getIndustry(isDarkMode), [isDarkMode]);
-  const today = useMemo(() => startOfDay(new Date()), []);
+  const today = vietnamCalendarDay();
 
   const [tasks, setTasks] = useState([]);
+  const [loadedScope, setLoadedScope] = useState(null);
+  const taskRequest = useRef(0);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState('');
   const [notice, setNotice] = useState(null);
 
   const [query, setQuery] = useState('');
-  const [groupMode, setGroupMode] = useState('record');
-  const [showAll, setShowAll] = useState(false);
+  const preferenceId = user?.id || null;
+  const storedPreferences = useMemo(() => readTaskListPreferences(preferenceId), [preferenceId]);
+  const [savedPreferences, setSavedPreferences] = useState(null);
+  const [historyExpanded, setHistoryExpanded] = useState(null);
+  const [openLimit, setOpenLimit] = useState(TASK_LIST_PAGE_SIZE);
+  const [historyLimit, setHistoryLimit] = useState(TASK_LIST_PAGE_SIZE);
 
   const [focusTaskId, setFocusTaskId] = useState(null);
   const [note, setNote] = useState('');
@@ -648,14 +520,8 @@ const TaskListing = ({ employees, allEmployees }) => {
   const [nav, go] = useScreenNavigation(TASK_LISTING_NAV);
 
   const openTaskId = nav.task;
-  /* `mine` is only offered to viewers who can see everyone, so a URL must not
-     be able to hand out a filter the control itself would refuse. */
-  const segment = nav.tab === 'mine' && !canViewAll ? DEFAULT_SEGMENT : (nav.tab ?? DEFAULT_SEGMENT);
-  /* An explicit `?tab=` is exactly "the viewer picked a tab themselves": until
-     one is set the screen may still open on whichever tab has rows, because a
-     ledger whose tasks are all closed must not open on a view that hides every
-     one of them. */
-  const segmentTouched = nav.tab !== null;
+  const saved = savedPreferences?.id === preferenceId ? savedPreferences.value : storedPreferences;
+  const preferences = applyLegacyTaskTab(saved, nav.tab);
 
   const openTask = useCallback((id) => {
     setFocusTaskId(id);
@@ -665,12 +531,16 @@ const TaskListing = ({ employees, allEmployees }) => {
 
   const closeTask = useCallback(() => { go({ task: null }); }, [go]);
 
-  /* Chips are this screen's tabs, so a click is a navigation and Back undoes
-     it. `showAll` is a per-tab disclosure and resets with the tab. */
-  const selectSegment = useCallback((value) => {
-    setShowAll(false);
-    go({ tab: value });
-  }, [go]);
+  const changePreferences = (patch, closeDetail = false) => {
+    const value = normalizeTaskListPreferences({ ...preferences, ...patch });
+    setSavedPreferences({ id: preferenceId, value });
+    writeTaskListPreferences(preferenceId, value);
+    if (closeDetail) go({ task: null, tab: null });
+    else if (nav.tab) go({ tab: null }, { replace: true });
+    setOpenLimit(TASK_LIST_PAGE_SIZE);
+    setHistoryLimit(TASK_LIST_PAGE_SIZE);
+    if (patch.status !== undefined) setHistoryExpanded(null);
+  };
 
   const directory = useMemo(
     () => (allEmployees?.length ? allEmployees : employees) || [],
@@ -709,6 +579,9 @@ const TaskListing = ({ employees, allEmployees }) => {
   }, [user?.employeeId, user?.id, user?.email, directory]);
 
   const myEmployeeId = viewerRecord.id;
+  const taskScope = JSON.stringify([user?.id ?? myEmployeeId, canViewAll, myEmployeeId]);
+  const currentScope = useRef(taskScope);
+  currentScope.current = taskScope;
   /* Only worth reporting once the directory has actually arrived. */
   const unlinkedViewer = !canViewAll && !viewerRecord.linked && directory.length > 0;
 
@@ -732,20 +605,19 @@ const TaskListing = ({ employees, allEmployees }) => {
   }, [employeeById, t]);
 
   const shortDate = useCallback(
-    (value) => formatDate(value, currentLanguage, { day: '2-digit', month: 'short' }),
+    (value) => formatWorkloadDay(value, currentLanguage, { day: '2-digit', month: 'short' }),
     [currentLanguage],
   );
 
-  const clockTime = useCallback((value) => {
-    if (!value) return '';
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return '';
-    return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-  }, []);
+  const clockTime = useCallback((value) => formatWorkloadTimestamp(value, currentLanguage, {
+    hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+  }), [currentLanguage]);
 
   /* ---------------- fetch ---------------- */
 
   const fetchTasks = useCallback(async ({ silent = false } = {}) => {
+    const request = ++taskRequest.current;
+    const isCurrent = () => request === taskRequest.current && currentScope.current === taskScope;
     if (!silent) setLoading(true);
     try {
       if (!isDemoMode()) {
@@ -757,21 +629,21 @@ const TaskListing = ({ employees, allEmployees }) => {
         ? await workloadService.getAllTasks()
         : await workloadService.getEmployeeTasks(myEmployeeId);
 
-      if (result.success) {
-        setTasks(result.data || []);
-        setFetchError('');
-      } else {
-        console.error('Failed to load tasks:', result.error);
-        setFetchError(t('taskListing.loadFailed', 'Failed to load tasks'));
-      }
+      if (!isCurrent()) return;
+      if (!result.success || !Array.isArray(result.data)) throw new Error(result.error || 'Unable to read tasks');
+      setTasks(result.data);
+      setLoadedScope(taskScope);
+      setFetchError('');
     } catch (error) {
+      if (!isCurrent()) return;
       console.error('Error fetching tasks:', error);
+      setLoadedScope(null);
       if (handleSessionAuthError(error, { silent })) return;
-      if (!silent) setFetchError(t('taskListing.loadFailed', 'Failed to load tasks'));
+      setFetchError(t('taskListing.loadFailed', 'Failed to load tasks'));
     } finally {
-      if (!silent) setLoading(false);
+      if (isCurrent()) setLoading(false);
     }
-  }, [canViewAll, myEmployeeId, handleSessionAuthError, t]);
+  }, [canViewAll, myEmployeeId, taskScope, handleSessionAuthError, t]);
 
   useAuthenticatedPageRefresh(() => fetchTasks({ silent: true }));
 
@@ -783,15 +655,12 @@ const TaskListing = ({ employees, allEmployees }) => {
       return;
     }
     fetchTasks();
+    return () => { taskRequest.current += 1; };
   }, [fetchTasks, canViewAll, myEmployeeId]);
 
-  useEffect(() => {
-    const channel = workloadService.subscribeToTaskChanges(
-      canViewAll ? null : myEmployeeId,
-      (payload) => { if (isRealtimeMutation(payload)) fetchTasks({ silent: true }); },
-    );
-    return () => { channel.unsubscribe(); };
-  }, [canViewAll, myEmployeeId, fetchTasks]);
+  useWorkloadTaskRefresh(canViewAll ? directory.map(({ id }) => id) : [myEmployeeId], () => fetchTasks({ silent: true }), {
+    enabled: Boolean(user) && !isDemoMode(),
+  });
 
   const flash = useCallback((kind, text) => {
     setNotice({ kind, text });
@@ -822,19 +691,15 @@ const TaskListing = ({ employees, allEmployees }) => {
       flash('err', t('taskListing.notYours', 'This task belongs to someone else'));
       return;
     }
-    const done = isClosed(task);
-    const today = localIsoDate();
-    await saveUpdate(
-      task.id,
-      {
-        status: done ? 'pending' : 'completed',
-        completionDate: done ? null : (task.completion_date || today),
-      },
-      done
-        ? t('taskListing.reopened', 'Task reopened')
-        : t('taskListing.markedComplete', 'Task marked complete'),
-    );
-  }, [canEditTask, saveUpdate, flash, t]);
+    const done = isClosed(task) || isCancelled(task);
+    const result = await workloadService.bulkUpdateTaskStatus([task.id], done ? 'pending' : 'completed');
+    if (result.success) {
+      flash('ok', done ? t('taskListing.reopened', 'Task reopened') : t('taskListing.markedComplete', 'Task marked complete'));
+      fetchTasks({ silent: true });
+    } else if (!handleSessionAuthError(new Error(result.error))) {
+      flash('err', t('taskListing.taskUpdateError', 'Failed to update task'));
+    }
+  }, [canEditTask, fetchTasks, flash, handleSessionAuthError, t]);
 
   const openAdd = useCallback(() => {
     setForm({ ...EMPTY_FORM, assignedTo: canAssign ? '' : myEmployeeId });
@@ -842,7 +707,7 @@ const TaskListing = ({ employees, allEmployees }) => {
   }, [canAssign, myEmployeeId]);
 
   const openEdit = useCallback((task) => {
-    setForm({
+    const original = {
       title: isDemoMode() ? getDemoTaskTitle(task, t) : (task.title || ''),
       description: isDemoMode() ? getDemoTaskDescription(task, t) : (task.description || ''),
       dueDate: task.due_date || '',
@@ -853,8 +718,9 @@ const TaskListing = ({ employees, allEmployees }) => {
       selfAssessment: task.self_assessment || '',
       qualityRating: task.quality_rating || 0,
       assignedTo: String(task.employee_id || ''),
-    });
-    setModal({ mode: 'edit', task });
+    };
+    setForm(original);
+    setModal({ mode: 'edit', task, original });
   }, [t]);
 
   const submitForm = useCallback(async () => {
@@ -868,25 +734,33 @@ const TaskListing = ({ employees, allEmployees }) => {
       return;
     }
 
-    if (form.startDate && form.completionDate && form.completionDate < form.startDate) {
+    const completionEdited = form.status === 'completed' && (
+      modal?.task?.status !== 'completed' || form.completionDate !== (modal?.task?.completion_date || '')
+    );
+    if (completionEdited && !form.completionDate) {
+      flash('err', completionIssueLabel('missing', t));
+      return;
+    }
+    if (completionEdited && form.completionDate > vietnamCalendarDay()) {
+      flash('err', completionIssueLabel('future', t));
+      return;
+    }
+    if (form.status === 'completed' && form.startDate && form.completionDate && form.completionDate < form.startDate) {
       flash('err', t('taskListing.completionBeforeStart', 'Completion date cannot be before start date'));
       return;
     }
 
     if (modal?.mode === 'edit') {
-      const updates = {
-        title: form.title,
-        description: form.description,
-        startDate: form.startDate || null,
-        dueDate: form.dueDate || null,
-        completionDate: form.completionDate || null,
-        priority: form.priority,
-        status: form.status,
-        selfAssessment: form.selfAssessment,
-        qualityRating: form.qualityRating,
-      };
-      if (canAssign && String(employeeId) !== String(modal.task.employee_id)) {
-        updates.assignedTo = employeeId;
+      const updates = {};
+      for (const key of ['title', 'description', 'startDate', 'dueDate', 'priority', 'selfAssessment', 'qualityRating']) {
+        if (form[key] !== modal.original[key]) updates[key] = form[key];
+      }
+      if (form.status !== modal.original.status) updates.status = form.status;
+      if (completionEdited) updates.completionDate = form.completionDate;
+      if (canAssign && String(employeeId) !== String(modal.task.employee_id)) updates.assignedTo = employeeId;
+      if (Object.keys(updates).length === 0) {
+        setModal(null);
+        return;
       }
       const ok = await saveUpdate(modal.task.id, updates, t('taskListing.taskUpdated', 'Task updated'));
       if (ok) setModal(null);
@@ -899,12 +773,12 @@ const TaskListing = ({ employees, allEmployees }) => {
       description: form.description || null,
       dueDate: form.dueDate || null,
       startDate: form.startDate || null,
-      completionDate: form.completionDate || null,
+      completionDate: form.status === 'completed' ? form.completionDate : null,
       priority: form.priority,
       status: form.status,
       selfAssessment: form.selfAssessment || null,
       qualityRating: form.qualityRating || 0,
-      createdBy: user?.employeeId || user?.id || null,
+      createdBy: viewerRecord.linked ? myEmployeeId : null,
     });
     if (result.success) {
       flash('ok', t('taskListing.taskCreated', 'Task created'));
@@ -914,7 +788,7 @@ const TaskListing = ({ employees, allEmployees }) => {
       console.error('Failed to create task:', result.error);
       flash('err', t('taskListing.taskCreateError', 'Failed to create task'));
     }
-  }, [form, modal, myEmployeeId, canAssign, saveUpdate, flash, fetchTasks, t, user]);
+  }, [form, modal, myEmployeeId, canAssign, saveUpdate, flash, fetchTasks, t, viewerRecord.linked]);
 
   const removeTask = useCallback(async (task) => {
     if (!globalThis.confirm(t('taskListing.confirmDelete', 'Delete this task?'))) return;
@@ -933,17 +807,15 @@ const TaskListing = ({ employees, allEmployees }) => {
   /* ---------------- derivation ---------------- */
 
   /**
-   * One pass over the rows the viewer may see. Everything the two screens read
-   * — state, urgency, source, the consequence line — is computed here so the
-   * ledger and the detail sheet can never disagree about a task.
+   * Both views derive dates and ownership from the same scoped rows.
    */
-  const rows = useMemo(() => (tasks || []).map((task) => {
+  const rows = useMemo(() => (loadedScope === taskScope ? tasks : []).map((task) => {
     const closed = isClosed(task);
     const cancelled = isCancelled(task);
     const open = !closed && !cancelled;
 
-    const due = task.due_date ? startOfDay(new Date(task.due_date)) : null;
-    const dueDays = due ? daysBetween(today, due) : null;
+    const due = task.due_date ? vietnamCalendarDay(task.due_date) : null;
+    const dueDays = due ? calendarDayDistance(today, due) : null;
     const late = open && dueDays != null && dueDays < 0 ? -dueDays : 0;
 
     let state = 'open';
@@ -971,63 +843,19 @@ const TaskListing = ({ employees, allEmployees }) => {
 
     const creatorId = task.created_by ? String(task.created_by) : '';
     const creatorName = creatorId ? nameOf(creatorId) : '';
-    const selfSet = !creatorId || creatorId === ownerId;
-    const source = selfSet ? 'self' : (creatorName ? 'assigned' : 'system');
-    const sourceLabel = {
-      self: t('taskListing.sourceSelf', 'Self-set'),
-      assigned: t('taskListing.sourceAssigned', 'Assigned'),
-      system: t('taskListing.sourceSystem', 'System'),
-    }[source];
-
-    const closedAt = closed ? closeStampOf(task) : null;
-    const onTime = closed && due && closedAt ? startOfDay(new Date(closedAt)) <= due : null;
+    const selfSet = creatorId === ownerId && Boolean(creatorId);
+    const completionIssue = taskCompletionIssue(task, today);
+    const closedAt = closed && !completionIssue ? task.completion_date : null;
 
     const openedBy = creatorName && !selfSet
       ? t('taskListing.byWho', 'by {who}').replace('{who}', creatorName)
-      : t('taskListing.bySelf', 'by the owner');
+      : selfSet ? t('taskListing.bySelf', 'by the owner') : '';
     const openedOn = task.created_at
       ? t('taskListing.openedOn', 'opened {date} {by}')
         .replace('{date}', shortDate(task.created_at))
         .replace('{by}', openedBy)
       : t('taskListing.openedUnknown', 'opening date not recorded');
 
-    /* The second line carries consequence or evidence with a real number.
-       Restating the title here would be a defect. */
-    let consequence;
-    if (closed) {
-      const when = closedAt ? shortDate(closedAt) : shortDate(task.created_at);
-      const rated = task.quality_rating > 0
-        ? t('taskListing.ratedN', 'rated {n}/5').replace('{n}', String(task.quality_rating))
-        : t('taskListing.notRated', 'not rated — the record keeps no quality figure for it');
-      const punctuality = onTime === null
-        ? ''
-        : ` · ${onTime
-          ? t('taskListing.onTime', 'on time')
-          : t('taskListing.lateClose', 'closed after the due date')}`;
-      consequence = `${t('taskListing.closedOn', 'Closed {date}').replace('{date}', when)}${punctuality} · ${rated}`;
-    } else if (cancelled) {
-      consequence = `${t('taskListing.cancelledLine', 'Cancelled')} · ${openedOn}`;
-    } else if (late > 0) {
-      consequence = `${
-        late === 1
-          ? t('taskListing.oneDayLate', '1 day past due')
-          : t('taskListing.nDaysLate', '{n} days past due').replace('{n}', String(late))
-      } · ${openedOn}`;
-    } else if (!due) {
-      consequence = `${t(
-        'taskListing.noDueLine',
-        'No due date — it cannot be chased and it never reaches this ledger’s overdue count',
-      )} · ${openedOn}`;
-    } else if (dueDays === 0) {
-      consequence = `${t('taskListing.dueTodayLine', 'Due today')} · ${openedOn}`;
-    } else {
-      consequence = `${t('taskListing.dueInDays', 'Due in {n} days').replace('{n}', String(dueDays))} · ${openedOn}`;
-    }
-    if (open && task.self_assessment) {
-      consequence += ` · ${t('taskListing.assessmentLogged', 'self-assessment logged')}`;
-    }
-
-    /* Due cell: lateness is written in days, never as a red date. */
     let dueLabel;
     if (!due) dueLabel = t('taskListing.noDue', 'No date');
     else if (closed || cancelled) dueLabel = shortDate(task.due_date);
@@ -1037,284 +865,39 @@ const TaskListing = ({ employees, allEmployees }) => {
     else if (dueDays <= NEAR_DAYS) dueLabel = t('taskListing.inNDays', 'In {n} d').replace('{n}', String(dueDays));
     else dueLabel = shortDate(task.due_date);
 
-    let dueTone = ind.ink;
-    if (closed || cancelled || !due) dueTone = ind.inkFaint;
-    else if (late > 0) dueTone = ind.accentDeep;
-    else if (dueDays === 0) dueTone = ind.accent;
-
     return {
       task,
       id: task.id,
       handle: handleOf(task.id),
       title: isDemoMode() ? getDemoTaskTitle(task, t) : (task.title || ''),
       description: isDemoMode() ? getDemoTaskDescription(task, t) : (task.description || ''),
-      open, closed, cancelled, state, stateLabel,
-      due, dueDays, late, dueLabel, dueTone,
+      open, closed, cancelled, state, stateLabel, status: norm(task.status),
+      due, dueDays, late, dueLabel,
       ownerId, ownerName, ownerDept,
-      creatorName, selfSet, source, sourceLabel, openedOn,
-      closedAt, onTime,
+      creatorName, selfSet, openedOn,
+      closedAt, completionIssue,
       priority: norm(task.priority) || 'medium',
       rating: Number(task.quality_rating) || 0,
-      consequence,
       mine: ownerId === myEmployeeId,
     };
-  }), [tasks, employeeById, nameOf, myEmployeeId, today, ind, shortDate, t]);
+  }), [tasks, loadedScope, taskScope, employeeById, nameOf, myEmployeeId, today, shortDate, t]);
 
   const byId = useMemo(() => new Map(rows.map((row) => [String(row.id), row])), [rows]);
 
-  /* Ticker figures read the whole scope, not the segment: the strip describes
-     the board, the segments only decide what is listed under it. */
-  const totals = useMemo(() => {
-    const open = rows.filter((row) => row.open);
-    const closedRows = rows.filter((row) => row.closed);
-    const measurable = closedRows.filter((row) => row.onTime !== null);
-    return {
-      open: open.length,
-      dueToday: open.filter((row) => row.dueDays === 0).length,
-      overdue: open.filter((row) => row.late > 0).length,
-      unscheduled: open.filter((row) => !row.due).length,
-      /* Closed here means "not open", so a cancelled task is still accounted
-         for rather than vanishing between the two segments. */
-      closed: rows.filter((row) => !row.open).length,
-      /* Every task on the viewer's own record, in any state — this is the
-         figure the Mine segment and the subtitle both quote. */
-      mine: rows.filter((row) => row.mine).length,
-      total: rows.length,
-      onTimePct: measurable.length
-        ? Math.round((measurable.filter((row) => row.onTime).length / measurable.length) * 100)
-        : null,
-      records: new Set(rows.map((row) => row.ownerId)).size,
-    };
-  }, [rows]);
-
-  /* ---------------- ledger shaping ---------------- */
-
-  const segments = useMemo(() => {
-    const list = [
-      { value: 'open', label: t('taskListing.segAllOpen', 'All open') },
-    ];
-    if (canViewAll) {
-      list.push({
-        value: 'mine',
-        label: `${t('taskListing.segMine', 'Mine')} · ${totals.mine}`,
-      });
-    }
-    list.push({
-      value: 'overdue',
-      label: `${t('taskListing.segOverdue', 'Overdue')} · ${totals.overdue}`,
-    });
-    /* The closed count carries its own label too: without it a scope whose
-       tasks are all finished reads as an empty screen. */
-    list.push({
-      value: 'closed',
-      label: `${t('taskListing.segClosed', 'Closed')} · ${totals.closed}`,
-    });
-    return list;
-  }, [canViewAll, totals.mine, totals.overdue, totals.closed, t]);
-
-  useEffect(() => {
-    if (segmentTouched || loading || totals.total === 0) return;
-    // The screen chose this, not the viewer, so it replaces rather than pushes.
-    if (totals.open === 0 && totals.closed > 0) go({ tab: 'closed' }, { replace: true });
-  }, [segmentTouched, loading, totals.open, totals.closed, totals.total, go]);
-
-  const filtered = useMemo(() => {
-    const needle = query.trim().toLowerCase();
-    return rows.filter((row) => {
-      if (segment === 'open' && !row.open) return false;
-      /* Mine is a scope, not a state: it shows the viewer's whole record so the
-         count in the label and the count in the subtitle are the same number. */
-      if (segment === 'mine' && !row.mine) return false;
-      if (segment === 'overdue' && !(row.open && row.late > 0)) return false;
-      if (segment === 'closed' && row.open) return false;
-      if (!needle) return true;
-      return `${row.title} ${row.description} ${row.ownerName} ${row.creatorName} ${row.handle}`
-        .toLowerCase()
-        .includes(needle);
-    });
-  }, [rows, segment, query]);
-
-  /** Rows inside a band: what is on fire first, what is closed last. */
-  const rowRank = useCallback((row) => {
-    if (row.late > 0) return [0, -row.late];
-    if (row.open && row.dueDays === 0) return [1, 0];
-    if (row.open && row.due) return [2, row.dueDays];
-    if (row.open) return [3, 0];
-    return [4, 0];
-  }, []);
-
-  const sortRows = useCallback((list) => [...list].sort((a, b) => {
-    const [ra, sa] = rowRank(a);
-    const [rb, sb] = rowRank(b);
-    return ra - rb || sa - sb || a.title.localeCompare(b.title);
-  }), [rowRank]);
-
-  const groupModeLabel = {
-    record: t('taskListing.groupRecord', 'Grouped by record'),
-    due: t('taskListing.groupDue', 'Grouped by due window'),
-    priority: t('taskListing.groupPriority', 'Grouped by priority'),
-  }[groupMode];
-
-  /**
-   * Bands. The fraction on a band counts every task on that record — closed
-   * ones included — so it stays the record's true state while the rows under
-   * it obey the segment filter. The footer says how many were left out.
-   */
-  const groups = useMemo(() => {
-    /* Bucketed on the date alone, not on the state, so a closed task lands in
-       the window it was due in and the band fraction stays truthful. */
-    const dueBucket = (row) => {
-      if (!row.due) return 'none';
-      if (row.dueDays < 0) return 'late';
-      if (row.dueDays === 0) return 'today';
-      if (row.dueDays <= 7) return 'week';
-      return 'later';
-    };
-
-    const keyOf = (row) => {
-      if (groupMode === 'record') return row.ownerId;
-      if (groupMode === 'priority') return row.priority;
-      return dueBucket(row);
-    };
-
-    const buckets = new Map();
-    filtered.forEach((row) => {
-      const key = keyOf(row);
-      if (!buckets.has(key)) buckets.set(key, []);
-      buckets.get(key).push(row);
-    });
-
-    const totalsFor = (key) => {
-      const all = rows.filter((row) => keyOf(row) === key);
-      return { done: all.filter((row) => row.closed).length, total: all.length };
-    };
-
-    const dueMeta = {
-      late: {
-        name: t('taskListing.bandOverdue', 'Past due'),
-        note: t('taskListing.bandOverdueNote', 'the due date has already gone by'),
-      },
-      today: {
-        name: t('taskListing.bandToday', 'Due today'),
-        note: t('taskListing.bandTodayNote', 'closes today or joins the overdue count tomorrow'),
-      },
-      week: {
-        name: t('taskListing.bandWeek', 'Next seven days'),
-        note: t('taskListing.bandWeekNote', 'inside the week — still schedulable'),
-      },
-      later: {
-        name: t('taskListing.bandLater', 'Later'),
-        note: t('taskListing.bandLaterNote', 'beyond the week'),
-      },
-      none: {
-        name: t('taskListing.bandNoDate', 'No due date'),
-        note: t('taskListing.bandNoDateNote', 'nothing can chase these until a date is set'),
-      },
-    };
-    const dueOrder = ['late', 'today', 'week', 'later', 'none'];
-    const priorityMeta = {
-      high: {
-        name: t('taskListing.priorityHigh', 'High'),
-        note: t('taskListing.bandHighNote', 'chased first by the decision column'),
-      },
-      medium: {
-        name: t('taskListing.priorityMedium', 'Medium'),
-        note: t('taskListing.bandMediumNote', 'normal queue'),
-      },
-      low: {
-        name: t('taskListing.priorityLow', 'Low'),
-        note: t('taskListing.bandLowNote', 'picked up when there is room'),
-      },
-    };
-
-    const built = [...buckets.entries()].map(([key, list]) => {
-      const counts = totalsFor(key);
-      const sample = list[0];
-      let name;
-      let note;
-      if (groupMode === 'record') {
-        name = sample.ownerName;
-        note = [
-          sample.ownerDept,
-          t('taskListing.emittedBy', 'every task below was opened on this employee record'),
-        ].filter(Boolean).join(' · ');
-      } else if (groupMode === 'priority') {
-        const meta = priorityMeta[key] || priorityMeta.medium;
-        name = meta.name;
-        note = meta.note;
-      } else {
-        const meta = dueMeta[key] || dueMeta.later;
-        name = meta.name;
-        note = meta.note;
-      }
-      return {
-        key,
-        name,
-        note,
-        rows: sortRows(list),
-        done: counts.done,
-        total: counts.total,
-        overdue: list.filter((row) => row.late > 0).length,
-        ownerId: groupMode === 'record' ? key : null,
-      };
-    });
-
-    if (groupMode === 'due') {
-      built.sort((a, b) => dueOrder.indexOf(a.key) - dueOrder.indexOf(b.key));
-    } else if (groupMode === 'priority') {
-      const order = ['high', 'medium', 'low'];
-      built.sort((a, b) => order.indexOf(a.key) - order.indexOf(b.key));
-    } else {
-      built.sort((a, b) => b.overdue - a.overdue || b.rows.length - a.rows.length || a.name.localeCompare(b.name));
-    }
-    return built;
-  }, [filtered, rows, groupMode, sortRows, t]);
-
-  const visibleGroups = showAll ? groups : groups.slice(0, MAX_GROUPS);
-  const shownRows = visibleGroups.reduce(
-    (sum, group) => sum + (showAll ? group.rows.length : Math.min(group.rows.length, MAX_ROWS_PER_GROUP)),
-    0,
-  );
-
-  /* ---------------- the decision column ---------------- */
-
-  /** Most overdue first, then today, then the unscheduled, then priority. */
-  const decisions = useMemo(() => {
-    const score = (row) => {
-      if (row.late > 0) return 1000 + row.late;
-      if (row.dueDays === 0) return 900;
-      if (!row.due) return 700 + (row.priority === 'high' ? 50 : 0);
-      if (row.priority === 'high') return 600 - Math.min(row.dueDays, 60);
-      return 400 - Math.min(row.dueDays, 60);
-    };
-    return rows.filter((row) => row.open).sort((a, b) => score(b) - score(a));
-  }, [rows]);
-
-  useEffect(() => {
-    if (focusTaskId && byId.has(String(focusTaskId))) return;
-    /* A link opens a task without anyone having clicked its row, so seed the
-       highlight from the URL. Closing the sheet then lands on the same row a
-       click would have left behind, instead of jumping to the top decision. */
-    if (openTaskId && byId.has(String(openTaskId))) {
-      setFocusTaskId(openTaskId);
-      return;
-    }
-    setFocusTaskId(decisions[0]?.id ?? null);
-  }, [decisions, focusTaskId, byId, openTaskId]);
-
-  const myRows = useMemo(() => rows.filter((row) => row.mine), [rows]);
-  const yourDay = useMemo(() => {
-    const open = myRows.filter((row) => row.open).sort((a, b) => {
-      const [ra, sa] = rowRank(a);
-      const [rb, sb] = rowRank(b);
-      return ra - rb || sa - sb;
-    });
-    const lastClosed = myRows
-      .filter((row) => row.closed && row.closedAt)
-      .sort((a, b) => new Date(b.closedAt) - new Date(a.closedAt))[0];
-    const list = open.slice(0, lastClosed ? YOUR_DAY_ROWS - 1 : YOUR_DAY_ROWS);
-    return { open, list, lastClosed, dueToday: open.filter((row) => row.dueDays === 0).length };
-  }, [myRows, rowRank]);
+  const ownerOptions = useMemo(() => {
+    const names = new Map(directory.map((employee) => [String(employee.id), getDemoEmployeeName(employee, t)]));
+    rows.forEach((row) => { if (!names.has(row.ownerId)) names.set(row.ownerId, row.ownerName); });
+    return [...names].sort(([, a], [, b]) => a.localeCompare(b, currentLanguage === 'vn' ? 'vi' : undefined));
+  }, [directory, rows, t, currentLanguage]);
+  const owner = !canViewAll ? 'mine' : ['all', 'mine'].includes(preferences.owner) || ownerOptions.some(([id]) => id === preferences.owner)
+    ? preferences.owner : 'all';
+  const { open: openRows, history: historyRows } = useMemo(() => selectTaskListView(rows, { ...preferences, owner }, query),
+    [rows, preferences, owner, query]);
+  const historyOnly = ['closed', 'completed', 'cancelled'].includes(preferences.status);
+  const showHistory = historyExpanded ?? historyOnly;
+  const filtered = showHistory ? [...openRows, ...historyRows] : openRows;
+  const taskDataReady = !loading && !fetchError && loadedScope === taskScope;
+  const scopeHasOpen = rows.some((row) => row.open);
 
   /* ---------------- export ---------------- */
 
@@ -1323,6 +906,8 @@ const TaskListing = ({ employees, allEmployees }) => {
       t('taskListing.taskTitle', 'Task Title'),
       t('taskListing.status', 'Status'),
       t('taskListing.startDate', 'Start Date'),
+      t('taskListing.createdLabel', 'Created'),
+      t('taskListing.updatedLabel', 'Last updated'),
       t('taskListing.dueDate', 'Due Date'),
       t('taskListing.completionDate', 'Completion Date'),
       t('taskListing.assignedTo', 'Assigned To'),
@@ -1331,8 +916,8 @@ const TaskListing = ({ employees, allEmployees }) => {
       t('taskListing.qualityRating', 'Quality Rating'),
     ];
     const body = filtered.map((row) => [
-      row.title, row.stateLabel, row.task.start_date || '', row.task.due_date || '',
-      row.task.completion_date || '', row.ownerName,
+      row.title, row.task.status, row.task.start_date || '', row.task.created_at || '', row.task.updated_at || '',
+      row.task.due_date || '', row.closedAt || '', row.ownerName,
       row.selfSet ? row.ownerName : row.creatorName, row.priority,
       row.rating || '',
     ]);
@@ -1390,7 +975,7 @@ const TaskListing = ({ employees, allEmployees }) => {
           .replace('{src}', opened.selfSet
             ? t('taskListing.srcSelfSet', 'set by the owner')
             : t('taskListing.srcAssignedBy', 'assigned by {creator}')
-              .replace('{creator}', opened.creatorName || t('taskListing.sourceSystem', 'System'))),
+              .replace('{creator}', opened.creatorName || t('taskListing.assignmentUnknown', 'Assignment source unavailable'))),
         brief: opened.description,
         done: true,
       },
@@ -1415,7 +1000,7 @@ const TaskListing = ({ employees, allEmployees }) => {
         key: 'closed',
         title: t('taskListing.stepClosed', 'Marked complete'),
         detail: opened.closed
-          ? t('taskListing.stepClosedDone', 'Closed {date}').replace('{date}', shortDate(opened.closedAt || task.created_at))
+          ? opened.closedAt ? t('taskListing.stepClosedDone', 'Closed {date}').replace('{date}', shortDate(opened.closedAt)) : completionIssueLabel(opened.completionIssue, t)
           : t('taskListing.stepClosedOpen', 'Follows the work · closing it is what clears the record'),
         done: opened.closed,
       },
@@ -1500,17 +1085,7 @@ const TaskListing = ({ employees, allEmployees }) => {
         }}
       >
         <FetchElapsedPill active={loading} isDarkMode label={t('common.fetching', 'Fetching')} />
-        <FlatListbox
-          ind={ind}
-          onDark
-          value={groupMode}
-          onChange={(event) => { setGroupMode(event.target.value); setShowAll(false); }}
-          aria-label={t('taskListing.grouping', 'Grouping')}
-        >
-          <option value="record" style={{ color: '#1d1f20' }}>{t('taskListing.byRecord', 'By record')}</option>
-          <option value="due" style={{ color: '#1d1f20' }}>{t('taskListing.byDue', 'By due window')}</option>
-          <option value="priority" style={{ color: '#1d1f20' }}>{t('taskListing.byPriority', 'By priority')}</option>
-        </FlatListbox>
+
       </div>
     </div>
   );
@@ -1675,7 +1250,7 @@ const TaskListing = ({ employees, allEmployees }) => {
                   {t('common.edit', 'Edit')}
                 </Btn>
                 <Btn ind={ind} variant="primary" onClick={() => toggleDone(task)} disabled={!editable}>
-                  {opened.closed ? t('taskListing.reopen', 'Reopen') : t('taskListing.markComplete', 'Mark complete')}
+                  {opened.closed || opened.cancelled ? t('taskListing.reopen', 'Reopen') : t('taskListing.markComplete', 'Mark complete')}
                 </Btn>
               </div>
             </div>
@@ -1754,8 +1329,6 @@ const TaskListing = ({ employees, allEmployees }) => {
                         <div
                           style={{
                             fontFamily: BODY, fontSize: 13.5, color: ind.ink,
-                            opacity: step.done ? 0.5 : 1,
-                            textDecoration: step.done ? 'line-through' : 'none',
                           }}
                         >
                           {step.title}
@@ -1798,7 +1371,7 @@ const TaskListing = ({ employees, allEmployees }) => {
                   <RelationRow
                     ind={ind}
                     relation={t('taskListing.relOpenedBy', 'Opened by')}
-                    subject={opened.selfSet ? opened.ownerName : (opened.creatorName || t('taskListing.sourceSystem', 'System'))}
+                    subject={opened.selfSet ? opened.ownerName : (opened.creatorName || t('taskListing.assignmentUnknown', 'Assignment source unavailable'))}
                     detail={task.created_at
                       ? `${shortDate(task.created_at)} · ${clockTime(task.created_at)}`
                       : t('taskListing.openedUnknown', 'opening date not recorded')}
@@ -1822,11 +1395,8 @@ const TaskListing = ({ employees, allEmployees }) => {
                         .replace('{n}', String(detail.siblingsLate))
                       : t('taskListing.noneOverdue', 'none of them overdue — open the record')}
                     onClick={() => {
-                      setGroupMode('record');
-                      setQuery(opened.ownerName);
-                      // One call: setSearchParams does not queue, so a second
-                      // call in this tick would overwrite the first.
-                      go({ task: null, tab: DEFAULT_SEGMENT });
+                      changePreferences({ owner: opened.ownerId, status: 'open', due: 'all' }, true);
+                      setQuery('');
                     }}
                   />
                 </Blueprint>
@@ -1913,9 +1483,8 @@ const TaskListing = ({ employees, allEmployees }) => {
                 ind={ind}
                 size={12.5}
                 onClick={() => {
-                  setGroupMode('record');
-                  setQuery(opened.ownerName);
-                  closeTask();
+                  changePreferences({ owner: opened.ownerId, status: 'open', due: 'all' }, true);
+                  setQuery('');
                 }}
               >
                 {`${opened.ownerName}${opened.ownerDept ? ` · ${opened.ownerDept}` : ''}`}
@@ -1924,7 +1493,7 @@ const TaskListing = ({ employees, allEmployees }) => {
             <FieldRow ind={ind} label={t('taskListing.assignedBy', 'Assigned By')}>
               {opened.selfSet
                 ? t('taskListing.selfSetValue', 'The owner')
-                : (opened.creatorName || t('taskListing.sourceSystem', 'System'))}
+                : (opened.creatorName || t('taskListing.assignmentUnknown', 'Assignment source unavailable'))}
             </FieldRow>
             <FieldRow ind={ind} label={t('taskListing.priority', 'Priority')}>
               <Tag ind={ind} variant={opened.priority === 'high' ? 'accent' : 'neutral'}>
@@ -1951,21 +1520,22 @@ const TaskListing = ({ employees, allEmployees }) => {
               if (opened.rating > 0) {
                 entries.push({
                   key: 'rated',
-                  date: shortDate(opened.closedAt || task.updated_at || task.created_at),
+                  date: '',
                   text: t('taskListing.actRated', 'Quality rated {n}/5').replace('{n}', String(opened.rating)),
                   actor: opened.ownerName,
-                  time: clockTime(opened.closedAt || task.updated_at),
+                  time: '',
                 });
               }
               if (opened.closed) {
                 entries.push({
                   key: 'closed',
-                  date: shortDate(opened.closedAt || task.created_at),
-                  text: t('taskListing.actClosed', 'Marked complete'),
+                  date: shortDate(opened.closedAt),
+                  text: opened.completionIssue ? completionIssueLabel(opened.completionIssue, t) : t('taskListing.actClosed', 'Marked complete'),
                   actor: opened.ownerName,
                   time: clockTime(opened.closedAt),
                 });
-              } else if (task.updated_at && task.updated_at !== task.created_at) {
+              }
+              if (task.updated_at && task.updated_at !== task.created_at) {
                 entries.push({
                   key: 'changed',
                   date: shortDate(task.updated_at),
@@ -1977,17 +1547,17 @@ const TaskListing = ({ employees, allEmployees }) => {
               if (task.self_assessment) {
                 entries.push({
                   key: 'assessed',
-                  date: shortDate(task.updated_at || task.created_at),
+                  date: '',
                   text: t('taskListing.actAssessed', 'Self-assessment written'),
                   actor: opened.ownerName,
-                  time: clockTime(task.updated_at),
+                  time: '',
                 });
               }
               entries.push({
                 key: 'opened',
                 date: shortDate(task.created_at),
                 text: t('taskListing.actOpened', 'Task opened on the {who} record').replace('{who}', opened.ownerName),
-                actor: opened.selfSet ? opened.ownerName : (opened.creatorName || t('taskListing.sourceSystem', 'System')),
+                actor: opened.selfSet ? opened.ownerName : (opened.creatorName || t('taskListing.assignmentUnknown', 'Assignment source unavailable')),
                 time: clockTime(task.created_at),
               });
               return entries.map((entry) => (
@@ -2075,610 +1645,221 @@ const TaskListing = ({ employees, allEmployees }) => {
     );
   }
 
-  /* ================================================================== *
-   * 4a — Task ledger
-   * ================================================================== */
-
-  const decisionCards = decisions.slice(0, DECISION_CARDS);
-  const decisionRows = decisions.slice(DECISION_CARDS, DECISION_CARDS + DECISION_ROWS);
-
-  const decisionTag = (row) => {
-    if (row.late > 0) {
-      return {
-        variant: 'outline',
-        label: row.late === 1
-          ? t('taskListing.oneDayLateShort', '1 day late')
-          : t('taskListing.nDaysLateShort', '{n} days late').replace('{n}', String(row.late)),
-      };
-    }
-    if (row.dueDays === 0) return { variant: 'accent', label: t('taskListing.today', 'Today') };
-    if (!row.due) return { variant: 'neutral', label: t('taskListing.noDue', 'No date') };
-    return { variant: 'neutral', label: t('taskListing.inNDays', 'In {n} d').replace('{n}', String(row.dueDays)) };
+  // Task queue
+  const statusLabels = {
+    open: t('taskListing.segAllOpen', 'All open'),
+    pending: t('taskListing.statusPending', 'Pending'),
+    'in-progress': t('taskListing.statusInProgress', 'In progress'),
+    completed: t('taskListing.statusCompleted', 'Completed'),
+    cancelled: t('taskListing.stateCancelled', 'Cancelled'),
+    closed: t('taskListing.segClosed', 'Closed'),
+  };
+  const dueLabels = {
+    all: t('taskListing.allDeadlines', 'All deadlines'),
+    overdue: t('taskListing.overdue', 'Overdue'),
+    today: t('taskListing.dueToday', 'Due today'),
+    upcoming: t('taskListing.dueUpcoming', 'Upcoming'),
+    undated: t('taskListing.unscheduled', 'No due date'),
+  };
+  const sortLabels = {
+    urgency: t('taskListing.sortUrgency', 'Urgency'),
+    created_at: t('taskListing.createdLabel', 'Created'),
+    updated_at: t('taskListing.updatedLabel', 'Last updated'),
+    due_date: t('taskListing.dueDate', 'Due date'),
+    completion_date: t('taskListing.completionDate', 'Completion date'),
+  };
+  const tones = {
+    overdue: ind.dark ? '#f2a69c' : '#8f3028',
+    today: ind.dark ? '#f6d08d' : '#744713',
+    upcoming: ind.accentDeep,
+    completed: ind.dark ? '#9dd9b8' : '#216041',
+  };
+  const dateOptions = { day: '2-digit', month: 'short', year: 'numeric' };
+  const formatDay = (value) => formatWorkloadDay(value, currentLanguage, dateOptions);
+  const formatTimestamp = (value) => formatWorkloadTimestamp(value, currentLanguage, {
+    ...dateOptions, hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+  });
+  const relevantFilters = query.trim() || owner !== (canViewAll ? 'all' : 'mine') || preferences.status !== 'open' || preferences.due !== 'all';
+  const resetFilters = () => {
+    setQuery('');
+    const { owner: ownerDefault, status, due } = DEFAULT_TASK_LIST_PREFERENCES;
+    changePreferences({ owner: ownerDefault, status, due });
   };
 
-  const decisionBody = (row) => {
-    const siblings = rows.filter((r) => r.ownerId === row.ownerId && r.open && String(r.id) !== String(row.id)).length;
-    const cost = row.late > 0
-      ? t('taskListing.costOverdue', 'It has been past due for {n} day(s) and is the oldest open item on this record.')
-        .replace('{n}', String(row.late))
-      : (row.dueDays === 0
-        ? t('taskListing.costToday', 'It is due today; tomorrow it joins the overdue count.')
-        : (!row.due
-          ? t('taskListing.costNoDate', 'It carries no due date, so nothing will chase it.')
-          : t('taskListing.costSoon', 'Due in {n} day(s), and marked {p} priority.')
-            .replace('{n}', String(row.dueDays))
-            .replace('{p}', row.priority)));
-    const context = t('taskListing.costContext', '{owner} has {n} other open task(s) on the same record.')
-      .replace('{owner}', row.ownerName)
-      .replace('{n}', String(siblings));
-    return `${cost} ${context}`;
-  };
+  const filterControl = (key, label, value, options, disabled = false) => (
+    <div className="min-w-0">
+      <label htmlFor={`task-${key}`} style={{ ...headCell, display: 'block', marginBottom: 4 }}>{label}</label>
+      <FlatListbox id={`task-${key}`} ind={ind} aria-label={label} value={value} options={options} disabled={disabled}
+        onChange={(event) => changePreferences({ [key]: event.target.value })} style={{ width: '100%' }} />
+    </div>
+  );
+  const optionsFor = (values, labels) => values.map((value) => ({ value, label: labels[value] }));
+
+  const renderTaskRows = (sectionRows, limit, setLimit) => (
+    <>
+      {groupTaskListRows(sectionRows.slice(0, limit), preferences.groupByEmployee).map((group) => (
+        <div key={group.key} data-task-group={preferences.groupByEmployee ? group.key : undefined}>
+          {preferences.groupByEmployee && (
+            <h3 style={{ ...figure(16, ind.ink), margin: 0, padding: '8px 14px', background: ind.chrome, borderBottom: `1px solid ${ind.hairline}` }}>
+              {group.ownerName}
+            </h3>
+          )}
+          <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+            {group.rows.map((row) => {
+              const dueWindow = taskDueWindow(row);
+              const assignment = row.open && isNewTaskAssignment(row.task);
+              const statusColor = row.closed && !row.completionIssue ? tones.completed : ind.ink;
+              const created = formatTimestamp(row.task.created_at);
+              const updated = preferences.sort === 'updated_at' ? formatTimestamp(row.task.updated_at) : '';
+              const dates = [
+                [t('taskListing.createdLabel', 'Created'), created],
+                ...(preferences.sort === 'updated_at' ? [[t('taskListing.updatedLabel', 'Last updated'), updated]] : []),
+                [t('taskListing.dueDate', 'Due date'), formatDay(row.due), row.open ? tones[dueWindow] : undefined],
+                ...(row.closed ? [[t('taskListing.completionDate', 'Completion date'), formatDay(row.task.completion_date), row.completionIssue ? tones.today : undefined]] : []),
+              ];
+              return (
+                <li key={row.id} data-task-row={row.id} data-task-status={row.status} data-task-urgency={row.open ? dueWindow : undefined}
+                  className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-2 px-3 py-3 sm:px-4 lg:grid-cols-[auto_minmax(0,1.45fr)_minmax(0,1.16fr)] lg:items-start"
+                  style={{ borderBottom: `1px solid ${ind.rule}`, background: String(focusTaskId) === String(row.id) ? ind.accentWash : 'transparent' }}>
+                  <div className="pt-1">
+                    {row.cancelled ? <span className="block w-[18px]" /> : (
+                      <SquareCheck ind={ind} done={row.closed} size={18} disabled={!canEditTask(row.task)}
+                        label={row.closed ? t('taskListing.reopen', 'Reopen') : t('taskListing.markComplete', 'Mark complete')}
+                        onClick={() => toggleDone(row.task)} />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <button type="button" onClick={() => openTask(row.id)} className="text-left focus-visible:outline-2 focus-visible:outline-offset-2"
+                      style={{ color: ind.ink, fontFamily: BODY, fontSize: 15, fontWeight: 600, lineHeight: 1.35, overflowWrap: 'anywhere' }}>
+                      {isDemoMode() ? row.title : <TranslatedText text={row.title} record={{ entityType: 'task', entityId: row.id, field: 'title' }} />}
+                    </button>
+                    <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1" style={{ fontSize: 12 }}>
+                      <span style={{ color: ind.inkGhost }}>{row.ownerName}</span>
+                      <span style={{ color: statusColor, fontWeight: 600 }}>{statusLabels[row.status] || row.stateLabel}</span>
+                      {row.open && <span style={{ color: tones[dueWindow] || ind.inkGhost, fontWeight: 600 }}>{dueLabels[dueWindow]}</span>}
+                      {assignment && <span style={{ color: ind.accentDeep, fontWeight: 600 }}>{t('taskListing.newAssignment', 'New assignment')}</span>}
+                      {row.completionIssue && <span style={{ color: tones.today, fontWeight: 600 }}>{completionIssueLabel(row.completionIssue, t)}</span>}
+                    </div>
+                  </div>
+                  <dl className="col-start-2 m-0 grid grid-cols-2 gap-x-3 gap-y-1 lg:col-start-3 lg:grid-cols-3">
+                    {dates.map(([label, value, color]) => (
+                      <div key={label} className="min-w-0">
+                        <dt style={headCell}>{label}</dt>
+                        <dd style={{ margin: 0, fontSize: 12, lineHeight: 1.4, color: color || ind.ink, overflowWrap: 'anywhere' }}>{value || '—'}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
+      {sectionRows.length > limit && (
+        <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2" style={caption}>
+          <span>{t('taskListing.visibleCount', '{shown} of {total} shown').replace('{shown}', limit.toLocaleString()).replace('{total}', sectionRows.length.toLocaleString())}</span>
+          <Btn ind={ind} onClick={() => setLimit(limit + TASK_LIST_PAGE_SIZE)}>{t('common.loadMore', 'Load more')}</Btn>
+        </div>
+      )}
+    </>
+  );
 
   return (
     <div data-screen-label="Task Listing" style={screenStyle}>
-      {renderTicker(
-        <>
-          <TickerCell ind={ind} label={t('taskListing.open', 'Open')} value={totals.open} />
-          <TickerCell ind={ind} label={t('taskListing.dueToday', 'Due today')} value={totals.dueToday} />
-          <TickerCell
-            ind={ind}
-            label={t('taskListing.overdue', 'Overdue')}
-            value={totals.overdue}
-            /* The one figure on the strip that asks for an action. */
-            valueColor={totals.overdue > 0 ? ind.tickerUp : undefined}
-          />
-          <TickerCell ind={ind} label={t('taskListing.unscheduled', 'No due date')} value={totals.unscheduled} />
-          <TickerCell
-            ind={ind}
-            label={t('taskListing.closedOnTime', 'Closed on time')}
-            value={totals.onTimePct == null ? '—' : `${totals.onTimePct}%`}
-            title={t('taskListing.closedOnTimeHint', 'Of the closed tasks that had a due date')}
-          />
-        </>,
-      )}
+      {renderTicker(<>
+        <TickerCell ind={ind} label={t('taskListing.open', 'Open')} value={taskDataReady ? openRows.length : '—'} />
+        <TickerCell ind={ind} label={dueLabels.overdue} value={taskDataReady ? openRows.filter((row) => row.late > 0).length : '—'} />
+        <TickerCell ind={ind} label={dueLabels.today} value={taskDataReady ? openRows.filter((row) => row.dueDays === 0).length : '—'} />
+        <TickerCell ind={ind} label={dueLabels.upcoming} value={taskDataReady ? openRows.filter((row) => row.dueDays > 0).length : '—'} />
+        <TickerCell ind={ind} label={dueLabels.undated} value={taskDataReady ? openRows.filter((row) => !row.due).length : '—'} />
+      </>)}
 
-      <div className="flex flex-col lg:flex-row items-stretch">
-        {/* ── LEFT — the ledger ───────────────────────────────────── */}
-        <div
-          className="flex-1 min-w-0 flex flex-col"
-          style={{ padding: '22px 24px 20px', gap: 14, borderRight: `1px solid ${ind.hairline}` }}
-        >
-          {banner}
-
-          <div className="flex flex-wrap items-end justify-between" style={{ gap: 14 }}>
-            <div style={{ minWidth: 0 }}>
-              <h1 style={{ fontFamily: BODY, fontSize: 32, fontWeight: 400, margin: 0, color: ind.ink, lineHeight: 1.1 }}>
-                {t('taskListing.title', 'Task Listing')}
-              </h1>
-              {/* The subtitle states the model, not just the count. */}
-              <p style={{ ...caption, marginTop: 6 }}>
-                {[
-                  /* Open and total both, so a ledger whose work is finished
-                     still says how much work there was. */
-                  t('taskListing.headOpen', '{n} open of {total} task(s) across {r} employee record(s)')
-                    .replace('{n}', String(totals.open))
-                    .replace('{total}', String(totals.total))
-                    .replace('{r}', String(totals.records)),
-                  t('taskListing.headModel', 'every one was opened on a record, none are free-standing'),
-                  t('taskListing.headMine', 'you own {n}').replace('{n}', String(totals.mine)),
-                ].join(' · ')}
-              </p>
-            </div>
-
-            <div style={{ display: 'flex', gap: 8, flex: 'none' }}>
-              <Btn ind={ind} onClick={exportCsv} style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
-                <Download size={13} strokeWidth={1.5} />
-                {t('taskListing.export', 'Export')}
-              </Btn>
-              {/* One primary only. */}
-              <Btn ind={ind} variant="primary" onClick={openAdd} style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
-                <Plus size={13} strokeWidth={1.5} />
-                {t('taskListing.newTask', 'New task')}
-              </Btn>
-            </div>
+      <div className="flex min-w-0 flex-col gap-4 px-3 py-4 sm:p-6">
+        {banner}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 style={{ fontFamily: BODY, fontWeight: 400, fontSize: 'clamp(25px, 4vw, 34px)', lineHeight: 1.1, margin: 0 }}>{t('taskListing.title', 'Task Listing')}</h1>
+          <div className="flex flex-wrap items-center gap-2">
+            <Btn ind={ind} onClick={exportCsv} disabled={!taskDataReady || !filtered.length} className="inline-flex items-center gap-2">
+              <Download size={14} aria-hidden="true" />{t('taskListing.export', 'Export')}
+            </Btn>
+            {canAssign && <Btn ind={ind} variant="primary" onClick={openAdd} className="inline-flex items-center gap-2">
+              <Plus size={14} aria-hidden="true" />{t('taskListing.newTask', 'New task')}
+            </Btn>}
           </div>
-
-          {/* Filter strip. Counts live in the labels, never as separate badges. */}
-          <div
-            className="flex flex-wrap items-center"
-            style={{
-              gap: 10, padding: '9px 0', minWidth: 0,
-              borderTop: `1px solid ${ind.hairline}`, borderBottom: `1px solid ${ind.hairline}`,
-            }}
-          >
-            <Seg
-              ind={ind}
-              ariaLabel={t('taskListing.title', 'Task Listing')}
-              value={segment}
-              onChange={selectSegment}
-              options={segments}
-            />
-
-            <div
-              className="flex-1"
-              style={{
-                display: 'flex', alignItems: 'center', gap: 7, minWidth: 0,
-                border: `1px solid ${ind.hairline}`, padding: '5px 11px',
-              }}
-            >
-              <Search size={14} strokeWidth={1.5} style={{ flex: 'none', color: ind.inkFaint }} />
-              <input
-                type="text"
-                value={query}
-                onChange={(event) => { setQuery(event.target.value); setShowAll(false); }}
-                placeholder={t('taskListing.searchPlaceholder', 'Search tasks, owners or the record that opened them')}
-                style={{
-                  flex: 1, minWidth: 0, background: 'transparent', border: 'none', outline: 'none',
-                  fontFamily: BODY, fontSize: 12.5, color: ind.ink,
-                }}
-              />
-              {query && (
-                <button
-                  type="button"
-                  onClick={() => setQuery('')}
-                  aria-label={t('common.clear', 'Clear')}
-                  style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: ind.inkFaint }}
-                >
-                  <X size={13} strokeWidth={1.5} />
-                </button>
-              )}
-            </div>
-
-            {/* The grouping is stated in words; the control is a link, not a widget. */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 'none' }}>
-              <span
-                style={{
-                  fontFamily: DISPLAY, fontWeight: 600, fontSize: 11, letterSpacing: '.14em',
-                  textTransform: 'uppercase', color: ind.inkFaint, whiteSpace: 'nowrap',
-                }}
-              >
-                {groupModeLabel}
-              </span>
-              <ActionLink
-                ind={ind}
-                icon={ChevronDown}
-                onClick={() => {
-                  const order = ['record', 'due', 'priority'];
-                  setGroupMode(order[(order.indexOf(groupMode) + 1) % order.length]);
-                  setShowAll(false);
-                }}
-              >
-                {t('taskListing.change', 'Change')}
-              </ActionLink>
-            </div>
-          </div>
-
-          {/* The table — one blueprint frame, padding 0, edge to edge inside. */}
-          <Blueprint ind={ind} style={{ padding: 0, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-            <div
-              className="grid grid-cols-[22px_1fr_86px] md:grid-cols-[26px_1fr_132px_150px_96px_86px]"
-              style={{ gap: 12, alignItems: 'center', padding: '9px 16px', borderBottom: `1px solid ${ind.hairline}` }}
-            >
-              <span />
-              <span style={headCell}>{t('taskListing.colTask', 'Task')}</span>
-              <span className="hidden md:block" style={headCell}>{t('taskListing.colSource', 'Source')}</span>
-              <span className="hidden md:block" style={headCell}>{t('taskListing.colOwner', 'Owner')}</span>
-              <span className="hidden md:block" style={headCell}>{t('taskListing.colDue', 'Due')}</span>
-              <span style={{ ...headCell, textAlign: 'right' }}>{t('taskListing.colState', 'State')}</span>
-            </div>
-
-            {loading && rows.length === 0 && (
-              <div style={{ padding: '28px 16px', textAlign: 'center' }}>
-                <span style={{ fontFamily: BODY, fontSize: 13, color: ind.inkMuted }}>
-                  {t('common.fetching', 'Fetching')}…
-                </span>
-              </div>
-            )}
-
-            {/*
-              An empty table has three different causes and they must not read
-              alike: the search excluded everything, the segment excluded
-              everything, or the scope really is empty. Saying "no tasks yet"
-              over a scope that holds closed ones is a defect — it reports a
-              filter as an absence of data.
-            */}
-            {!loading && visibleGroups.length === 0 && (
-              <div style={{ padding: '28px 16px', textAlign: 'center' }}>
-                <span className="block" style={{ fontFamily: BODY, fontSize: 13, color: ind.inkMuted, lineHeight: 1.55 }}>
-                  {query
-                    ? t('taskListing.noMatches', 'Nothing matches that search')
-                    : (totals.total > 0
-                      ? t('taskListing.noneInSegment', 'No tasks in this view — the scope holds {n}, all in other states')
-                        .replace('{n}', String(totals.total))
-                      : (unlinkedViewer
-                        ? t(
-                          'taskListing.unlinkedViewer',
-                          'This sign-in is not linked to an employee record, so there is no record to list tasks against. An administrator can link it from User Management.',
-                        )
-                        : t('taskListing.noTasks', 'No tasks yet. Add your first task!')))}
-                </span>
-                {!query && totals.total > 0 && segment !== 'closed' && totals.closed > 0 && (
-                  <span className="block" style={{ marginTop: 10 }}>
-                    <ActionLink
-                      ind={ind}
-                      onClick={() => selectSegment('closed')}
-                    >
-                      {t('taskListing.showClosedN', 'Show the {n} closed').replace('{n}', String(totals.closed))}
-                    </ActionLink>
-                  </span>
-                )}
-                {query && (
-                  <span className="block" style={{ marginTop: 10 }}>
-                    <ActionLink ind={ind} icon={X} onClick={() => setQuery('')}>
-                      {t('taskListing.clearSearch', 'Clear the search')}
-                    </ActionLink>
-                  </span>
-                )}
-              </div>
-            )}
-
-            {visibleGroups.map((group, groupIndex) => {
-              const bandRows = showAll ? group.rows : group.rows.slice(0, MAX_ROWS_PER_GROUP);
-              const hidden = group.rows.length - bandRows.length;
-              return (
-                <div key={group.key}>
-                  <div
-                    className="flex flex-wrap items-center justify-between"
-                    style={{
-                      gap: 16, padding: '9px 16px', background: ind.accentWash,
-                      borderBottom: `1px solid ${ind.rule}`,
-                      borderTop: groupIndex > 0 ? `1px solid ${ind.rule}` : 'none',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, minWidth: 0 }}>
-                      <ChevronDown size={13} strokeWidth={1.5} style={{ flex: 'none', color: ind.inkFaint, alignSelf: 'center' }} />
-                      <span
-                        style={{
-                          fontFamily: DISPLAY, fontWeight: 600, fontSize: 14, letterSpacing: '.07em',
-                          textTransform: 'uppercase', color: ind.ink, whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {group.name}
-                      </span>
-                      <span style={{ fontFamily: BODY, fontSize: 11.5, color: ind.inkMuted, minWidth: 0 }}>
-                        {group.note}
-                      </span>
-                    </div>
-                    <GroupProgress
-                      ind={ind}
-                      done={group.done}
-                      total={group.total}
-                      label={t('taskListing.done', 'Done')}
-                    />
-                  </div>
-
-                  {bandRows.map((row, rowIndex) => {
-                    const selected = String(row.id) === String(focusTaskId);
-                    const last = rowIndex === bandRows.length - 1 && hidden <= 0;
-                    return (
-                      <div
-                        key={row.id}
-                        className="grid grid-cols-[22px_1fr_86px] md:grid-cols-[26px_1fr_132px_150px_96px_86px]"
-                        style={{
-                          gap: 12, alignItems: 'center', padding: '10px 16px',
-                          borderBottom: last && groupIndex === visibleGroups.length - 1 ? 'none' : `1px solid ${ind.rule}`,
-                          background: selected ? ind.accentWash : 'transparent',
-                          boxShadow: selected ? `inset 3px 0 0 ${ind.accent}` : 'none',
-                          transition: 'background .15s ease',
-                        }}
-                        onMouseEnter={(event) => { if (!selected) event.currentTarget.style.background = ind.accentWash; }}
-                        onMouseLeave={(event) => { if (!selected) event.currentTarget.style.background = 'transparent'; }}
-                      >
-                        <SquareCheck
-                          ind={ind}
-                          done={row.closed}
-                          disabled={!canEditTask(row.task)}
-                          onClick={() => toggleDone(row.task)}
-                          label={row.closed
-                            ? t('taskListing.reopen', 'Reopen')
-                            : t('taskListing.markComplete', 'Mark complete')}
-                        />
-
-                        <div style={{ minWidth: 0 }}>
-                          <button
-                            type="button"
-                            onClick={() => openTask(row.id)}
-                            style={{
-                              background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left',
-                              fontFamily: BODY, fontSize: 13.5, color: ind.ink,
-                              opacity: row.closed ? 0.5 : 1,
-                              textDecoration: row.closed ? 'line-through' : 'none',
-                            }}
-                          >
-                            {isDemoMode()
-                              ? row.title
-                              : <TranslatedText text={row.title} record={{ entityType: 'task', entityId: row.id, field: 'title' }} />}
-                          </button>
-                          {/* Consequence or evidence with a real number — never a restatement. */}
-                          <p
-                            style={{
-                              fontFamily: BODY, fontSize: 11.5, lineHeight: 1.45, margin: '2px 0 0',
-                              color: ind.inkMuted, opacity: row.closed ? 0.85 : 1,
-                            }}
-                          >
-                            {row.consequence}
-                          </p>
-                          <p className="md:hidden" style={{ fontFamily: BODY, fontSize: 11.5, color: ind.inkFaint, margin: '2px 0 0' }}>
-                            {`${row.sourceLabel} · ${row.ownerName} · ${row.dueLabel}`}
-                          </p>
-                        </div>
-
-                        <span className="hidden md:block" style={{ justifySelf: 'start' }}>
-                          <Tag
-                            ind={ind}
-                            variant={row.source === 'assigned' ? 'accent' : (row.source === 'self' ? 'outline' : 'neutral')}
-                          >
-                            {row.sourceLabel}
-                          </Tag>
-                        </span>
-
-                        <span className="hidden md:block" style={{ minWidth: 0 }}>
-                          <OwnerCell ind={ind} name={row.ownerName} muted={row.closed} />
-                        </span>
-
-                        <span
-                          className="hidden md:block"
-                          style={{
-                            fontFamily: DISPLAY, fontWeight: 600, fontSize: 13, color: row.dueTone,
-                            fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap',
-                          }}
-                        >
-                          {row.dueLabel}
-                        </span>
-
-                        <span style={{ justifySelf: 'end' }}>
-                          <StateWord ind={ind} state={row.state} label={row.stateLabel} />
-                        </span>
-                      </div>
-                    );
-                  })}
-
-                  {hidden > 0 && (
-                    <div style={{ padding: '8px 16px', borderBottom: `1px solid ${ind.rule}` }}>
-                      <ActionLink ind={ind} onClick={() => setShowAll(true)}>
-                        {t('taskListing.nMoreOnRecord', '{n} more on this record').replace('{n}', String(hidden))}
-                      </ActionLink>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-
-            {/* Truncation is stated, never implied by a fade. */}
-            {visibleGroups.length > 0 && (
-              <div
-                className="flex flex-wrap items-center justify-between"
-                style={{
-                  gap: 12, padding: '9px 16px', borderTop: `1px solid ${ind.hairline}`,
-                  fontFamily: BODY, fontSize: 12, color: ind.inkMuted,
-                }}
-              >
-                <span>
-                  {t('taskListing.showingRows', 'Showing {shown} of {total} · {groups} of {allGroups} group(s)')
-                    .replace('{shown}', String(shownRows))
-                    .replace('{total}', String(filtered.length))
-                    .replace('{groups}', String(visibleGroups.length))
-                    .replace('{allGroups}', String(groups.length))}
-                </span>
-                {(groups.length > visibleGroups.length || shownRows < filtered.length) && (
-                  <ActionLink ind={ind} onClick={() => setShowAll(true)}>
-                    {t('taskListing.showAll', 'Show everything')}
-                  </ActionLink>
-                )}
-                {showAll && groups.length > MAX_GROUPS && (
-                  <ActionLink ind={ind} icon={ChevronDown} onClick={() => setShowAll(false)}>
-                    {t('taskListing.collapse', 'Collapse')}
-                  </ActionLink>
-                )}
-              </div>
-            )}
-          </Blueprint>
         </div>
 
-        {/* ── RIGHT — needs a decision, 340px ─────────────────────── */}
-        <aside className="w-full lg:w-[340px] lg:shrink-0 flex flex-col" style={{ background: ind.chrome }}>
-          <div style={{ padding: '20px 20px 12px', borderBottom: `1px solid ${ind.hairline}` }}>
-            <div className="flex items-baseline justify-between" style={{ gap: 10 }}>
-              <ColumnHeading ind={ind}>{t('taskListing.needsDecision', 'Needs a decision')}</ColumnHeading>
-              <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 12, color: ind.accent, whiteSpace: 'nowrap' }}>
-                {t('taskListing.nItems', '{n} items').replace('{n}', String(decisions.length))}
-              </span>
-            </div>
-            {/* Reconciles with the ticker: same two figures, same scope. */}
-            <p style={smallNote}>
-              {t('taskListing.decisionSummary', '{o} overdue · {u} with no due date to chase them by')
-                .replace('{o}', String(totals.overdue))
-                .replace('{u}', String(totals.unscheduled))}
-            </p>
+        <div className="grid grid-cols-2 gap-x-3 gap-y-2 border-y py-3 md:grid-cols-3 xl:grid-cols-6" style={{ borderColor: ind.hairline }}>
+          {filterControl('owner', t('taskListing.colOwner', 'Owner'), owner, [
+            ...(canViewAll ? [{ value: 'all', label: t('taskListing.ownersAll', 'All owners') }] : []),
+            { value: 'mine', label: t('taskListing.segMine', 'Mine') },
+            ...(canViewAll ? ownerOptions.map(([value, label]) => ({ value, label })) : []),
+          ], !canViewAll)}
+          {filterControl('status', t('taskListing.status', 'Status'), preferences.status, optionsFor(TASK_LIST_STATUSES, statusLabels))}
+          {filterControl('due', t('taskListing.dueDate', 'Due date'), preferences.due, optionsFor(TASK_LIST_DUE_FILTERS, dueLabels), historyOnly)}
+          {filterControl('sort', t('taskListing.sortBy', 'Sort by'), preferences.sort, optionsFor(TASK_LIST_SORTS, sortLabels))}
+          {filterControl('direction', t('taskListing.sortDirection', 'Direction'), preferences.direction, [
+            { value: 'asc', label: t('taskListing.sortAscending', 'Ascending') },
+            { value: 'desc', label: t('taskListing.sortDescending', 'Descending') },
+          ], preferences.sort === 'urgency')}
+          <div className="min-w-0">
+            <span style={{ ...headCell, display: 'block', marginBottom: 4 }}>{t('taskListing.grouping', 'Grouping')}</span>
+            <Btn ind={ind} aria-label={t('taskListing.grouping', 'Grouping')} aria-pressed={preferences.groupByEmployee}
+              onClick={() => changePreferences({ groupByEmployee: !preferences.groupByEmployee })}
+              style={{ width: '100%', textAlign: 'left', minHeight: 33 }}>
+              {preferences.groupByEmployee ? t('taskListing.groupEmployee', 'By employee') : t('taskListing.groupNone', 'None')}
+            </Btn>
           </div>
-
-          {decisions.length === 0 && (
-            <div style={{ padding: '16px 20px', borderBottom: `1px solid ${ind.rule}` }}>
-              <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, lineHeight: 1.5 }}>
-                {t('taskListing.nothingToDecide', 'Nothing is open. Every task on the visible records is closed.')}
-              </p>
-            </div>
-          )}
-
-          {/* Two actionable cards; the first tinted, the second plain. */}
-          {decisionCards.map((row, index) => {
-            const tag = decisionTag(row);
-            return (
-              <div
-                key={row.id}
-                style={{
-                  padding: '14px 20px', borderBottom: `1px solid ${ind.rule}`,
-                  background: index === 0 ? ind.accentWash : 'transparent',
-                }}
-              >
-                <div className="flex items-baseline justify-between" style={{ gap: 10 }}>
-                  <span
-                    style={{
-                      fontFamily: DISPLAY, fontWeight: 600, fontSize: 14, letterSpacing: '.04em',
-                      textTransform: 'uppercase', color: ind.ink, minWidth: 0,
-                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {row.title}
-                  </span>
-                  <Tag ind={ind} variant={tag.variant}>{tag.label}</Tag>
-                </div>
-                <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkGhost, margin: '5px 0 9px', lineHeight: 1.45 }}>
-                  {decisionBody(row)}
-                </p>
-                {/* Every item offers two exits. */}
-                <div style={{ display: 'flex', gap: 7 }}>
-                  <Btn
-                    ind={ind}
-                    variant="primary"
-                    onClick={() => toggleDone(row.task)}
-                    disabled={!canEditTask(row.task)}
-                  >
-                    {t('taskListing.markComplete', 'Mark complete')}
-                  </Btn>
-                  <Btn ind={ind} onClick={() => openTask(row.id)}>
-                    {t('taskListing.openTask', 'Open')}
-                  </Btn>
-                </div>
-              </div>
-            );
-          })}
-
-          {/* Two compact rows. */}
-          {decisionRows.map((row) => (
-            <div
-              key={row.id}
-              className="flex items-center justify-between"
-              style={{ gap: 12, padding: '12px 20px', borderBottom: `1px solid ${ind.rule}` }}
-            >
-              <div style={{ minWidth: 0 }}>
-                <div
-                  style={{
-                    fontFamily: BODY, fontSize: 13, color: ind.ink,
-                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                  }}
-                >
-                  {row.title}
-                </div>
-                <div style={{ fontFamily: BODY, fontSize: 11.5, color: ind.inkMuted, marginTop: 2 }}>
-                  {`${row.ownerName} · ${row.dueLabel}`}
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => openTask(row.id)}
-                aria-label={t('taskListing.openTask', 'Open')}
-                style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: ind.inkFaint, flex: 'none' }}
-              >
-                <ArrowRight size={15} strokeWidth={1.5} />
-              </button>
-            </div>
-          ))}
-
-          {/* Your day — every row names its record and its due state. */}
-          <div style={{ padding: '18px 20px 10px', marginTop: 6, borderBottom: `1px solid ${ind.hairline}` }}>
-            <div className="flex items-baseline justify-between" style={{ gap: 10 }}>
-              <ColumnHeading ind={ind}>{t('taskListing.yourDay', 'Your day')}</ColumnHeading>
-              <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 12, color: ind.ink, opacity: 0.5, whiteSpace: 'nowrap' }}>
-                {t('taskListing.yourDayCount', '{n} open · {d} due today')
-                  .replace('{n}', String(yourDay.open.length))
-                  .replace('{d}', String(yourDay.dueToday))}
-              </span>
-            </div>
+          <div className="col-span-2 flex min-w-0 items-center gap-2 px-2 md:col-span-3 xl:col-span-4" style={{ border: `1px solid ${ind.hairline}` }}>
+            <Search size={14} aria-hidden="true" style={{ flex: 'none', color: ind.inkGhost }} />
+            <input className="min-w-0 flex-1 bg-transparent px-1 py-2 focus-visible:outline-2 focus-visible:outline-offset-1"
+              aria-label={t('taskListing.search', 'Search tasks')}
+              placeholder={t('taskListing.searchPlaceholder', 'Search tasks, owners or the record that opened them')}
+              value={query} onChange={(event) => { setQuery(event.target.value); setOpenLimit(TASK_LIST_PAGE_SIZE); setHistoryLimit(TASK_LIST_PAGE_SIZE); }} />
           </div>
+          {relevantFilters && <Btn ind={ind} onClick={resetFilters} className="justify-self-start">{t('taskListing.clearFilters', 'Clear filters')}</Btn>}
+        </div>
 
-          {yourDay.list.length === 0 && !yourDay.lastClosed && (
-            <div style={{ padding: '12px 20px', borderBottom: `1px solid ${ind.rule}` }}>
-              <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, lineHeight: 1.5 }}>
-                {t('taskListing.yourDayEmpty', 'Nothing is assigned to you right now.')}
-              </p>
-            </div>
+        {!fetchError && !taskDataReady && (
+          <p role="status" style={caption}>{unlinkedViewer ? t('taskListing.unlinkedViewer', 'This sign-in is not linked to an employee record.') : t('common.fetching', 'Fetching')}</p>
+        )}
+        {taskDataReady && unlinkedViewer && (
+          <p role="status" style={caption}>{t('taskListing.unlinkedViewer', 'This sign-in is not linked to an employee record.')}</p>
+        )}
+        {taskDataReady && !unlinkedViewer && <>
+          {!historyOnly && (
+            <section aria-labelledby="tasks-open-heading" className="min-w-0">
+              <h2 id="tasks-open-heading" style={{ ...figure(18, ind.ink), margin: '0 0 6px' }}>
+                {t('taskListing.segAllOpen', 'All open')} · {openRows.length.toLocaleString()}
+              </h2>
+              <Blueprint ind={ind} style={{ padding: 0, minWidth: 0 }}>
+                {openRows.length ? renderTaskRows(openRows, openLimit, setOpenLimit) : (
+                  <p role="status" className="px-4 py-5" style={caption}>
+                    {relevantFilters && scopeHasOpen ? t('taskListing.noFilteredOpen', 'No open tasks match these filters.')
+                      : historyRows.length ? t('taskListing.caughtUp', 'No open tasks. View task history below.')
+                        : t('taskListing.noOpenTasks', 'No open tasks.')}
+                  </p>
+                )}
+              </Blueprint>
+            </section>
           )}
-
-          {yourDay.list.map((row) => (
-            <div
-              key={row.id}
-              style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '10px 20px', borderBottom: `1px solid ${ind.rule}` }}
-            >
-              <SquareCheck
-                ind={ind}
-                size={14}
-                done={false}
-                onClick={() => toggleDone(row.task)}
-                label={t('taskListing.markComplete', 'Mark complete')}
-              />
-              <button
-                type="button"
-                onClick={() => openTask(row.id)}
-                style={{ flex: 1, minWidth: 0, background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left' }}
-              >
-                <span
-                  className="block"
-                  style={{
-                    fontFamily: BODY, fontSize: 12.5, color: ind.ink,
-                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                  }}
-                >
-                  {row.title}
-                </span>
-                <span className="block" style={{ fontFamily: BODY, fontSize: 11, color: ind.inkMuted, marginTop: 2 }}>
-                  {`${row.ownerName} · ${row.dueLabel}`}
-                </span>
-              </button>
+          <section aria-label={t('taskListing.taskHistory', 'Task history')} className="min-w-0" style={{ border: `1px solid ${ind.hairline}` }}>
+            <button type="button" aria-expanded={showHistory} aria-controls="task-list-history" onClick={() => setHistoryExpanded(!showHistory)}
+              className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left focus-visible:outline-2 focus-visible:outline-offset-2" style={{ background: ind.chrome }}>
+              <span style={figure(17, ind.ink)}>{t('taskListing.taskHistory', 'Task history')} · {historyRows.length.toLocaleString()}</span>
+              <ChevronDown size={16} aria-hidden="true" style={{ transform: showHistory ? 'rotate(180deg)' : undefined }} />
+            </button>
+            <div id="task-list-history" hidden={!showHistory}>
+              {showHistory && (historyRows.length ? renderTaskRows(historyRows, historyLimit, setHistoryLimit) : (
+                <p className="px-4 py-4" style={caption}>{t('taskListing.emptyHistory', 'No tasks in history match this view.')}</p>
+              ))}
             </div>
-          ))}
-
-          {yourDay.lastClosed && (
-            <div
-              style={{
-                display: 'flex', alignItems: 'center', gap: 11, padding: '10px 20px',
-                borderBottom: `1px solid ${ind.rule}`, opacity: 0.55,
-              }}
-            >
-              <SquareCheck
-                ind={ind}
-                size={14}
-                done
-                onClick={() => toggleDone(yourDay.lastClosed.task)}
-                label={t('taskListing.reopen', 'Reopen')}
-              />
-              <span style={{ flex: 1, minWidth: 0 }}>
-                <span
-                  className="block"
-                  style={{
-                    fontFamily: BODY, fontSize: 12.5, color: ind.ink, textDecoration: 'line-through',
-                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                  }}
-                >
-                  {yourDay.lastClosed.title}
-                </span>
-                <span className="block" style={{ fontFamily: BODY, fontSize: 11, color: ind.inkMuted, marginTop: 2 }}>
-                  {t('taskListing.closedAt', 'Closed {date}').replace(
-                    '{date}',
-                    `${shortDate(yourDay.lastClosed.closedAt)} ${clockTime(yourDay.lastClosed.closedAt)}`.trim(),
-                  )}
-                </span>
-              </span>
-            </div>
-          )}
-        </aside>
+          </section>
+        </>}
       </div>
 
-      {modal && (
-        <TaskFormModal
-          ind={ind}
-          t={t}
-          form={form}
-          setForm={setForm}
-          mode={modal.mode}
-          canAssign={canAssign}
-          assignable={assignable}
-          employeeLabel={employeeLabel}
-          onClose={() => setModal(null)}
-          onSave={submitForm}
-          onDelete={modal.task ? () => removeTask(modal.task) : null}
-        />
-      )}
+      {modal && <TaskFormModal ind={ind} t={t} form={form} setForm={setForm} mode={modal.mode} canAssign={canAssign}
+        assignable={assignable} employeeLabel={employeeLabel} onClose={() => setModal(null)} onSave={submitForm}
+        onDelete={modal.task ? () => removeTask(modal.task) : null} />}
     </div>
   );
 };
